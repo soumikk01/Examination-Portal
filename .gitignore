@@ -1,0 +1,11 @@
+node_modules
+.env
+.DS_Store
+dist
+coverage
+.vscode
+api/node_modules
+api/dist
+api/.wrangler
+frontend/node_modules
+frontend/dist
