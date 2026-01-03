@@ -75,14 +75,14 @@ const SearchPage = () => {
                     <div className="glass-card bg-white p-10 max-w-4xl mx-auto flex flex-col gap-4">
                         <input
                             type="text"
-                            placeholder="Enter your College ID (e.g., CS2024001)"
+                            placeholder="Enter your College ID"
                             className="input-field w-full border-[#e2e8f0]"
                             value={searchId}
                             onChange={(e) => setSearchId(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                         />
-                        <button onClick={handleSearch} className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white w-full py-3 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all">
-                            <Search size={22} strokeWidth={2.5} /> Search
+                        <button onClick={handleSearch} className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white w-1/2 mx-auto py-3 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all">
+                            <Search size={11} strokeWidth={2.5} /> Search
                         </button>
                         <p className="text-sm text-gray-400 text-center">
                             Demo IDs: CS2024001, EC2024002, ME2024003
