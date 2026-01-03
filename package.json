@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "server": "node server.js",
+    "server:worker": "cd api && npm run dev",
     "client": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "dev:worker": "concurrently \"npm run server:worker\" \"npm run client\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

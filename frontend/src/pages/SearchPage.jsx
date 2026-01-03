@@ -60,34 +60,36 @@ const SearchPage = () => {
     };
 
     return (
-        <div className="min-h-screen p-4 md:p-12 max-w-6xl mx-auto" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="min-h-screen p-4 md:p-12 max-w-6xl mx-auto" style={{ position: 'relative' }}>
             <BlinkingDots />
 
-            <header className="mb-12 text-center">
-                <h1 className="text-5xl font-extrabold mb-4 text-[#2d368e]">
-                    Examination Portal
-                </h1>
-                <p className="text-xl text-gray-500">Check your exam details, dates, and room assignments</p>
-            </header>
+            <div style={{ position: 'relative', zIndex: 10 }}>
+                <header className="mb-12 text-center">
+                    <h1 className="text-5xl font-extrabold mb-4 text-[#2d368e]">
+                        Examination Portal
+                    </h1>
+                    <p className="text-xl text-gray-500">Check your exam details, dates, and room assignments</p>
+                </header>
 
-            <main>
-                <div className="glass-card bg-white p-10 max-w-4xl mx-auto flex flex-col gap-4">
-                    <input
-                        type="text"
-                        placeholder="Enter your College ID (e.g., CS2024001)"
-                        className="input-field w-full border-[#e2e8f0]"
-                        value={searchId}
-                        onChange={(e) => setSearchId(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    <button onClick={handleSearch} className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white w-full py-3 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all">
-                        <Search size={22} strokeWidth={2.5} /> Search
-                    </button>
-                    <p className="text-sm text-gray-400 text-center">
-                        Demo IDs: CS2024001, EC2024002, ME2024003
-                    </p>
-                </div>
-            </main>
+                <main>
+                    <div className="glass-card bg-white p-10 max-w-4xl mx-auto flex flex-col gap-4">
+                        <input
+                            type="text"
+                            placeholder="Enter your College ID (e.g., CS2024001)"
+                            className="input-field w-full border-[#e2e8f0]"
+                            value={searchId}
+                            onChange={(e) => setSearchId(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+                        <button onClick={handleSearch} className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white w-full py-3 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all">
+                            <Search size={22} strokeWidth={2.5} /> Search
+                        </button>
+                        <p className="text-sm text-gray-400 text-center">
+                            Demo IDs: CS2024001, EC2024002, ME2024003
+                        </p>
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };
