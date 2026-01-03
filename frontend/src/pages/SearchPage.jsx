@@ -63,6 +63,32 @@ const SearchPage = () => {
         <div className="min-h-screen p-4 md:p-12 max-w-6xl mx-auto" style={{ position: 'relative' }}>
             <BlinkingDots />
 
+            {/* Top Left Gradient Blob */}
+            <div style={{
+                position: 'absolute',
+                top: '-10%',
+                left: '-5%',
+                width: '400px',
+                height: '400px',
+                background: 'radial-gradient(circle, rgba(96, 165, 250, 0.6) 0%, rgba(37, 99, 235, 0.4) 100%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                zIndex: 0
+            }} />
+
+            {/* Bottom Right Gradient Blob */}
+            <div style={{
+                position: 'absolute',
+                bottom: '-10%',
+                right: '-5%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(52, 211, 153, 0.5) 0%, rgba(5, 150, 105, 0.4) 100%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                zIndex: 0
+            }} />
+
             <div style={{ position: 'relative', zIndex: 10 }}>
                 <header className="mb-12 text-center">
                     <h1 className="text-5xl font-extrabold mb-4 text-[#2d368e]">
@@ -81,8 +107,8 @@ const SearchPage = () => {
                             onChange={(e) => setSearchId(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                         />
-                        <button onClick={handleSearch} className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white w-1/2 mx-auto py-3 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all">
-                            <Search size={11} strokeWidth={2.5} /> Search
+                        <button onClick={handleSearch} className="bg-white border-2 border-slate-200 hover:border-[#2563eb] text-gray-700 hover:text-[#2563eb] w-32 mx-auto py-2 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all shadow-sm">
+                            <Search size={16} strokeWidth={2.5} /> Search
                         </button>
                         <p className="text-sm text-gray-400 text-center">
                             Demo IDs: CS2024001, EC2024002, ME2024003
