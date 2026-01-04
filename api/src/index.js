@@ -110,49 +110,68 @@ app.post('/api/student/:collegeId/exam', async (c) => {
     const student = await c.env.DB.prepare("SELECT id FROM Students WHERE collegeId = ?").bind(collegeId).first();
     if (!student) return c.json({ error: "Student not found" }, 404);
 
-    const { success } = await c.env.DB.prepare(
-        "INSERT INTO Exams (studentId, examId, subject, score, date, time, room, examCategory) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    )
-        .bind(
-            student.id,
-            body.examId,
-            body.subject,
-            body.score,
-            body.date,
-            body.time,
-            body.room,
-            body.examCategory || 'ODD'
+    try {
+        const { success } = await c.env.DB.prepare(
+            "INSERT INTO Exams (studentId, examId, subject, score, date, time, room, examType, examCategory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
-        .run();
+            .bind(
+                student.id,
+                body.examId,
+                body.subject,
+                body.score !== undefined ? body.score : null,
+                body.date,
+                body.time,
+                body.room,
+                body.examType || 'Regular',
+                body.examCategory || 'ODD'
+            )
+            .run();
 
-    return c.json({ message: "Exam added successfully" }, 201);
+        if (success) {
+            return c.json({ message: "Exam added successfully" }, 201);
+        } else {
+            return c.json({ error: "Failed to add exam" }, 500);
+        }
+    } catch (e) {
+        return c.json({ error: "Error adding exam: " + e.message }, 500);
+    }
 });
 
 // DELETE /api/student/:collegeId/exam/:examId
 app.delete('/api/student/:collegeId/exam/:examId', async (c) => {
     const examId = c.req.param('examId');
-    const { success } = await c.env.DB.prepare("DELETE FROM Exams WHERE examId = ?").bind(examId).run();
 
-    if (success) {
-        return c.json({ message: "Exam deleted successfully" });
-    } else {
-        return c.json({ error: "Failed to delete exam" }, 500);
+    try {
+        const { success } = await c.env.DB.prepare("DELETE FROM Exams WHERE examId = ?").bind(examId).run();
+
+        if (success) {
+            return c.json({ message: "Exam deleted successfully" });
+        } else {
+            return c.json({ error: "Failed to delete exam" }, 500);
+        }
+    } catch (e) {
+        return c.json({ error: "Error deleting exam: " + e.message }, 500);
     }
 });
 
 // DELETE /api/student/:collegeId
 app.delete('/api/student/:collegeId', async (c) => {
     const collegeId = c.req.param('collegeId');
-    const student = await c.env.DB.prepare("SELECT id FROM Students WHERE collegeId = ?").bind(collegeId).first();
 
-    if (!student) return c.json({ error: "Student not found" }, 404);
+    try {
+        const student = await c.env.DB.prepare("SELECT id FROM Students WHERE collegeId = ?").bind(collegeId).first();
 
-    // Delete Exams first (Foreign Key)
-    await c.env.DB.prepare("DELETE FROM Exams WHERE studentId = ?").bind(student.id).run();
-    // Delete Student
-    await c.env.DB.prepare("DELETE FROM Students WHERE id = ?").bind(student.id).run();
+        if (!student) return c.json({ error: "Student not found" }, 404);
 
-    return c.body(null, 204);
+        // Delete Exams first (Foreign Key)
+        await c.env.DB.prepare("DELETE FROM Exams WHERE studentId = ?").bind(student.id).run();
+        // Delete Student
+        await c.env.DB.prepare("DELETE FROM Students WHERE id = ?").bind(student.id).run();
+
+        return c.body(null, 204);
+    } catch (e) {
+        return c.json({ error: "Error deleting student: " + e.message }, 500);
+    }
 });
 
 export default app;
