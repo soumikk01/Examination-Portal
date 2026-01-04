@@ -188,7 +188,9 @@ const SearchPage = () => {
                             e.target.style.borderColor = '#e5e7eb'; // Reset border on typing
                         }}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSearch();
+                            if (e.key === 'Enter') {
+                                if (searchId.trim()) handleSearch();
+                            }
                         }}
                         aria-label="Student ID Input"
                     />

@@ -40,7 +40,7 @@ const ProfilePage = () => {
 
         // Filter by exam type if not ALL
         if (examTypeFilter !== 'ALL') {
-            exams = exams.filter(e => e.examCategory === examTypeFilter);
+            exams = exams.filter(e => e.examCategory && e.examCategory === examTypeFilter);
         }
 
         const upcoming = exams.filter(e => !e.isPassed).sort((a, b) => a.dateTime - b.dateTime);
@@ -385,17 +385,24 @@ const ProfilePage = () => {
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-bold text-[#2d368e] text-xl">{exam.subject}</span>
                                                 </div>
-                                                <span style={{
-                                                    padding: '4px 12px',
-                                                    borderRadius: '9999px',
-                                                    fontSize: '12px',
-                                                    fontWeight: 'bold',
-                                                    textTransform: 'uppercase',
-                                                    backgroundColor: exam.examType === 'Backlog' ? '#fed7aa' : '#bbf7d0',
-                                                    color: exam.examType === 'Backlog' ? '#ea580c' : '#16a34a'
-                                                }}>
-                                                    {exam.examType || 'Regular'}
-                                                </span>
+                                                <div className="flex gap-2">
+                                                    {exam.isPassed && exam.score !== null && (
+                                                        <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-700 border border-blue-200">
+                                                            Score: {exam.score}
+                                                        </span>
+                                                    )}
+                                                    <span style={{
+                                                        padding: '4px 12px',
+                                                        borderRadius: '9999px',
+                                                        fontSize: '12px',
+                                                        fontWeight: 'bold',
+                                                        textTransform: 'uppercase',
+                                                        backgroundColor: exam.examType === 'Backlog' ? '#fed7aa' : '#bbf7d0',
+                                                        color: exam.examType === 'Backlog' ? '#ea580c' : '#16a34a'
+                                                    }}>
+                                                        {exam.examType || 'Regular'}
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                                                 <div style={{ flex: '1', minWidth: '100px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -420,7 +427,7 @@ const ProfilePage = () => {
                     )}
                 </div>
                 {/* Pinned Note Section */}
-                < div className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300" style={{ transform: 'rotate(-1deg)' }}>
+                <div className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300" style={{ transform: 'rotate(-1deg)' }}>
                     <div className="bg-[#fffdf0] border border-[#e6e2c8] p-6 rounded-sm shadow-[2px_4px_8px_rgba(0,0,0,0.1)] relative">
                         <div className="text-center">
                             <h4 className="flex items-center justify-center gap-2 font-bold text-gray-800 text-lg mb-2 underline decoration-wavy decoration-[#e6e2c8]">
@@ -432,10 +439,10 @@ const ProfilePage = () => {
                             </p>
                         </div>
                     </div>
-                </div >
+                </div>
 
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 
