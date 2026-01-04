@@ -36,10 +36,6 @@ cd ../api && npm install
 npm run dev
 ```
 
-**Access:**
-- Frontend: http://localhost:5174
-- Backend API: http://localhost:8787
-
 ## 🔍 Features
 
 - **Student Search:** Search by College ID
