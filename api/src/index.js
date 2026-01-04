@@ -6,35 +6,8 @@ const app = new Hono();
 // Enable CORS
 app.use('/*', cors());
 
-// Mock Data
-let students = [
-    {
-        collegeId: "CS2024001",
-        name: "John Doe",
-        department: "Computer Science",
-        exams: [
-            { examId: "EX001", subject: "Data Structures", score: 85 },
-            { examId: "EX002", subject: "Algorithms", score: 90 }
-        ]
-    },
-    {
-        collegeId: "CS2024002",
-        name: "Jane Smith",
-        department: "Computer Science",
-        exams: [
-            { examId: "EX001", subject: "Data Structures", score: 78 }
-        ]
-    },
-    {
-        collegeId: "EE2024001",
-        name: "Alice Brown",
-        department: "Electrical Engineering",
-        exams: []
-    }
-];
-
 // Root endpoint
-app.get('/', (c) => c.text('Examination Portal API is running!'));
+app.get('/', (c) => c.text('Examination Portal API (D1 Database) is running!'));
 
 // GET /api/health
 app.get('/api/health', (c) => {
@@ -42,101 +15,142 @@ app.get('/api/health', (c) => {
 });
 
 // GET /api/students
-app.get('/api/students', (c) => {
-    return c.json(students);
-});
-
-// GET /api/search
-app.get('/api/search', (c) => {
-    const query = c.req.query('query');
-    if (!query) return c.json({ error: "Query parameter is required" }, 400);
-
-    const results = students.filter(s =>
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        s.collegeId.toLowerCase().includes(query.toLowerCase())
-    );
+app.get('/api/students', async (c) => {
+    const { results } = await c.env.DB.prepare("SELECT * FROM Students").all();
     return c.json(results);
 });
 
-// GET /api/student/:collegeId
-app.get('/api/student/:collegeId', (c) => {
-    const collegeId = c.req.param('collegeId');
-    const student = students.find(s => s.collegeId === collegeId);
+// GET /api/search
+app.get('/api/search', async (c) => {
+    const query = c.req.query('query');
+    if (!query) return c.json({ error: "Query parameter is required" }, 400);
+
+    const { results } = await c.env.DB.prepare(
+        "SELECT * FROM Students WHERE name LIKE ? OR collegeId LIKE ?"
+    )
+        .bind(`%${query}%`, `%${query}%`)
+        .all();
+
+    return c.json(results);
+});
+
+// GET /api/student/* (supports IDs with slashes like jis/2000/000)
+app.get('/api/student/*', async (c) => {
+    // Extract collegeId from the wildcard path
+    const collegeId = c.req.path.replace('/api/student/', '');
+
+    // Fetch Student
+    const student = await c.env.DB.prepare("SELECT * FROM Students WHERE collegeId = ?")
+        .bind(collegeId)
+        .first();
+
     if (!student) return c.json({ error: "Student not found" }, 404);
-    return c.json(student);
+
+    // Fetch Exams for this Student
+    const { results: exams } = await c.env.DB.prepare("SELECT * FROM Exams WHERE studentId = ?")
+        .bind(student.id)
+        .all();
+
+    return c.json({ ...student, exams: exams || [] });
 });
 
 // GET /api/student/:collegeId/exams
-app.get('/api/student/:collegeId/exams', (c) => {
+app.get('/api/student/:collegeId/exams', async (c) => {
     const collegeId = c.req.param('collegeId');
-    const student = students.find(s => s.collegeId === collegeId);
-    if (!student) return c.json({ error: "Student not found" }, 404);
-    return c.json(student.exams);
-});
+    const student = await c.env.DB.prepare("SELECT id FROM Students WHERE collegeId = ?").bind(collegeId).first();
 
-// GET /api/exam/:examId
-app.get('/api/exam/:examId', (c) => {
-    const examId = c.req.param('examId');
-    const examDetails = [];
-    students.forEach(s => {
-        const exam = s.exams.find(e => e.examId === examId);
-        if (exam) {
-            examDetails.push({ studentName: s.name, collegeId: s.collegeId, ...exam });
-        }
-    });
-    if (examDetails.length === 0) return c.json({ error: "Exam not found" }, 404);
-    return c.json(examDetails);
+    if (!student) return c.json({ error: "Student not found" }, 404);
+
+    const { results } = await c.env.DB.prepare("SELECT * FROM Exams WHERE studentId = ?").bind(student.id).all();
+    return c.json(results);
 });
 
 // POST /api/student
 app.post('/api/student', async (c) => {
-    const newStudent = await c.req.json();
-    if (!newStudent.collegeId || !newStudent.name) {
+    const body = await c.req.json();
+    if (!body.collegeId || !body.name) {
         return c.json({ error: "CollegeId and Name are required" }, 400);
     }
-    students.push({ ...newStudent, exams: newStudent.exams || [] });
-    return c.json(newStudent, 201);
+
+    try {
+        const { success } = await c.env.DB.prepare(
+            "INSERT INTO Students (collegeId, name, department, studentRoll, studentReg, examinationSem, batch) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+            .bind(
+                body.collegeId,
+                body.name,
+                body.department || null,
+                body.studentRoll || null,
+                body.studentReg || null,
+                body.examinationSem || null,
+                body.batch || null
+            )
+            .run();
+
+        if (success) {
+            return c.json({ message: "Student created successfully" }, 201);
+        } else {
+            return c.json({ error: "Failed to create student" }, 500);
+        }
+    } catch (e) {
+        return c.json({ error: "Error creating student: " + e.message }, 500);
+    }
 });
 
 // POST /api/student/:collegeId/exam
 app.post('/api/student/:collegeId/exam', async (c) => {
     const collegeId = c.req.param('collegeId');
-    const student = students.find(s => s.collegeId === collegeId);
+    let body;
+    try {
+        body = await c.req.json();
+    } catch (e) {
+        return c.json({ error: "Invalid JSON body" }, 400);
+    }
+
+    const student = await c.env.DB.prepare("SELECT id FROM Students WHERE collegeId = ?").bind(collegeId).first();
     if (!student) return c.json({ error: "Student not found" }, 404);
 
-    const newExam = await c.req.json();
-    student.exams.push(newExam);
-    return c.json(newExam, 201);
-});
+    const { success } = await c.env.DB.prepare(
+        "INSERT INTO Exams (studentId, examId, subject, score, date, time, room) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    )
+        .bind(
+            student.id,
+            body.examId,
+            body.subject,
+            body.score,
+            body.date,
+            body.time,
+            body.room
+        )
+        .run();
 
-// PUT /api/student/:collegeId
-app.put('/api/student/:collegeId', async (c) => {
-    const collegeId = c.req.param('collegeId');
-    const index = students.findIndex(s => s.collegeId === collegeId);
-    if (index === -1) return c.json({ error: "Student not found" }, 404);
-
-    const body = await c.req.json();
-    students[index] = { ...students[index], ...body };
-    return c.json(students[index]);
-});
-
-// DELETE /api/student/:collegeId
-app.delete('/api/student/:collegeId', (c) => {
-    const collegeId = c.req.param('collegeId');
-    const initialLength = students.length;
-    students = students.filter(s => s.collegeId !== collegeId);
-    if (students.length === initialLength) return c.json({ error: "Student not found" }, 404);
-    return c.body(null, 204);
+    return c.json({ message: "Exam added successfully" }, 201);
 });
 
 // DELETE /api/student/:collegeId/exam/:examId
-app.delete('/api/student/:collegeId/exam/:examId', (c) => {
-    const collegeId = c.req.param('collegeId');
+app.delete('/api/student/:collegeId/exam/:examId', async (c) => {
     const examId = c.req.param('examId');
-    const student = students.find(s => s.collegeId === collegeId);
+    const { success } = await c.env.DB.prepare("DELETE FROM Exams WHERE examId = ?").bind(examId).run();
+
+    if (success) {
+        return c.json({ message: "Exam deleted successfully" });
+    } else {
+        return c.json({ error: "Failed to delete exam" }, 500);
+    }
+});
+
+// DELETE /api/student/:collegeId
+app.delete('/api/student/:collegeId', async (c) => {
+    const collegeId = c.req.param('collegeId');
+    const student = await c.env.DB.prepare("SELECT id FROM Students WHERE collegeId = ?").bind(collegeId).first();
+
     if (!student) return c.json({ error: "Student not found" }, 404);
 
-    student.exams = student.exams.filter(e => e.examId !== examId);
+    // Delete Exams first (Foreign Key)
+    await c.env.DB.prepare("DELETE FROM Exams WHERE studentId = ?").bind(student.id).run();
+    // Delete Student
+    await c.env.DB.prepare("DELETE FROM Students WHERE id = ?").bind(student.id).run();
+
     return c.body(null, 204);
 });
 
