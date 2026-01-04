@@ -111,7 +111,7 @@ app.post('/api/student/:collegeId/exam', async (c) => {
     if (!student) return c.json({ error: "Student not found" }, 404);
 
     const { success } = await c.env.DB.prepare(
-        "INSERT INTO Exams (studentId, examId, subject, score, date, time, room) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO Exams (studentId, examId, subject, score, date, time, room, examCategory) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     )
         .bind(
             student.id,
@@ -120,7 +120,8 @@ app.post('/api/student/:collegeId/exam', async (c) => {
             body.score,
             body.date,
             body.time,
-            body.room
+            body.room,
+            body.examCategory || 'ODD'
         )
         .run();
 
