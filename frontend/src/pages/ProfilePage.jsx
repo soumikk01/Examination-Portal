@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, ArrowLeft } from 'lucide-react';
+import { Calendar, ArrowLeft, Clock, MapPin } from 'lucide-react';
 import { api } from '../services/api';
 
 const parseExamDateTime = (dateStr, timeStr) => {
@@ -234,6 +234,20 @@ const ProfilePage = () => {
                 zIndex: 0
             }} />
 
+            {/* Decorative Blue Round Design (matching SearchPage) */}
+            <div style={{
+                position: 'absolute',
+                top: '-50px',
+                left: '-150px',
+                width: '300px',
+                height: '300px',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                borderRadius: '50%',
+                boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)',
+                zIndex: 5,
+                opacity: 0.9
+            }} />
+
             {/* Bottom Right Gradient Blob */}
             <div style={{
                 position: 'absolute',
@@ -369,54 +383,149 @@ const ProfilePage = () => {
                                 </div>
                             )}
                             <div className="space-y-4">
-                                {processedExams.map((exam, index) => {
+                                {processedExams.map((exam) => {
                                     const isFirstUpcoming = !exam.isPassed && processedExams.filter(e => !e.isPassed).indexOf(exam) === 0;
                                     return (
                                         <div
                                             key={exam.examId}
-                                            className={`p-6 rounded-xl border transition-all duration-300 ${exam.isPassed
-                                                ? 'bg-gray-100 border-gray-300 ring-2 ring-gray-400 opacity-70 hover:opacity-100'
+                                            className={`rounded-xl border-t border-b border-r transition-all duration-300 ${exam.isPassed
+                                                ? 'p-6 bg-gray-100 border-gray-300 ring-2 ring-gray-400 opacity-70 hover:opacity-100'
                                                 : isFirstUpcoming
                                                     ? 'bg-indigo-100 border-indigo-400 ring-4 ring-indigo-500 shadow-2xl shadow-indigo-300 scale-[1.03] hover:shadow-2xl hover:scale-[1.04]'
                                                     : 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500 shadow-lg shadow-indigo-200 scale-[1.01] hover:shadow-xl hover:scale-[1.02]'
                                                 }`}
+                                            style={{
+                                                borderLeftWidth: '6px',
+                                                borderLeftStyle: 'solid',
+                                                borderLeftColor: exam.isPassed
+                                                    ? '#6b7280'
+                                                    : isFirstUpcoming
+                                                        ? '#2d368e'
+                                                        : '#6366f1',
+                                                display: !exam.isPassed ? 'flex' : 'block',
+                                                padding: !exam.isPassed ? '0' : '24px',
+                                                overflow: 'hidden'
+                                            }}
                                         >
-                                            <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-[#2d368e] text-xl">{exam.subject}</span>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    {exam.isPassed && exam.score !== null && (
-                                                        <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-700 border border-blue-200">
-                                                            Score: {exam.score}
-                                                        </span>
-                                                    )}
-                                                    <span style={{
-                                                        padding: '4px 12px',
-                                                        borderRadius: '9999px',
-                                                        fontSize: '12px',
-                                                        fontWeight: 'bold',
-                                                        textTransform: 'uppercase',
-                                                        backgroundColor: exam.examType === 'Backlog' ? '#fed7aa' : '#bbf7d0',
-                                                        color: exam.examType === 'Backlog' ? '#ea580c' : '#16a34a'
+                                            {!exam.isPassed ? (
+                                                // Professional Date Box Layout for Upcoming Exams
+                                                <>
+                                                    <div style={{
+                                                        width: '100px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        backgroundColor: isFirstUpcoming ? '#2d368e' : '#e0e7ff',
+                                                        color: isFirstUpcoming ? 'white' : '#4f46e5',
+                                                        padding: '16px',
+                                                        textAlign: 'center',
+                                                        borderRight: '1px solid rgba(0,0,0,0.05)'
                                                     }}>
-                                                        {exam.examType || 'Regular'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-                                                <div style={{ flex: '1', minWidth: '100px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <Calendar size={16} style={{ color: '#6366f1' }} /> {exam.date || 'N/A'}
-                                                </div>
-                                                <div style={{ flex: '1', minWidth: '100px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    🕒 {exam.time || 'N/A'}
-                                                </div>
-                                                <div style={{ flex: '1', minWidth: '100px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    🏛️ {exam.room || 'N/A'}
-                                                </div>
-                                            </div>
+                                                        <span style={{ fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.8 }}>
+                                                            {new Date(exam.date).toLocaleString('default', { month: 'short' })}
+                                                        </span>
+                                                        <span style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>
+                                                            {new Date(exam.date).getDate()}
+                                                        </span>
+                                                        <span style={{ fontSize: '12px', fontWeight: '600', opacity: 0.8, marginTop: '4px' }}>
+                                                            {new Date(exam.date).getFullYear()}
+                                                        </span>
+                                                    </div>
+
+                                                    <div style={{ flex: 1, padding: '20px' }}>
+                                                        <div className="flex items-center justify-between mb-3 border-b border-indigo-200 pb-2">
+                                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-sm font-medium text-indigo-400">Paper Name:</span>
+                                                                    <span className="font-bold text-[#2d368e] text-xl">{exam.subject}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-sm font-medium text-indigo-400">Paper Code:</span>
+                                                                    <span className="font-semibold text-[#2d368e]">{exam.examId || 'N/A'}</span>
+                                                                </div>
+                                                            </div>
+                                                            <span style={{
+                                                                padding: '4px 12px',
+                                                                borderRadius: '9999px',
+                                                                fontSize: '12px',
+                                                                fontWeight: 'bold',
+                                                                textTransform: 'uppercase',
+                                                                backgroundColor: exam.examType === 'Backlog' ? '#fed7aa' : '#bbf7d0',
+                                                                color: exam.examType === 'Backlog' ? '#ea580c' : '#16a34a'
+                                                            }}>
+                                                                {exam.examType || 'Regular'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 mt-4">
+                                                            <div className="flex flex-col p-3 bg-white/50 rounded-lg border border-indigo-100 hover:border-indigo-200 transition-colors">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <Clock size={16} className="text-indigo-500" />
+                                                                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Time</span>
+                                                                </div>
+                                                                <span className="text-gray-900 font-bold ml-6">{exam.time || 'N/A'}</span>
+                                                            </div>
+                                                            <div className="flex flex-col p-3 bg-white/50 rounded-lg border border-indigo-100 hover:border-indigo-200 transition-colors">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <MapPin size={16} className="text-indigo-500" />
+                                                                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Room</span>
+                                                                </div>
+                                                                <span className="text-gray-900 font-bold ml-6">{exam.room || 'N/A'}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                // Standard Layout for Passed Exams
+                                                <>
+                                                    <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
+                                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-medium text-gray-400">Paper Name:</span>
+                                                                <span className="font-bold text-[#2d368e] text-xl">{exam.subject}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-medium text-gray-400">Paper Code:</span>
+                                                                <span className="font-semibold text-gray-600">{exam.examId || 'N/A'}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {exam.isPassed && exam.score !== null && (
+                                                                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-700 border border-blue-200">
+                                                                    Score: {exam.score}
+                                                                </span>
+                                                            )}
+                                                            <span style={{
+                                                                padding: '4px 12px',
+                                                                borderRadius: '9999px',
+                                                                fontSize: '12px',
+                                                                fontWeight: 'bold',
+                                                                textTransform: 'uppercase',
+                                                                backgroundColor: exam.examType === 'Backlog' ? '#fed7aa' : '#bbf7d0',
+                                                                color: exam.examType === 'Backlog' ? '#ea580c' : '#16a34a'
+                                                            }}>
+                                                                {exam.examType || 'Regular'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-6 text-sm">
+                                                        <div className="flex items-center gap-2 text-gray-600">
+                                                            <Calendar size={16} className="text-indigo-400" />
+                                                            <span className="font-medium">{exam.date || 'N/A'}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-gray-600">
+                                                            <Clock size={16} className="text-indigo-400" />
+                                                            <span className="font-medium">{exam.time || 'N/A'}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-gray-600">
+                                                            <MapPin size={16} className="text-indigo-400" />
+                                                            <span className="font-medium">{exam.room || 'N/A'}</span>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                    )
+                                    );
                                 })}
                             </div>
                         </>
@@ -425,9 +534,9 @@ const ProfilePage = () => {
                             No exams scheduled for this student
                         </div>
                     )}
-                </div>
+                </div >
                 {/* Pinned Note Section */}
-                <div className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300" style={{ transform: 'rotate(-1deg)' }}>
+                < div className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300" style={{ transform: 'rotate(-1deg)' }}>
                     <div className="bg-[#fffdf0] border border-[#e6e2c8] p-6 rounded-sm shadow-[2px_4px_8px_rgba(0,0,0,0.1)] relative">
                         <div className="text-center">
                             <h4 className="flex items-center justify-center gap-2 font-bold text-gray-800 text-lg mb-2 underline decoration-wavy decoration-[#e6e2c8]">
@@ -439,10 +548,10 @@ const ProfilePage = () => {
                             </p>
                         </div>
                     </div>
-                </div>
+                </div >
 
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
