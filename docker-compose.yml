@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # API Service (Express + SQLite)
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: exam-portal-api
+    ports:
+      - "8787:8787"
+    volumes:
+      - api-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=8787
+    restart: unless-stopped
+
+  # Frontend Service (React + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: exam-portal-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  api-data:
+    driver: local
