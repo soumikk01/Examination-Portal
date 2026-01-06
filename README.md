@@ -253,7 +253,7 @@ Contributions are welcome! Please follow these steps:
 **Soumik Biswas**
 
 - GitHub: [@soumikk01](https://github.com/soumikk01)
-
+- GitHub: [@soumikk01](https://github.com/soumikk01)
 ---
 
 ## 📝 License
