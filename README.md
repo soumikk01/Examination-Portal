@@ -254,7 +254,7 @@ Contributions are welcome! Please follow these steps:
 
 - GitHub: [@soumikk01](https://github.com/soumikk01)
 - GitHub: [@thisissumanmajumder](https://github.com/thisissumanmajumder)
-- - GitHub: [@Supriyaprasad1008](https://github.com/Supriyaprasad1008)
+- GitHub: [@Supriyaprasad1008](https://github.com/Supriyaprasad1008)
 ---
 
 ## 📝 License
