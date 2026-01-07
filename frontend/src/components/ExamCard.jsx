@@ -2,159 +2,273 @@ import { Clock, MapPin, Calendar } from 'lucide-react';
 
 /**
  * Exam Card Component
- * Displays individual exam information with different styling for upcoming vs past exams
+ * Displays individual exam information with professional design
  */
 const ExamCard = ({ exam, isNext = false }) => {
-  const isPassed = exam.isPassed;
+    const isPassed = exam.isPassed;
 
-  // Format date for display
-  const formatDate = (dateStr) => {
-    if (!dateStr) return { day: '--', month: '---', year: '----' };
-    const [year, month, day] = dateStr.split('-');
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return {
-      day: day,
-      month: months[parseInt(month) - 1] || '---',
-      year: year,
+    // Format date for display
+    const formatDate = (dateStr) => {
+        if (!dateStr) return { day: '--', month: '---', year: '----' };
+        const [year, month, day] = dateStr.split('-');
+        const months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+        ];
+        return {
+            day: day,
+            month: months[parseInt(month) - 1] || '---',
+            year: year,
+        };
     };
-  };
 
-  const date = formatDate(exam.date);
+    const date = formatDate(exam.date);
 
-  return (
-    <div
-      style={{
-        display: 'flex',
-        gap: '16px',
-        padding: '16px',
-        borderRadius: '12px',
-        border: isPassed ? '1px solid #e5e7eb' : '2px solid #3b82f6',
-        backgroundColor: !isPassed && !isNext ? '#eff6ff' : isPassed ? '#f9fafb' : 'white',
-        opacity: isPassed ? 0.7 : 1,
-        boxShadow: isNext
-          ? '0 8px 20px rgba(45, 54, 142, 0.3)'
-          : !isPassed
-            ? '0 2px 8px rgba(59, 130, 246, 0.1)'
-            : 'none',
-        transition: 'all 0.2s ease',
-      }}
-    >
-      {/* Date Block */}
-      {!isPassed && (
+    return (
         <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: isNext ? '#2d368e' : 'transparent',
-            color: isNext ? 'white' : '#2d368e',
-            padding: '12px 16px',
-            borderRadius: '10px',
-            minWidth: '70px',
-          }}
-        >
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>
-            {date.month}
-          </span>
-          <span style={{ fontSize: '1.5rem', fontWeight: 700, lineHeight: 1 }}>{date.day}</span>
-          <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>{date.year}</span>
-        </div>
-      )}
-
-      {/* Exam Details */}
-      <div style={{ flex: 1 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: '8px',
-          }}
-        >
-          <h3
             style={{
-              fontSize: '1rem',
-              fontWeight: 600,
-              color: isPassed ? '#6b7280' : '#1f2937',
-              margin: 0,
+                display: 'flex',
+                gap: '20px',
+                padding: '20px',
+                borderRadius: '16px',
+                border: isPassed
+                    ? '1px solid #e5e7eb'
+                    : isNext
+                        ? '2px solid #4f46e5'
+                        : '2px solid #60a5fa',
+                backgroundColor: !isPassed && !isNext ? '#eff6ff' : isPassed ? '#f9fafb' : 'white',
+                opacity: isPassed ? 0.7 : 1,
+                boxShadow: isNext
+                    ? '0 10px 30px rgba(79, 70, 229, 0.25), 0 0 0 1px rgba(79, 70, 229, 0.1)'
+                    : !isPassed
+                        ? '0 4px 12px rgba(59, 130, 246, 0.15)'
+                        : '0 2px 4px rgba(0, 0, 0, 0.05)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'default',
+                position: 'relative',
+                overflow: 'hidden',
             }}
-          >
-            {exam.subject.replace('(Backlog)', '').trim()}{' '}
-            <span style={{ fontSize: '0.9em', color: '#4b5563', marginLeft: '6px' }}>
-              [{exam.examId}]
-            </span>
-          </h3>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span
-              style={{
-                fontSize: '0.75rem',
-                padding: '4px 10px',
-                borderRadius: '9999px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                backgroundColor: exam.examType === 'Backlog' ? '#ffedd5' : '#dcfce7',
-                color: exam.examType === 'Backlog' ? '#c2410c' : '#15803d',
-              }}
-            >
-              {exam.examType || 'Regular'}
-            </span>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '16px',
-            flexWrap: 'wrap',
-            fontSize: '0.875rem',
-            color: '#6b7280',
-          }}
+            onMouseEnter={(e) => {
+                if (!isPassed) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = isNext
+                        ? '0 12px 35px rgba(79, 70, 229, 0.3), 0 0 0 1px rgba(79, 70, 229, 0.15)'
+                        : '0 6px 16px rgba(59, 130, 246, 0.2)';
+                }
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = isNext
+                    ? '0 10px 30px rgba(79, 70, 229, 0.25), 0 0 0 1px rgba(79, 70, 229, 0.1)'
+                    : !isPassed
+                        ? '0 4px 12px rgba(59, 130, 246, 0.15)'
+                        : '0 2px 4px rgba(0, 0, 0, 0.05)';
+            }}
         >
-          {isPassed && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Calendar size={14} /> {exam.date}
-            </span>
-          )}
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Clock size={14} /> {exam.time}
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <MapPin size={14} /> {exam.room}
-          </span>
-        </div>
+            {/* Accent Line for Next Exam */}
+            {isNext && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '4px',
+                        background: 'linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%)',
+                    }}
+                />
+            )}
 
-        {exam.examCategory && (
-          <span
-            style={{
-              display: 'inline-block',
-              marginTop: '8px',
-              fontSize: '0.7rem',
-              padding: '2px 8px',
-              borderRadius: '4px',
-              backgroundColor: '#f3f4f6',
-              color: '#4b5563',
-            }}
-          >
-            {exam.examCategory}
-          </span>
-        )}
-      </div>
-    </div>
-  );
+            {/* Date Block */}
+            {!isPassed && (
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: isNext
+                            ? 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)'
+                            : 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                        color: isNext ? 'white' : '#1e40af',
+                        padding: '16px 20px',
+                        borderRadius: '12px',
+                        minWidth: '85px',
+                        boxShadow: isNext
+                            ? '0 4px 12px rgba(79, 70, 229, 0.3)'
+                            : '0 2px 6px rgba(59, 130, 246, 0.15)',
+                        border: isNext ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #93c5fd',
+                    }}
+                >
+                    <span
+                        style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            opacity: isNext ? 0.9 : 0.8,
+                        }}
+                    >
+                        {date.month}
+                    </span>
+                    <span
+                        style={{
+                            fontSize: '2rem',
+                            fontWeight: 800,
+                            lineHeight: 1,
+                            margin: '4px 0',
+                        }}
+                    >
+                        {date.day}
+                    </span>
+                    <span
+                        style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            opacity: isNext ? 0.8 : 0.7,
+                        }}
+                    >
+                        {date.year}
+                    </span>
+                </div>
+            )}
+
+            {/* Exam Details */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: '12px',
+                    }}
+                >
+                    <div style={{ flex: 1 }}>
+                        <h3
+                            style={{
+                                fontSize: '1.125rem',
+                                fontWeight: 700,
+                                color: isPassed ? '#6b7280' : isNext ? '#1e40af' : '#1f2937',
+                                margin: 0,
+                                lineHeight: 1.4,
+                                letterSpacing: '-0.01em',
+                            }}
+                        >
+                            {exam.subject.replace('(Backlog)', '').trim()}
+                        </h3>
+                        <span
+                            style={{
+                                fontSize: '0.875rem',
+                                color: '#6b7280',
+                                fontWeight: 500,
+                                marginTop: '2px',
+                                display: 'inline-block',
+                            }}
+                        >
+                            [{exam.examId}]
+                        </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        <span
+                            style={{
+                                fontSize: '0.7rem',
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.03em',
+                                backgroundColor: exam.examType === 'Backlog' ? '#fff7ed' : '#f0fdf4',
+                                color: exam.examType === 'Backlog' ? '#ea580c' : '#16a34a',
+                                border: exam.examType === 'Backlog' ? '1px solid #fed7aa' : '1px solid #bbf7d0',
+                                boxShadow:
+                                    exam.examType === 'Backlog'
+                                        ? '0 1px 3px rgba(234, 88, 12, 0.1)'
+                                        : '0 1px 3px rgba(22, 163, 74, 0.1)',
+                            }}
+                        >
+                            {exam.examType || 'Regular'}
+                        </span>
+                    </div>
+                </div>
+
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '20px',
+                        flexWrap: 'wrap',
+                        fontSize: '0.875rem',
+                        color: '#6b7280',
+                    }}
+                >
+                    {isPassed && (
+                        <span
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontWeight: 500,
+                            }}
+                        >
+                            <Calendar size={16} strokeWidth={2} />
+                            {exam.date}
+                        </span>
+                    )}
+                    <span
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontWeight: 500,
+                        }}
+                    >
+                        <Clock size={16} strokeWidth={2} />
+                        {exam.time}
+                    </span>
+                    <span
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontWeight: 500,
+                        }}
+                    >
+                        <MapPin size={16} strokeWidth={2} />
+                        {exam.room}
+                    </span>
+                </div>
+
+                {exam.examCategory && (
+                    <div>
+                        <span
+                            style={{
+                                display: 'inline-block',
+                                fontSize: '0.75rem',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                backgroundColor: '#f3f4f6',
+                                color: '#4b5563',
+                                fontWeight: 600,
+                                border: '1px solid #e5e7eb',
+                            }}
+                        >
+                            {exam.examCategory}
+                        </span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default ExamCard;
