@@ -31,17 +31,17 @@ CREATE TABLE IF NOT EXISTS Exams (
 -- Seed Initial Data (Mock Data)
 INSERT INTO Students (collegeId, name, department, studentRoll, studentReg, examinationSem, batch) VALUES 
 
-('jis/2000/000', 'Soumik Biswas', 'Computer Science', NULL, NULL, '3rd Semester', '2023-2027');
+('JIS/2000/000', 'Soumik Biswas', 'Computer Science', NULL, NULL, '3rd Semester', '2023-2027');
 
 INSERT INTO Exams (studentId, examId, subject, score, date, time, room, examType, examCategory) VALUES 
 
 -- Soumik Biswas Exams
-((SELECT id FROM Students WHERE collegeId = 'jis/2000/000'), 'EX101', 'Mathematics Examination', NULL, '2026-01-01', '09:00 AM', 'Hall A - Room 101', 'Regular', 'ODD'),
-((SELECT id FROM Students WHERE collegeId = 'jis/2000/000'), 'EX102', 'Programming in C Examination', NULL, '2026-01-12', '11:00 AM', 'Lab Block - Room 201', 'Regular', 'ODD'),
-((SELECT id FROM Students WHERE collegeId = 'jis/2000/000'), 'EX103', 'Data Structures Examination', NULL, '2026-01-15', '02:00 PM', 'Hall B - Room 105', 'Regular', 'EVEN'),
-((SELECT id FROM Students WHERE collegeId = 'jis/2000/000'), 'EX104', 'Database Management Systems Examination', NULL, '2026-01-18', '10:00 AM', 'Hall C - Room 302', 'Regular', 'EVEN'),
-((SELECT id FROM Students WHERE collegeId = 'jis/2000/000'), 'EX105', 'Operating Systems Examination', NULL, '2026-01-20', '09:30 AM', 'Hall A - Room 202', 'Regular', 'TEST-I'),
-((SELECT id FROM Students WHERE collegeId = 'jis/2000/000'), 'EX106', 'Artificial Intelligence Examination', NULL, '2026-01-22', '01:00 PM', 'Lab Block - Room 401', 'Regular', 'TEST-II');
+((SELECT id FROM Students WHERE collegeId = 'JIS/2000/000'), 'EX101', 'Mathematics Examination', NULL, '2026-01-01', '09:00 AM', 'Hall A - Room 101', 'Regular', 'ODD'),
+((SELECT id FROM Students WHERE collegeId = 'JIS/2000/000'), 'EX102', 'Programming in C Examination', NULL, '2026-01-12', '11:00 AM', 'Lab Block - Room 201', 'Regular', 'ODD'),
+((SELECT id FROM Students WHERE collegeId = 'JIS/2000/000'), 'EX103', 'Data Structures Examination', NULL, '2026-01-15', '02:00 PM', 'Hall B - Room 105', 'Regular', 'EVEN'),
+((SELECT id FROM Students WHERE collegeId = 'JIS/2000/000'), 'EX104', 'Database Management Systems Examination', NULL, '2026-01-18', '10:00 AM', 'Hall C - Room 302', 'Regular', 'EVEN'),
+((SELECT id FROM Students WHERE collegeId = 'JIS/2000/000'), 'EX105', 'Operating Systems Examination', NULL, '2026-01-20', '09:30 AM', 'Hall A - Room 202', 'Regular', 'TEST-I'),
+((SELECT id FROM Students WHERE collegeId = 'JIS/2000/000'), 'EX106', 'Artificial Intelligence Examination', NULL, '2026-01-22', '01:00 PM', 'Lab Block - Room 401', 'Regular', 'TEST-II');
 
 
 -- Civil Engineering Student (JIS/000/111)
@@ -69,3 +69,17 @@ INSERT INTO Exams (studentId, examId, subject, score, date, time, room, examType
 ((SELECT id FROM Students WHERE collegeId = 'JIS/222/333'), 'EE504', 'Digital Electronics', 90, '2025-12-01', '02:00 PM', 'EE Block - 201', 'Regular', 'EVEN'),
 ((SELECT id FROM Students WHERE collegeId = 'JIS/222/333'), 'EE505', 'Microprocessors', 88, '2025-12-10', '10:00 AM', 'EE Block - 202', 'Regular', 'TEST-I'),
 ((SELECT id FROM Students WHERE collegeId = 'JIS/222/333'), 'EE506', 'Electrical Machines', 75, '2025-12-15', '02:00 PM', 'EE Block - 203', 'Regular', 'TEST-II');
+
+
+-- Student with Backlog (JIS/999/999)
+INSERT INTO Students (collegeId, name, department, studentRoll, studentReg, examinationSem, batch) VALUES 
+('JIS/999/999', 'Amit Verma', 'Mechanical Engineering', '2023ME999', 'REG2023999', '4th Semester', '2023-2027');
+
+INSERT INTO Exams (studentId, examId, subject, score, date, time, room, examType, examCategory) VALUES 
+-- Backlog Exams
+((SELECT id FROM Students WHERE collegeId = 'JIS/999/999'), 'ME401', 'Thermodynamics (Backlog)', NULL, '2026-01-10', '10:00 AM', 'ME Block - 101', 'Backlog', 'ODD'),
+((SELECT id FROM Students WHERE collegeId = 'JIS/999/999'), 'ME402', 'Fluid Mechanics (Backlog)', NULL, '2026-01-14', '02:00 PM', 'ME Block - 102', 'Backlog', 'ODD'),
+
+-- Regular Exams
+((SELECT id FROM Students WHERE collegeId = 'JIS/999/999'), 'ME405', 'Machine Design', NULL, '2026-01-18', '10:00 AM', 'ME Block - 201', 'Regular', 'EVEN');
+

@@ -1,0 +1,41 @@
+# Development configuration with hot reload
+# Run with: docker-compose -f docker-compose.dev.yml up
+
+services:
+  # API Service (Express + SQLite) - Development Mode
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: exam-portal-api-dev
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./backend/src:/app/src # Hot reload for source files
+      - ./backend/schema.sql:/app/schema.sql
+      - api-data:/app/data
+    environment:
+      - NODE_ENV=development
+      - PORT=8787
+    restart: unless-stopped
+
+  # Frontend Service (React + Vite) - Development Mode
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: exam-portal-frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src # Hot reload for source files
+      - ./frontend/index.html:/app/index.html
+    environment:
+      - VITE_API_URL=http://localhost:8787/api
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  api-data:
+    driver: local

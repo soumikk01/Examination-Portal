@@ -1,14 +1,12 @@
 {
   "name": "examination-portal",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Student Examination Portal - Check exam details, dates, and room assignments",
   "scripts": {
-    "dev": "npm run dev:worker",
-    "dev:worker": "concurrently \"npm run server:worker\" \"npm run client\"",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "client": "cd frontend && npm run dev",
-    "server:worker": "cd api && npm run dev",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "server": "cd backend && npm run dev",
+    "test": "cd frontend && npm run test"
   },
   "repository": {
     "type": "git",

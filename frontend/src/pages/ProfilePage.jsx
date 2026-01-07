@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calendar, ArrowLeft, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
+import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
 
 const parseExamDateTime = (dateStr, timeStr) => {
     if (!dateStr || !timeStr) return new Date();
@@ -29,22 +30,22 @@ const ProfilePage = () => {
         if (!student?.exams) return [];
 
         const now = new Date();
-        let exams = student.exams.map(exam => {
+        let exams = student.exams.map((exam) => {
             const dateTime = parseExamDateTime(exam.date, exam.time);
             return {
                 ...exam,
                 dateTime,
-                isPassed: dateTime < now
+                isPassed: dateTime < now,
             };
         });
 
         // Filter by exam type if not ALL
         if (examTypeFilter !== 'ALL') {
-            exams = exams.filter(e => e.examCategory && e.examCategory === examTypeFilter);
+            exams = exams.filter((e) => e.examCategory && e.examCategory === examTypeFilter);
         }
 
-        const upcoming = exams.filter(e => !e.isPassed).sort((a, b) => a.dateTime - b.dateTime);
-        const past = exams.filter(e => e.isPassed).sort((a, b) => b.dateTime - a.dateTime);
+        const upcoming = exams.filter((e) => !e.isPassed).sort((a, b) => a.dateTime - b.dateTime);
+        const past = exams.filter((e) => e.isPassed).sort((a, b) => b.dateTime - a.dateTime);
 
         return [...upcoming, ...past];
     }, [student, examTypeFilter]);
@@ -55,7 +56,7 @@ const ProfilePage = () => {
                 // Fetch data and wait for at least 400ms simultaneously
                 const [data] = await Promise.all([
                     api.getStudentByCollegeId(collegeId),
-                    new Promise(resolve => setTimeout(resolve, 400))
+                    new Promise((resolve) => setTimeout(resolve, 400)),
                 ]);
 
                 if (data.error) {
@@ -72,195 +73,69 @@ const ProfilePage = () => {
         fetchStudent();
     }, [collegeId]);
 
+    // Redirect to home only if there was an explicit error fetching
+    useEffect(() => {
+        if (!loading && error) {
+            navigate('/');
+        }
+    }, [loading, error, navigate]);
+
     if (loading) {
         return (
-            <div style={{
-                minHeight: '100vh',
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '20px',
-                position: 'relative',
-                overflow: 'hidden',
-                boxSizing: 'border-box',
-                backgroundColor: '#cbd5e1',
-                margin: 0
-            }}>
-                {/* Top Left Gradient Blob */}
-                <div style={{
-                    position: 'absolute',
-                    top: '-150px',
-                    left: '-150px',
-                    width: '400px',
-                    height: '400px',
-                    background: 'radial-gradient(circle, #86bafa4d 0%, #5c8cf533 100%)',
-                    borderRadius: '50%',
-                    filter: 'blur(80px)',
-                    zIndex: 0
-                }} />
-
-                {/* Bottom Right Gradient Blob */}
-                <div style={{
-                    position: 'absolute',
-                    bottom: '-150px',
-                    right: '-150px',
-                    width: '400px',
-                    height: '400px',
-                    background: 'radial-gradient(circle, hsla(158, 87%, 73%, 0.30) 0%, #72f1c933 100%)',
-                    borderRadius: '50%',
-                    filter: 'blur(80px)',
-                    zIndex: 0
-                }} />
-
+            <PageLayout>
                 <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
                     <div className="flex justify-end mb-8">
-                        <div className="skeleton skeleton-text w-16 bg-blue-100"></div>
+                        <Skeleton width="4rem" height="2rem" className="bg-blue-100" />
                     </div>
 
                     {/* Skeleton Profile Card */}
-                    <div className="glass-card p-8 mb-8 bg-white/50 backdrop-blur-sm">
-                        <div className="skeleton skeleton-text h-8 w-1/3 mb-6 bg-blue-100"></div>
+                    <Card className="mb-8" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                        <Skeleton height="2rem" width="33%" className="mb-6 bg-blue-100" />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {[1, 2, 3, 4, 5].map((i) => (
                                 <div key={i} className="flex gap-2 items-center">
-                                    <div className="skeleton skeleton-text w-24 bg-gray-100"></div>
-                                    <div className="skeleton skeleton-text w-32 bg-gray-200"></div>
+                                    <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
+                                    <Skeleton width="8rem" height="1rem" className="bg-gray-200" />
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Skeleton Exam Schedule */}
-                    <div className="glass-card bg-white/80 p-8">
-                        <div className="skeleton skeleton-text h-8 w-1/4 mb-6 bg-blue-100"></div>
+                    <Card style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
+                        <Skeleton height="2rem" width="25%" className="mb-6 bg-blue-100" />
                         <div className="space-y-4">
                             {[1, 2, 3].map((i) => (
                                 <div key={i} className="bg-slate-50 p-6 rounded-xl border border-slate-100">
                                     <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                                        <div className="skeleton skeleton-text w-1/3 bg-indigo-100"></div>
-                                        <div className="skeleton skeleton-text w-16 rounded-full bg-green-100"></div>
+                                        <Skeleton width="33%" height="1.5rem" className="bg-indigo-100" />
+                                        <Skeleton
+                                            width="4rem"
+                                            height="1.5rem"
+                                            rounded="999px"
+                                            className="bg-green-100"
+                                        />
                                     </div>
                                     <div className="flex justify-between gap-4 flex-wrap">
-                                        <div className="skeleton skeleton-text w-24 bg-gray-100"></div>
-                                        <div className="skeleton skeleton-text w-24 bg-gray-100"></div>
-                                        <div className="skeleton skeleton-text w-24 bg-gray-100"></div>
+                                        <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
+                                        <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
+                                        <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </Card>
                 </div>
-            </div>
+            </PageLayout>
         );
     }
 
-    if (error || !student) {
-        return (
-            <div className="min-h-screen p-4 md:p-12 max-w-6xl mx-auto">
-                <div className="flex justify-end mb-8">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="flex items-center gap-2 font-medium"
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                            e.currentTarget.style.boxShadow = '0 10px 20px rgba(239, 68, 68, 0.2)';
-                            e.currentTarget.style.backgroundColor = '#dc2626';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(239, 68, 68, 0.1)';
-                            e.currentTarget.style.backgroundColor = '#ef4444';
-                        }}
-                        onMouseDown={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
-                            e.currentTarget.style.boxShadow = 'none';
-                        }}
-                        onMouseUp={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                            e.currentTarget.style.boxShadow = '0 10px 20px rgba(239, 68, 68, 0.2)';
-                        }}
-                        style={{
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: '0 4px 6px rgba(239, 68, 68, 0.1)'
-                        }}
-                    >
-                        <ArrowLeft size={18} strokeWidth={2.5} /> Back
-                    </button>
-                </div>
-                <div className="glass-card bg-white p-12 text-center">
-                    <h2 className="text-2xl font-bold text-red-500 mb-4">Student Not Found</h2>
-                    <p className="text-gray-500">No student found with ID: {collegeId}</p>
-                </div>
-            </div>
-        );
+    if (!student) {
+        return null;
     }
-
-
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '20px',
-            position: 'relative',
-            overflow: 'hidden',
-            boxSizing: 'border-box',
-            backgroundColor: '#cbd5e1',
-            margin: 0
-        }}>
-            {/* Top Left Gradient Blob */}
-            <div style={{
-                position: 'absolute',
-                top: '-150px',
-                left: '-150px',
-                width: '400px',
-                height: '400px',
-                background: 'radial-gradient(circle, #86bafa4d 0%, #5c8cf533 100%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                zIndex: 0
-            }} />
-
-            {/* Decorative Blue Round Design (matching SearchPage) */}
-            <div style={{
-                position: 'absolute',
-                top: '-50px',
-                left: '-150px',
-                width: '300px',
-                height: '300px',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                borderRadius: '50%',
-                boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)',
-                zIndex: 5,
-                opacity: 0.9
-            }} />
-
-            {/* Bottom Right Gradient Blob */}
-            <div style={{
-                position: 'absolute',
-                bottom: '-150px',
-                right: '-150px',
-                width: '400px',
-                height: '400px',
-                background: 'radial-gradient(circle, hsla(158, 87%, 73%, 0.30) 0%, #72f1c933 100%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                zIndex: 0
-            }} />
-
+        <PageLayout>
             <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
                 <div className="flex justify-between items-center mb-8">
                     {/* Filter Buttons - Left Side */}
@@ -275,7 +150,8 @@ const ProfilePage = () => {
                                 }}
                                 onMouseLeave={(e) => {
                                     e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                                    e.currentTarget.style.boxShadow = examTypeFilter === type ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none';
+                                    e.currentTarget.style.boxShadow =
+                                        examTypeFilter === type ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none';
                                 }}
                                 onMouseDown={(e) => {
                                     e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
@@ -295,7 +171,7 @@ const ProfilePage = () => {
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                     backgroundColor: examTypeFilter === type ? '#4f46e5' : '#e0e7ff',
                                     color: examTypeFilter === type ? 'white' : '#4f46e5',
-                                    boxShadow: examTypeFilter === type ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none'
+                                    boxShadow: examTypeFilter === type ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none',
                                 }}
                             >
                                 {type}
@@ -303,229 +179,66 @@ const ProfilePage = () => {
                         ))}
                     </div>
                     {/* Back Button - Right Side */}
-                    <button
-                        onClick={() => navigate('/')}
-                        className="flex items-center gap-2 font-medium"
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                            e.currentTarget.style.boxShadow = '0 10px 20px rgba(239, 68, 68, 0.2)';
-                            e.currentTarget.style.backgroundColor = '#dc2626';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(239, 68, 68, 0.1)';
-                            e.currentTarget.style.backgroundColor = '#ef4444';
-                        }}
-                        onMouseDown={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
-                            e.currentTarget.style.boxShadow = 'none';
-                        }}
-                        onMouseUp={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                            e.currentTarget.style.boxShadow = '0 10px 20px rgba(239, 68, 68, 0.2)';
-                        }}
-                        style={{
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: '0 4px 6px rgba(239, 68, 68, 0.1)'
-                        }}
-                    >
-                        <ArrowLeft size={18} strokeWidth={2.5} /> Back
-                    </button>
+                    <Button variant="danger" onClick={() => navigate('/')} icon={ArrowLeft}>
+                        Back
+                    </Button>
                 </div>
 
                 {/* Student Profile Card */}
-                <div className="glass-card p-8 mb-8" style={{ backgroundColor: '#f0f4f8' }}>
+                <Card className="mb-8" style={{ backgroundColor: '#f0f4f8' }}>
                     <h3 className="text-2xl font-bold text-[#2d368e] border-b pb-4 mb-6">{student.name}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-base">
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Student Code :</span>
-                            <span className="text-gray-900 font-semibold">{student.studentCode || student.collegeId || 'N/A'}</span>
+                            <span className="text-gray-900 font-semibold">
+                                {student.studentCode || student.collegeId || 'N/A'}
+                            </span>
                         </div>
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Student Roll :</span>
-                            <span className="text-gray-900 font-semibold">{student.studentRoll || student.roll || 'N/A'}</span>
+                            <span className="text-gray-900 font-semibold">
+                                {student.studentRoll || student.roll || 'N/A'}
+                            </span>
                         </div>
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Student Reg :</span>
-                            <span className="text-gray-900 font-semibold">{student.studentReg || student.registration || 'N/A'}</span>
+                            <span className="text-gray-900 font-semibold">
+                                {student.studentReg || student.registration || 'N/A'}
+                            </span>
                         </div>
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Examination Sem :</span>
-                            <span className="text-gray-900 font-semibold">{student.examinationSem || student.semester || 'N/A'}</span>
+                            <span className="text-gray-900 font-semibold">
+                                {student.examinationSem || student.semester || 'N/A'}
+                            </span>
                         </div>
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Batch :</span>
                             <span className="text-gray-900 font-semibold">{student.batch || 'N/A'}</span>
                         </div>
                     </div>
-                </div>
+                </Card>
 
                 {/* Exam Schedule Card */}
-                <div className="glass-card bg-white p-8">
+                <Card style={{ backgroundColor: 'white' }}>
                     <h3 className="text-2xl font-bold text-[#2d368e] border-b pb-4 mb-6">📅 Exam Schedule</h3>
                     {processedExams.length > 0 ? (
                         <>
                             {/* Show message if all exams are completed */}
-                            {processedExams.every(e => e.isPassed) && (
+                            {processedExams.every((e) => e.isPassed) && (
                                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-6 rounded-xl mb-6 text-center">
                                     <span className="text-4xl mb-2 block">🎉</span>
                                     <h4 className="text-xl font-bold text-green-700 mb-2">All Exams Completed!</h4>
-                                    <p className="text-green-600">Congratulations! You have completed all your scheduled exams. Enjoy your break!</p>
+                                    <p className="text-green-600">
+                                        Congratulations! You have completed all your scheduled exams. Enjoy your break!
+                                    </p>
                                 </div>
                             )}
                             <div className="space-y-4">
                                 {processedExams.map((exam) => {
-                                    const isFirstUpcoming = !exam.isPassed && processedExams.filter(e => !e.isPassed).indexOf(exam) === 0;
-                                    return (
-                                        <div
-                                            key={exam.examId}
-                                            className={`rounded-xl border-t border-b border-r transition-all duration-300 ${exam.isPassed
-                                                ? 'p-6 bg-gray-100 border-gray-300 ring-2 ring-gray-400 opacity-70 hover:opacity-100'
-                                                : isFirstUpcoming
-                                                    ? 'bg-indigo-100 border-indigo-400 ring-4 ring-indigo-500 shadow-2xl shadow-indigo-300 scale-[1.03] hover:shadow-2xl hover:scale-[1.04]'
-                                                    : 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500 shadow-lg shadow-indigo-200 scale-[1.01] hover:shadow-xl hover:scale-[1.02]'
-                                                }`}
-                                            style={{
-                                                borderLeftWidth: '6px',
-                                                borderLeftStyle: 'solid',
-                                                borderLeftColor: exam.isPassed
-                                                    ? '#6b7280'
-                                                    : isFirstUpcoming
-                                                        ? '#2d368e'
-                                                        : '#6366f1',
-                                                display: !exam.isPassed ? 'flex' : 'block',
-                                                padding: !exam.isPassed ? '0' : '24px',
-                                                overflow: 'hidden'
-                                            }}
-                                        >
-                                            {!exam.isPassed ? (
-                                                // Professional Date Box Layout for Upcoming Exams
-                                                <>
-                                                    <div style={{
-                                                        width: '100px',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        backgroundColor: isFirstUpcoming ? '#2d368e' : '#e0e7ff',
-                                                        color: isFirstUpcoming ? 'white' : '#4f46e5',
-                                                        padding: '16px',
-                                                        textAlign: 'center',
-                                                        borderRight: '1px solid rgba(0,0,0,0.05)'
-                                                    }}>
-                                                        <span style={{ fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.8 }}>
-                                                            {new Date(exam.date).toLocaleString('default', { month: 'short' })}
-                                                        </span>
-                                                        <span style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>
-                                                            {new Date(exam.date).getDate()}
-                                                        </span>
-                                                        <span style={{ fontSize: '12px', fontWeight: '600', opacity: 0.8, marginTop: '4px' }}>
-                                                            {new Date(exam.date).getFullYear()}
-                                                        </span>
-                                                    </div>
-
-                                                    <div style={{ flex: 1, padding: '20px' }}>
-                                                        <div className="flex items-center justify-between mb-3 border-b border-indigo-200 pb-2">
-                                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-medium text-indigo-400">Paper Name:</span>
-                                                                    <span className="font-bold text-[#2d368e] text-xl">{exam.subject}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-medium text-indigo-400">Paper Code:</span>
-                                                                    <span className="font-semibold text-[#2d368e]">{exam.examId || 'N/A'}</span>
-                                                                </div>
-                                                            </div>
-                                                            <span style={{
-                                                                padding: '4px 12px',
-                                                                borderRadius: '9999px',
-                                                                fontSize: '12px',
-                                                                fontWeight: 'bold',
-                                                                textTransform: 'uppercase',
-                                                                backgroundColor: exam.examType === 'Backlog' ? '#fed7aa' : '#bbf7d0',
-                                                                color: exam.examType === 'Backlog' ? '#ea580c' : '#16a34a'
-                                                            }}>
-                                                                {exam.examType || 'Regular'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-4 mt-4">
-                                                            <div className="flex flex-col p-3 bg-white/50 rounded-lg border border-indigo-100 hover:border-indigo-200 transition-colors">
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <Clock size={16} className="text-indigo-500" />
-                                                                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Time</span>
-                                                                </div>
-                                                                <span className="text-gray-900 font-bold ml-6">{exam.time || 'N/A'}</span>
-                                                            </div>
-                                                            <div className="flex flex-col p-3 bg-white/50 rounded-lg border border-indigo-100 hover:border-indigo-200 transition-colors">
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <MapPin size={16} className="text-indigo-500" />
-                                                                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Room</span>
-                                                                </div>
-                                                                <span className="text-gray-900 font-bold ml-6">{exam.room || 'N/A'}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                // Standard Layout for Passed Exams
-                                                <>
-                                                    <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-medium text-gray-400">Paper Name:</span>
-                                                                <span className="font-bold text-[#2d368e] text-xl">{exam.subject}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-medium text-gray-400">Paper Code:</span>
-                                                                <span className="font-semibold text-gray-600">{exam.examId || 'N/A'}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            {exam.isPassed && exam.score !== null && (
-                                                                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-700 border border-blue-200">
-                                                                    Score: {exam.score}
-                                                                </span>
-                                                            )}
-                                                            <span style={{
-                                                                padding: '4px 12px',
-                                                                borderRadius: '9999px',
-                                                                fontSize: '12px',
-                                                                fontWeight: 'bold',
-                                                                textTransform: 'uppercase',
-                                                                backgroundColor: exam.examType === 'Backlog' ? '#fed7aa' : '#bbf7d0',
-                                                                color: exam.examType === 'Backlog' ? '#ea580c' : '#16a34a'
-                                                            }}>
-                                                                {exam.examType || 'Regular'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-6 text-sm">
-                                                        <div className="flex items-center gap-2 text-gray-600">
-                                                            <Calendar size={16} className="text-indigo-400" />
-                                                            <span className="font-medium">{exam.date || 'N/A'}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-gray-600">
-                                                            <Clock size={16} className="text-indigo-400" />
-                                                            <span className="font-medium">{exam.time || 'N/A'}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-gray-600">
-                                                            <MapPin size={16} className="text-indigo-400" />
-                                                            <span className="font-medium">{exam.room || 'N/A'}</span>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    );
+                                    const isFirstUpcoming =
+                                        !exam.isPassed && processedExams.filter((e) => !e.isPassed).indexOf(exam) === 0;
+                                    return <ExamCard key={exam.examId} exam={exam} isNext={isFirstUpcoming} />;
                                 })}
                             </div>
                         </>
@@ -534,28 +247,32 @@ const ProfilePage = () => {
                             No exams scheduled for this student
                         </div>
                     )}
-                </div >
+                </Card>
+
                 {/* Pinned Note Section */}
-                < div className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300" style={{ transform: 'rotate(-1deg)' }}>
+                <div
+                    className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300"
+                    style={{ transform: 'rotate(-1deg)' }}
+                >
                     <div className="bg-[#fffdf0] border border-[#e6e2c8] p-6 rounded-sm shadow-[2px_4px_8px_rgba(0,0,0,0.1)] relative">
                         <div className="text-center">
                             <h4 className="flex items-center justify-center gap-2 font-bold text-gray-800 text-lg mb-2 underline decoration-wavy decoration-[#e6e2c8]">
                                 <span>📌</span> Important Notice
                             </h4>
                             <p className="text-gray-700 font-medium leading-relaxed">
-                                Please report to your assigned room <span className="text-red-600 font-bold">at least 15 minutes</span> before the scheduled examination time.
-                                Students must wear the <span className="font-bold">college uniform</span> and bring their <span className="text-[#2d368e] font-bold">college ID card</span> along with all required documents.
+                                Please report to your assigned room{' '}
+                                <span className="text-red-600 font-bold">at least 15 minutes</span> before the
+                                scheduled examination time. Students must wear the{' '}
+                                <span className="font-bold">college uniform</span> and bring their{' '}
+                                <span className="text-[#2d368e] font-bold">college ID card</span> along with all
+                                required documents.
                             </p>
                         </div>
                     </div>
-                </div >
-
-            </div >
-        </div >
+                </div>
+            </div>
+        </PageLayout>
     );
 };
 
-
-
 export default ProfilePage;
-
