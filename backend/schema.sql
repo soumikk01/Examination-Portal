@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS Exams (
 -- Seed Initial Data (Mock Data)
 INSERT INTO Students (collegeId, name, degree, department, studentRoll, studentReg, examinationSem, batch) VALUES 
 
-('JIS/2000/0000', 'Soumik Biswas', 'B.TECH', 'Computer Science', NULL, NULL, '3rd Semester', '2027');
+('JIS/2000/0000', 'Soumik Biswas', 'B.TECH', 'Computer Science', '2023CS0000', 'REG20230000', '3rd Semester', '2027');
 
 INSERT INTO Exams (studentId, examId, subject, score, date, time, room, examType, examCategory) VALUES 
 

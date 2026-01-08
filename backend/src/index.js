@@ -49,7 +49,41 @@ app.get('/api/search', (req, res) => {
     }
 });
 
+// POST /api/student/verify
+app.post('/api/student/verify', (req, res) => {
+    const { collegeId, verification } = req.body;
+
+    if (!collegeId || !verification) {
+        return res.status(400).json({ error: "College ID and verification are required" });
+    }
+
+    try {
+        const student = db.prepare("SELECT * FROM Students WHERE collegeId = ?").get(collegeId);
+
+        if (!student) {
+            return res.status(404).json({ error: "Student not found" });
+        }
+
+        // Verification: Check if verification matches last 3 digits of studentRoll
+        if (!student.studentRoll) {
+            return res.status(403).json({ error: "Roll number not found for this student." });
+        }
+
+        const last3Digits = student.studentRoll.slice(-3);
+        if (last3Digits !== verification) {
+            return res.status(403).json({ error: "Verification failed. Please check the last 3 digits of your roll number." });
+        }
+
+        // If verification passed, return student data with exams
+        const exams = db.prepare("SELECT * FROM Exams WHERE studentId = ?").all(student.id);
+        res.json({ ...student, exams: exams || [] });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET /api/student/* (supports IDs with slashes like jis/2000/000)
+// Kept for backward compatibility but should migrate to POST verify
 app.get('/api/student/*', (req, res) => {
     // Handle both regular params and wildcard for IDs with slashes
     const collegeId = req.params[0] || req.params.collegeId;
