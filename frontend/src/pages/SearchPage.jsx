@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { api } from '../services/api';
-import { Button, Card, Skeleton, PageLayout } from '../components';
+import { Button, Card, Skeleton, PageLayout, DecorativeCircle } from '../components';
 
 const SearchPage = () => {
     const [searchId, setSearchId] = useState('');
+    const [verification, setVerification] = useState('');
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [searching, setSearching] = useState(false);
     const [error, setError] = useState('');
+    const [shake, setShake] = useState(false);
+    const verificationInputRef = useRef(null);
 
     // Simulate loading effect
     useEffect(() => {
@@ -21,23 +24,34 @@ const SearchPage = () => {
     }, []);
 
     const handleSearch = async () => {
-        if (!searchId) return;
+        if (!searchId || !verification) {
+            setError('Please enter both Student ID and verification');
+            triggerShake();
+            return;
+        }
 
         setSearching(true);
         setError('');
 
         try {
-            const data = await api.getStudentByCollegeId(searchId);
+            const data = await api.verifyStudent(searchId, verification);
             if (data.error || !data.name) {
-                setError('Student not found! Please check the ID.');
+                setError(data.error || 'Verification failed! Please check your details.');
+                triggerShake();
             } else {
                 navigate(`/student/${searchId}`);
             }
         } catch (err) {
-            setError('Student not found! Please check the ID.');
+            setError('Verification failed! Please check your details.');
+            triggerShake();
         } finally {
             setSearching(false);
         }
+    };
+
+    const triggerShake = () => {
+        setShake(true);
+        setTimeout(() => setShake(false), 650);
     };
 
     if (loading) {
@@ -51,6 +65,7 @@ const SearchPage = () => {
                         <Skeleton height="2rem" width="10rem" className="mb-4" />
                         <Skeleton height="1rem" width="14rem" className="mb-6" />
                         <Skeleton height="3rem" width="100%" className="mb-4 rounded-lg" />
+                        <Skeleton height="3rem" width="100%" className="mb-4 rounded-lg" />
                         <Skeleton height="3rem" width="100%" className="bg-blue-100 rounded-lg" />
                     </Card>
                 </div>
@@ -60,36 +75,26 @@ const SearchPage = () => {
 
     return (
         <PageLayout centerContent>
-            {/* Decorative Green Round Design */}
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: '-50px',
-                    right: '-150px',
-                    width: '300px',
-                    height: '300px',
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    borderRadius: '50%',
-                    boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.5)',
-                    zIndex: 5,
-                    opacity: 0.9,
-                }}
+            <DecorativeCircle
+                bottom="-50px"
+                right="-150px"
+                width="300px"
+                height="300px"
+                gradient="linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                shadow="0 10px 25px -5px rgba(16, 185, 129, 0.5)"
+                opacity={0.9}
+                zIndex={5}
             />
 
-            {/* Decorative Small Blue Round Design */}
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: '-40px',
-                    right: '100px',
-                    width: '160px',
-                    height: '160px',
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                    borderRadius: '50%',
-                    boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)',
-                    zIndex: 4,
-                    opacity: 0.8,
-                }}
+            <DecorativeCircle
+                bottom="-40px"
+                right="100px"
+                width="160px"
+                height="160px"
+                gradient="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
+                shadow="0 8px 16px -4px rgba(59, 130, 246, 0.4)"
+                opacity={0.8}
+                zIndex={4}
             />
 
             {/* Content */}
@@ -119,7 +124,13 @@ const SearchPage = () => {
                     </p>
                 </header>
 
-                <Card padding="32px 24px" style={{ border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <Card
+                    padding="32px 24px"
+                    style={{
+                        border: '1px solid rgba(226, 232, 240, 0.8)',
+                        animation: shake ? 'shake 0.6s cubic-bezier(.36,.07,.19,.97) both' : 'none',
+                    }}
+                >
                     <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                         <img
                             src={logo}
@@ -141,6 +152,8 @@ const SearchPage = () => {
                     >
                         Student Login
                     </h2>
+
+                    {/* Student ID Input */}
                     <label
                         style={{
                             fontSize: '0.75rem',
@@ -163,7 +176,7 @@ const SearchPage = () => {
                             borderRadius: '8px',
                             padding: '14px 16px',
                             fontSize: '1rem',
-                            marginBottom: error ? '8px' : '16px',
+                            marginBottom: '16px',
                             boxSizing: 'border-box',
                             outline: 'none',
                             backgroundColor: error ? '#fef2f2' : 'white',
@@ -173,30 +186,118 @@ const SearchPage = () => {
                             let val = e.target.value.toUpperCase();
                             const prevVal = searchId;
 
-                            // Smart format for JIS/xxxx/xxxx pattern
-                            if (val.length === 3 && val === 'JIS' && prevVal.length < 3) {
-                                val = val + '/';
-                            } else if (val.startsWith('JIS/') && !val.includes('/', 4)) {
-                                const afterJIS = val.substring(4);
-                                if (
-                                    afterJIS.length === 4 &&
-                                    /^\d+$/.test(afterJIS) &&
-                                    prevVal.length < val.length
-                                ) {
-                                    val = val + '/';
+                            // Allow free deletion - if user is deleting, just accept it
+                            if (val.length < prevVal.length) {
+                                setSearchId(val);
+                                setError('');
+                                setShake(false);
+                                return;
+                            }
+
+                            // Only apply smart formatting when adding characters
+                            // Step 1: Ensure it starts with JIS
+                            if (!val.startsWith('JIS')) {
+                                if (val.length <= 3) {
+                                    val = 'JIS'.substring(0, val.length);
+                                } else {
+                                    return; // Reject if doesn't start with JIS
+                                }
+                            }
+
+                            // Step 2: Auto-add first slash after JIS
+                            if (val.length === 3 && !val.includes('/')) {
+                                val = 'JIS/';
+                            }
+
+                            // Step 3: After 'JIS/', only allow 4 digits
+                            if (val.length > 4 && val.startsWith('JIS/')) {
+                                const afterFirstSlash = val.substring(4);
+
+                                // Extract only digits
+                                const digits = afterFirstSlash.replace(/[^0-9]/g, '');
+
+                                // Limit to 4 digits
+                                const first4Digits = digits.substring(0, 4);
+
+                                if (first4Digits.length === 4) {
+                                    // Auto-add second slash after 4 digits
+                                    if (val.length === 8 && !val.includes('/', 4)) {
+                                        val = `JIS/${first4Digits}/`;
+                                    } else if (val.length > 8) {
+                                        const afterSecondSlash = val.substring(9);
+                                        const secondDigits = afterSecondSlash.replace(/[^0-9]/g, '');
+                                        const last4Digits = secondDigits.substring(0, 4);
+                                        val = `JIS/${first4Digits}/${last4Digits}`;
+
+                                        // Auto-focus to verification input when complete
+                                        if (last4Digits.length === 4 && verificationInputRef.current) {
+                                            setTimeout(() => verificationInputRef.current.focus(), 0);
+                                        }
+                                    } else {
+                                        val = `JIS/${first4Digits}`;
+                                    }
+                                } else {
+                                    val = `JIS/${first4Digits}`;
                                 }
                             }
 
                             setSearchId(val);
                             setError('');
+                            setShake(false);
                         }}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                                if (searchId.trim()) handleSearch();
+                                if (searchId.trim() && verification.trim()) handleSearch();
                             }
                         }}
                         aria-label="Student ID Input"
                     />
+
+                    {/* Verification Input */}
+                    <label
+                        style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            color: '#6b7280',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            display: 'block',
+                            marginBottom: '8px',
+                        }}
+                    >
+                        LAST 3 DIGITS OF ROLL NUMBER
+                    </label>
+                    <input
+                        ref={verificationInputRef}
+                        type="text"
+                        placeholder="e.g., 111"
+                        style={{
+                            width: '100%',
+                            border: error ? '2px solid #ef4444' : '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            padding: '14px 16px',
+                            fontSize: '1rem',
+                            marginBottom: error ? '8px' : '16px',
+                            boxSizing: 'border-box',
+                            outline: 'none',
+                            backgroundColor: error ? '#fef2f2' : 'white',
+                        }}
+                        value={verification}
+                        onChange={(e) => {
+                            // Only allow numbers and max 3 digits
+                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
+                            setVerification(val);
+                            setError('');
+                            setShake(false);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                if (searchId.trim() && verification.trim()) handleSearch();
+                            }
+                        }}
+                        aria-label="Verification Input"
+                    />
+
                     {error && (
                         <p
                             style={{
@@ -212,9 +313,9 @@ const SearchPage = () => {
 
                     <Button
                         onClick={() => {
-                            if (!searchId.trim()) {
-                                // Manual shake handling if needed, or rely on input error state
-                                setError('Please enter a student ID');
+                            if (!searchId.trim() || !verification.trim()) {
+                                setError('Please enter both Student ID and verification');
+                                triggerShake();
                                 return;
                             }
                             handleSearch();

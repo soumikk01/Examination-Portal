@@ -512,6 +512,30 @@ body {
   --tw-shadow-color: #c7d2fe;
 }
 
+@keyframes shake {
+
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translateX(-4px);
+  }
+
+  40%,
+  60% {
+    transform: translateX(4px);
+  }
+}
+
 /* Positioning */
 .relative {
   position: relative;
@@ -557,11 +581,11 @@ table {
   overflow-x: auto;
 }
 
-.divide-y > * + * {
+.divide-y>*+* {
   border-top-width: 1px;
 }
 
-.divide-gray-50 > * + * {
+.divide-gray-50>*+* {
   border-color: #f9fafb;
 }
 
@@ -587,31 +611,31 @@ table {
 }
 
 /* Misc */
-.space-y-1 > * + * {
+.space-y-1>*+* {
   margin-top: 0.25rem;
 }
 
-.space-y-2 > * + * {
+.space-y-2>*+* {
   margin-top: 0.5rem;
 }
 
-.space-y-4 > * + * {
+.space-y-4>*+* {
   margin-top: 1rem;
 }
 
-.space-y-5 > * + * {
+.space-y-5>*+* {
   margin-top: 1.25rem;
 }
 
-.space-y-6 > * + * {
+.space-y-6>*+* {
   margin-top: 1.5rem;
 }
 
-.space-y-12 > * + * {
+.space-y-12>*+* {
   margin-top: 3rem;
 }
 
-.space-x-2 > * + * {
+.space-x-2>*+* {
   margin-left: 0.5rem;
 }
 
@@ -658,7 +682,7 @@ body,
   min-height: 100vh;
 }
 
-#root > div {
+#root>div {
   width: 100%;
 }
 

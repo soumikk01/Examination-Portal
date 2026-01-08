@@ -186,7 +186,7 @@ const ProfilePage = () => {
 
                 {/* Student Profile Card */}
                 <Card className="mb-8" style={{ backgroundColor: '#f0f4f8' }}>
-                    <h3 className="text-2xl font-bold text-[#2d368e] border-b pb-4 mb-6">{student.name}</h3>
+                    <h3 className="text-3xl font-bold text-[#2d368e] border-b pb-4 mb-6">{student.name}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-base">
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Student Code :</span>
@@ -214,7 +214,9 @@ const ProfilePage = () => {
                         </div>
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Batch :</span>
-                            <span className="text-gray-900 font-semibold">{student.batch || 'N/A'}</span>
+                            <span className="text-gray-900 font-semibold">
+                                {[student.degree, student.department, student.batch].filter(Boolean).join(' - ') || 'N/A'}
+                            </span>
                         </div>
                     </div>
                 </Card>
