@@ -26,6 +26,18 @@ services:
       - api
     restart: unless-stopped
 
+  # Ngrok Tunnel
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command: "http frontend:80"
+    env_file:
+      - ngrok.env
+    ports:
+      - "4040:4040"
+    depends_on:
+      - frontend
+
 volumes:
   api-data:
     driver: local
