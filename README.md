@@ -51,17 +51,6 @@ A modern, professional web application for managing student examination schedule
 
 ---
 
-## 📸 Screenshots
-
-> Add screenshots here by placing images in the `docs/` folder
-
-```
-![Search Page](docs/screenshots/search.png)
-![Profile Page](docs/screenshots/profile.png)
-```
-
----
-
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -71,9 +60,6 @@ A modern, professional web application for managing student examination schedule
 ### With Docker (Recommended)
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/Examination-Portal.git
-cd Examination-Portal
 
 # Start all services
 docker-compose up --build
@@ -270,3 +256,4 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 Made with ❤️ by Alliance
 
 </div>
+    

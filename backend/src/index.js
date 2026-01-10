@@ -1,9 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import db, { initializeDatabase } from './database.js';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 const PORT = process.env.PORT || 8787;
+
+// Security Middleware
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+app.use(limiter);
 
 // Middleware
 app.use(cors());
@@ -49,14 +63,28 @@ app.get('/api/search', (req, res) => {
     }
 });
 
+import { studentSchema, examSchema, verificationSchema } from './schemas.js';
+
+// Validation Middleware
+const validate = (schema) => (req, res, next) => {
+    try {
+        const result = schema.safeParse(req.body);
+        if (!result.success) {
+            return res.status(400).json({ error: result.error.errors });
+        }
+        // Replace body with validated data (strips unknown fields)
+        req.body = result.data;
+        next();
+    } catch (error) {
+        return res.status(500).json({ error: "Validation error" });
+    }
+};
+
 // POST /api/student/verify
-app.post('/api/student/verify', (req, res) => {
+app.post('/api/student/verify', validate(verificationSchema), (req, res) => {
     const { collegeId, verification } = req.body;
 
-    if (!collegeId || !verification) {
-        return res.status(400).json({ error: "College ID and verification are required" });
-    }
-
+    // ... (rest of function unchanged, just start of logic)
     try {
         const student = db.prepare("SELECT * FROM Students WHERE collegeId = ?").get(collegeId);
 
@@ -103,11 +131,9 @@ app.get('/api/student/*', (req, res) => {
 });
 
 // POST /api/student
-app.post('/api/student', (req, res) => {
+app.post('/api/student', validate(studentSchema), (req, res) => {
     const body = req.body;
-    if (!body.collegeId || !body.name) {
-        return res.status(400).json({ error: "CollegeId and Name are required" });
-    }
+    // Validation handled by middleware now
 
     try {
         const stmt = db.prepare(
@@ -129,7 +155,7 @@ app.post('/api/student', (req, res) => {
 });
 
 // POST /api/student/:collegeId/exam
-app.post('/api/student/:collegeId/exam', (req, res) => {
+app.post('/api/student/:collegeId/exam', validate(examSchema), (req, res) => {
     const collegeId = req.params.collegeId;
     const body = req.body;
 
