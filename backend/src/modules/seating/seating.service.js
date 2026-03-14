@@ -3,6 +3,6 @@ export async function list() {
   return [];
 }
 
-export async function assign(data) {
+export async function assign(_data) {
   return { message: 'Seating assignment not yet implemented' };
 }

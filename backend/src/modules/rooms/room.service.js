@@ -3,6 +3,6 @@ export async function list() {
   return [];
 }
 
-export async function getById(id) {
+export async function getById(_id) {
   return null;
 }

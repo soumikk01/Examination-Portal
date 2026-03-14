@@ -13,7 +13,8 @@ export async function getByCollegeId(collegeId) {
 
   if (!student) return null;
 
-  const { sessionId: _, ...safeStudent } = student;
+  const safeStudent = { ...student };
+  delete safeStudent.sessionId;
   await cache.set(cacheKey, safeStudent, 3600);
 
   return safeStudent;
