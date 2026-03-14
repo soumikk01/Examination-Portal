@@ -6,8 +6,9 @@ WORKDIR /app
 # Install build dependencies for better-sqlite3
 RUN apk add --no-cache python3 make g++
 
-# Copy package files and install dependencies
+# Copy package files and Prisma schema (needed for postinstall prisma generate)
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm install
 
 # Copy source code and Prisma schema
