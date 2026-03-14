@@ -7,7 +7,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<SearchPage />} />
-        <Route path="/student/*" element={<ProfilePage />} />
+        <Route path="/student/:collegeId/*" element={<ProfilePage />} />
       </Routes>
     </Router>
   );

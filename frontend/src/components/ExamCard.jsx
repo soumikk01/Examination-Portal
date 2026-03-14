@@ -1,4 +1,5 @@
 import { Clock, MapPin, Calendar } from 'lucide-react';
+import { formatDate } from '../utils/dateUtils';
 
 /**
  * Exam Card Component
@@ -6,32 +7,6 @@ import { Clock, MapPin, Calendar } from 'lucide-react';
  */
 const ExamCard = ({ exam, isNext = false }) => {
     const isPassed = exam.isPassed;
-
-    // Format date for display
-    const formatDate = (dateStr) => {
-        if (!dateStr) return { day: '--', month: '---', year: '----' };
-        const [year, month, day] = dateStr.split('-');
-        const months = [
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'May',
-            'Jun',
-            'Jul',
-            'Aug',
-            'Sep',
-            'Oct',
-            'Nov',
-            'Dec',
-        ];
-        return {
-            day: day,
-            month: months[parseInt(month) - 1] || '---',
-            year: year,
-        };
-    };
-
     const date = formatDate(exam.date);
 
     return (

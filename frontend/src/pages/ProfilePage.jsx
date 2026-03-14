@@ -1,23 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
+import { parseExamDateTime } from '../utils/dateUtils';
 
-const parseExamDateTime = (dateStr, timeStr) => {
-    if (!dateStr || !timeStr) return new Date();
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const [time, period] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':').map(Number);
-    if (period === 'PM' && hours !== 12) hours += 12;
-    if (period === 'AM' && hours === 12) hours = 0;
-    return new Date(year, month - 1, day, hours, minutes);
-};
 
 const ProfilePage = () => {
-    const location = useLocation();
-    // Extract collegeId from path: /student/jis/2000/000 -> jis/2000/000
-    const collegeId = location.pathname.replace('/student/', '');
+    const { collegeId: paramId, '*': splat } = useParams();
+    // Support nested paths if any, but usually collegeId is the main identifier
+    const collegeId = paramId + (splat ? '/' + splat : '');
     const navigate = useNavigate();
     const [student, setStudent] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -53,32 +45,33 @@ const ProfilePage = () => {
     useEffect(() => {
         const fetchStudent = async () => {
             try {
-                // Fetch data and wait for at least 400ms simultaneously
-                const [data] = await Promise.all([
-                    api.getStudentByCollegeId(collegeId),
-                    new Promise((resolve) => setTimeout(resolve, 400)),
-                ]);
-
-                if (data.error) {
-                    setError('Student not found');
-                } else {
-                    setStudent(data);
-                }
+                setLoading(true);
+                // Fetch data
+                const data = await api.getStudentProfile(collegeId);
+                setStudent(data);
             } catch (err) {
-                setError('Error fetching student data');
+                console.error('Profile Fetch Error:', err);
+                setError(err.message || 'Error fetching student data');
+                
+                // If unauthorized or not found, we should eventually redirect
+                // but let's show the error state first
+                if (err.status === 401) {
+                    navigate('/');
+                }
             } finally {
                 setLoading(false);
             }
         };
         fetchStudent();
-    }, [collegeId]);
+    }, [collegeId, navigate]);
 
-    // Redirect to home only if there was an explicit error fetching
+    // Redirect to home only if there was an explicit AUTH error or critical failure after showing error
     useEffect(() => {
-        if (!loading && error) {
-            navigate('/');
+        if (!loading && error && !student) {
+            const timer = setTimeout(() => navigate('/'), 3000);
+            return () => clearTimeout(timer);
         }
-    }, [loading, error, navigate]);
+    }, [loading, error, student, navigate]);
 
     if (loading) {
         return (

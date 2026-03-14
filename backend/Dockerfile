@@ -1,24 +1,36 @@
-FROM node:20-alpine
+# Build stage
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Install build dependencies for better-sqlite3
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
+# Copy package files and install dependencies
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
 # Copy source code
 COPY . .
+
+# Final stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy production dependencies and built assets from builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/package.json ./package.json
 
 # Create data directory
 RUN mkdir -p data
 
 # Expose port
 EXPOSE 8787
+
+# Use environment variable for production
+ENV NODE_ENV=production
 
 # Start command
 CMD ["npm", "start"]

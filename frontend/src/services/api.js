@@ -1,89 +1,81 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
+import axios from 'axios';
 
-// Custom error class for API errors
-class ApiError extends Error {
-    constructor(message, status, data = null) {
-        super(message);
-        this.name = 'ApiError';
-        this.status = status;
-        this.data = data;
-    }
-}
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
 
-// Helper function to handle API responses
-const handleResponse = async (response) => {
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new ApiError(
-            errorData.error || `HTTP Error: ${response.status}`,
-            response.status,
-            errorData
-        );
-    }
+// Create axios instance
+const apiClient = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
-    // Handle empty responses (like 204 No Content)
-    if (response.status === 204) {
-        return null;
-    }
-
-    return response.json();
-};
-
-// Helper function to handle fetch errors
-const safeFetch = async (url, options = {}) => {
-    try {
-        const response = await fetch(url, options);
-        return handleResponse(response);
-    } catch (error) {
-        if (error instanceof ApiError) {
-            throw error;
+// Request interceptor to add auth token
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('examination_portal_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
         }
-        // Network error or other fetch error
-        throw new ApiError(error.message || 'Network error. Please check your connection.', 0);
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Response interceptor for error handling
+apiClient.interceptors.response.use(
+    (response) => response.data,
+    (error) => {
+        const { response } = error;
+        
+        // Handle session expiration
+        if (response && response.status === 401 && !window.location.pathname.includes('/login')) {
+            localStorage.removeItem('examination_portal_token');
+            localStorage.removeItem('examination_portal_student');
+            window.location.href = '/';
+        }
+
+        const message = response?.data?.error || error.message || 'Network error';
+        const status = response?.status || 0;
+        const data = response?.data || null;
+
+        const apiError = new Error(message);
+        apiError.name = 'ApiError';
+        apiError.status = status;
+        apiError.data = data;
+        
+        return Promise.reject(apiError);
     }
-};
+);
 
 export const api = {
-    getStudents: () => safeFetch(`${API_BASE_URL}/students`),
+    getHealth: () => apiClient.get('/health'),
 
-    searchStudents: (query) => safeFetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}`),
+    login: async (identifier, verification) => {
+        const data = await apiClient.post('/auth/login', { 
+            collegeId: identifier, 
+            verification 
+        });
+        
+        if (data.token) {
+            localStorage.setItem('examination_portal_token', data.token);
+            localStorage.setItem('examination_portal_student', JSON.stringify(data.student));
+        }
+        return data;
+    },
 
-    getStudentByCollegeId: (collegeId) =>
-        safeFetch(`${API_BASE_URL}/student/${encodeURIComponent(collegeId)}`),
+    getStudentProfile: (collegeId) =>
+        apiClient.get(`/student/${encodeURIComponent(collegeId)}`),
 
-    verifyStudent: (collegeId, verification) =>
-        safeFetch(`${API_BASE_URL}/student/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ collegeId, verification }),
-        }),
+    logout: () => {
+        localStorage.removeItem('examination_portal_token');
+        localStorage.removeItem('examination_portal_student');
+        window.location.href = '/';
+    },
 
+    // Legacy/Admin methods
     createStudent: (studentData) =>
-        safeFetch(`${API_BASE_URL}/student`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(studentData),
-        }),
-
-    addExam: (collegeId, examData) =>
-        safeFetch(`${API_BASE_URL}/student/${encodeURIComponent(collegeId)}/exam`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(examData),
-        }),
-
-    deleteStudent: (collegeId) =>
-        safeFetch(`${API_BASE_URL}/student/${encodeURIComponent(collegeId)}`, {
-            method: 'DELETE',
-        }),
-
-    deleteExam: (collegeId, examId) =>
-        safeFetch(
-            `${API_BASE_URL}/student/${encodeURIComponent(collegeId)}/exam/${encodeURIComponent(examId)}`,
-            {
-                method: 'DELETE',
-            }
-        ),
+        apiClient.post('/student', studentData),
 };
 
-export { ApiError };
+export { apiClient as default };

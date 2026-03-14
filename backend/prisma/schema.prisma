@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id             Int     @id @default(autoincrement())
+  collegeId      String  @unique(map: "sqlite_autoindex_Students_1") @map("collegeId")
+  name           String
+  degree         String?
+  department     String?
+  studentRoll    String? @unique @map("studentRoll")
+  studentReg     String? @map("studentReg")
+  examinationSem String? @map("examinationSem")
+  batch          String?
+  sessionId      String?
+  lastLogin      DateTime?
+  exams          Exam[]
+
+  @@map("Students")
+}
+
+model Exam {
+  id           Int      @id @default(autoincrement())
+  studentId    Int?     @map("studentId")
+  examId       String?  @unique(map: "sqlite_autoindex_Exams_1") @map("examId")
+  subject      String?
+  score        Int?
+  date         String?
+  time         String?
+  room         String?
+  examType     String?  @default("Regular") @map("examType")
+  examCategory String?  @default("ODD") @map("examCategory")
+  student      Student? @relation(fields: [studentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("Exams")
+}

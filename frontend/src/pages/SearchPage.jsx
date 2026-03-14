@@ -34,15 +34,11 @@ const SearchPage = () => {
         setError('');
 
         try {
-            const data = await api.verifyStudent(searchId, verification);
-            if (data.error || !data.name) {
-                setError(data.error || 'Verification failed! Please check your details.');
-                triggerShake();
-            } else {
-                navigate(`/student/${searchId}`);
-            }
+            const data = await api.login(searchId, verification);
+            // After successful login, redirect to profile using the canonical collegeId
+            navigate(`/student/${data.student.collegeId}`);
         } catch (err) {
-            setError('Verification failed! Please check your details.');
+            setError(err.message || 'Login failed! Please check your credentials.');
             triggerShake();
         } finally {
             setSearching(false);

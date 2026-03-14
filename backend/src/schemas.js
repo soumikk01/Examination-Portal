@@ -4,7 +4,7 @@ export const studentSchema = z.object({
     collegeId: z.string().min(1, "College ID is required"),
     name: z.string().min(1, "Name is required"),
     department: z.string().optional().nullable(),
-    studentRoll: z.string().optional().nullable(),
+    studentRoll: z.string().min(1, "Student Roll is required"),
     studentReg: z.string().optional().nullable(),
     examinationSem: z.string().optional().nullable(),
     batch: z.string().optional().nullable()
