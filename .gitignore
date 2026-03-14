@@ -34,9 +34,11 @@ backend/node_modules/
 backend/dist/
 *.db
 
-# Frontend
-frontend/node_modules/
-frontend/dist/
+# Apps
+apps/student-web/node_modules/
+apps/student-web/dist/
+apps/admin-web/node_modules/
+apps/admin-web/dist/
 
 # Docker
 .docker/

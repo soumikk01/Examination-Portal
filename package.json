@@ -4,9 +4,10 @@
   "description": "Student Examination Portal - Check exam details, dates, and room assignments",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "client": "cd frontend && npm run dev",
+    "client": "cd apps/student-web && npm run dev",
     "server": "cd backend && npm run dev",
-    "test": "cd frontend && npm run test"
+    "test": "cd apps/student-web && npm run test",
+    "admin": "cd apps/admin-web && npm run dev"
   },
   "repository": {
     "type": "git",

@@ -50,7 +50,6 @@ const ProfilePage = () => {
                 const data = await api.getStudentProfile(collegeId);
                 setStudent(data);
             } catch (err) {
-                console.error('Profile Fetch Error:', err);
                 setError(err.message || 'Error fetching student data');
                 
                 // If unauthorized or not found, we should eventually redirect

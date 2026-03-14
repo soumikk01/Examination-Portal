@@ -26,9 +26,6 @@ redis.on('connect', () => {
   logger.info('Connected to Redis');
 });
 
-/**
- * Caching Wrapper
- */
 export const cache = {
   async get(key) {
     try {
@@ -56,7 +53,7 @@ export const cache = {
     } catch (err) {
       // Failed to delete cache
     }
-  }
+  },
 };
 
 export default redis;

@@ -60,12 +60,11 @@ A modern, professional web application for managing student examination schedule
 ### With Docker (Recommended)
 
 ```bash
-
-# Start all services
-docker-compose up --build
+# From repo root
+docker compose -f docker/docker-compose.yml up --build
 ```
 
-🌐 Access at: **http://localhost**
+🌐 **Student app:** http://localhost (port 80)
 
 ### Without Docker
 
@@ -75,41 +74,63 @@ cd backend
 npm install
 npm run dev
 
-# Terminal 2 - Frontend  
-cd frontend
-npm install
-npm run dev
+# Terminal 2 - Student web
+npm run client
+# or: cd apps/student-web && npm run dev
 ```
 
-🌐 Access at: **http://localhost:5173**
+🌐 **Student app:** http://localhost:5173
+
+```bash
+# Terminal 3 (optional) - Admin panel
+npm run admin
+# or: cd apps/admin-web && npm run dev
+```
+
+🌐 **Admin panel:** http://localhost:5174
+
+### How admin, frontend & backend connect
+
+| App | Port | Connects to |
+|-----|------|-------------|
+| **Backend** (API) | 8787 | Database, Redis |
+| **Student web** (frontend) | 5173 | Backend via Vite proxy `/api` → `http://localhost:8787` |
+| **Admin web** | 5174 | Backend via Vite proxy `/api` → `http://localhost:8787` |
+
+- Both frontends use base URL `/api/v1` in dev; the Vite dev server proxies `/api` to the backend.
+- Backend CORS allows `http://localhost:5173` and `http://localhost:5174` (set `CORS_ORIGIN` in `backend/.env` if needed).
+- **Admin login:** Staff sign in with email + password. Backend verifies against the `Staff` table and issues a JWT; the dashboard is protected. After setting up the backend, run `cd backend && npm run db:seed` to create a default admin: **admin@example.com** / **Admin@123** (change in production). Optional: `VITE_ADMIN_API_KEY` in `apps/admin-web/.env` still works for API/script-based student registration.
 
 ---
 
 ## 📁 Project Structure
 
 ```
-Examination-Portal/
-├── 📂 backend/               # Express.js + SQLite API
-│   ├── 📂 src/
-│   │   ├── index.js          # Server entry point
-│   │   └── database.js       # Database connection
-│   ├── schema.sql            # Database schema & seed data
+examination-portal/
+├── .github/workflows/        # CI/CD (e.g. ci.yml)
+├── docker/
+│   ├── docker-compose.yml
+│   └── docker-compose.dev.yml
+├── apps/
+│   ├── student-web/          # Student-facing React + Vite app
+│   │   ├── src/components/, pages/, services/, styles/
+│   │   ├── Dockerfile, nginx.conf, vite.config.js
+│   │   └── package.json
+│   └── admin-web/            # Admin panel (React + Vite)
+│       ├── src/components/, pages/, services/, styles/
+│       ├── Dockerfile, nginx.conf, vite.config.js
+│       └── package.json
+├── backend/                  # Express.js + Prisma + SQLite
+│   ├── prisma/schema.prisma
+│   ├── src/
+│   │   ├── config/, database/, utils/, middleware/
+│   │   └── modules/ (auth, exams, students, rooms, seating)
 │   ├── Dockerfile
-│   └── README.md             # API documentation
-│
-├── 📂 frontend/              # React + Vite
-│   ├── 📂 src/
-│   │   ├── 📂 components/    # Reusable UI components
-│   │   ├── 📂 pages/         # Page components
-│   │   ├── 📂 services/      # API service layer
-│   │   └── 📂 styles/        # CSS styles
-│   ├── Dockerfile
-│   └── nginx.conf            # Production web server config
-│
-├── 📂 docs/                  # Documentation
-├── docker-compose.yml        # Container orchestration
-├── .env.example              # Environment template
-└── README.md                 # You are here!
+│   └── package.json
+├── data/                     # SQLite DB (e.g. examination.db)
+├── .env.example
+├── package.json              # Root scripts: client, admin, server, test
+└── README.md
 ```
 
 ---
@@ -159,18 +180,18 @@ Examination-Portal/
 
 ---
 
-## 📡 API Reference
+## 📡 API Reference (v1)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/health` | Health check |
-| `GET` | `/api/students` | Get all students |
-| `GET` | `/api/search?query=` | Search students |
-| `GET` | `/api/student/{id}` | Get student with exams |
-| `POST` | `/api/student` | Create new student |
-| `POST` | `/api/student/{id}/exam` | Add exam to student |
-| `DELETE` | `/api/student/{id}` | Delete student |
-| `DELETE` | `/api/student/{id}/exam/{examId}` | Delete exam |
+| `GET` | `/api/v1/health` | Health check (DB, Redis) |
+| `POST` | `/api/v1/auth/login` | Student login (collegeId + verification) |
+| `GET` | `/api/v1/student/:collegeId` | Get student profile + exams (auth required) |
+| `POST` | `/api/v1/student` | Register student (X-Admin-Key required) |
+| `GET` | `/api/v1/exams` | List exams |
+| `GET` | `/api/v1/exams/:id` | Get exam by id |
+| `GET` | `/api/v1/rooms` | List rooms |
+| `GET` | `/api/v1/seating` | List seating |
 
 📖 See [Backend README](backend/README.md) for detailed API documentation.
 
@@ -182,29 +203,29 @@ Examination-Portal/
 Code linting and formatting are configured for consistent code style.
 
 ```bash
-# Run linting
-cd frontend && npm run lint
+# Student web
+cd apps/student-web && npm run lint
+cd apps/student-web && npm run lint:fix
+cd apps/student-web && npm run format
 
-# Auto-fix lint issues
-cd frontend && npm run lint:fix
-
-# Format code
-cd frontend && npm run format
+# Backend
+cd backend && npm run lint
 ```
 
 ### Testing
 Unit tests are set up with **Vitest** and **React Testing Library**.
 
 ```bash
-# Run tests
-cd frontend && npm run test
+# From root
+npm run test
 
-# Run tests in watch mode
-cd frontend && npm run test:watch
+# Or from student-web
+cd apps/student-web && npm run test
+cd apps/student-web && npm run test:watch
 ```
 
 ### Error Handling
-The API service (`frontend/src/services/api.js`) includes:
+The student app API service (`apps/student-web/src/services/api.js`) includes:
 - ✅ Custom `ApiError` class for typed errors
 - ✅ `safeFetch()` wrapper with try-catch
 - ✅ Automatic URL encoding for safety
@@ -215,10 +236,10 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push:
 
 | Step | Description |
 |------|-------------|
-| **Lint** | ESLint checks for frontend & backend |
-| **Test** | Vitest runs frontend tests |
-| **Build** | Vite builds production bundle |
-| **Docker** | Builds Docker images |
+| **Lint** | ESLint for apps/student-web & backend |
+| **Test** | Vitest for student-web |
+| **Build** | Vite build for student-web |
+| **Docker** | `docker compose -f docker/docker-compose.yml build` |
 
 ---
 

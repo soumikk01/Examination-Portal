@@ -10,8 +10,11 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm install
 
-# Copy source code
+# Copy source code and Prisma schema
 COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
 
 # Final stage
 FROM node:20-alpine

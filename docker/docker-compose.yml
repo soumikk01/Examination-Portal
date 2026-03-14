@@ -2,7 +2,7 @@ services:
   # API Service (Express + SQLite)
   api:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile
     container_name: exam-portal-api
     ports:
@@ -14,12 +14,12 @@ services:
       - PORT=8787
     restart: unless-stopped
 
-  # Frontend Service (React + Nginx)
-  frontend:
+  # Student Frontend Service (React + Nginx)
+  student-web:
     build:
-      context: ./frontend
+      context: ../apps/student-web
       dockerfile: Dockerfile
-    container_name: exam-portal-frontend
+    container_name: exam-portal-student-web
     ports:
       - "80:80"
     depends_on:
