@@ -99,7 +99,7 @@ npm run admin
 
 - Both frontends use base URL `/api/v1` in dev; the Vite dev server proxies `/api` to the backend.
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174` (set `CORS_ORIGIN` in `backend/.env` if needed).
-- **Admin login:** Staff sign in with email + password. Backend verifies against the `Staff` table and issues a JWT; the dashboard is protected. After setting up the backend, run `cd backend && npm run db:seed` to create a default admin: **admin@example.com** / **Admin@123** (change in production). Optional: `VITE_ADMIN_API_KEY` in `apps/admin-web/.env` still works for API/script-based student registration.
+- **Admin login:** Staff sign in with email + password. Backend verifies against the `Staff` table and issues a JWT; the dashboard is protected. After setting up the backend, run `cd backend && npm run db:seed` to create a default admin (email/password from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` in `backend/.env`; if unset, dev default is admin@example.com with a built-in dev password—**set both env vars and use a strong password in production**). Optional: `VITE_ADMIN_API_KEY` in `apps/admin-web/.env` still works for API/script-based student registration.
 
 ---
 

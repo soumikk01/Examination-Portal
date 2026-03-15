@@ -3,8 +3,15 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const DEFAULT_ADMIN_EMAIL = 'admin@example.com';
-const DEFAULT_ADMIN_PASSWORD = 'Admin@123';
+const DEFAULT_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@example.com';
+// In production, require SEED_ADMIN_PASSWORD to be set; in dev, allow default for convenience
+const DEFAULT_ADMIN_PASSWORD =
+  process.env.SEED_ADMIN_PASSWORD ||
+  (process.env.NODE_ENV === 'production'
+    ? (() => {
+        throw new Error('SEED_ADMIN_PASSWORD must be set when seeding in production.');
+      })()
+    : 'Admin@123');
 
 async function main() {
   const existing = await prisma.staff.findUnique({
@@ -22,7 +29,7 @@ async function main() {
       name: 'Admin',
     },
   });
-  console.log('Created default admin:', DEFAULT_ADMIN_EMAIL, '(password: ' + DEFAULT_ADMIN_PASSWORD + ')');
+  console.log('Created default admin:', DEFAULT_ADMIN_EMAIL, '(change password after first login in production)');
 }
 
 main()

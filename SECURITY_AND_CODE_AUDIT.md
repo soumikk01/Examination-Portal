@@ -23,6 +23,7 @@ This document summarizes findings from a review of the Examination Portal codeba
 - No hardcoded passwords, API keys, or JWT secrets in source.
 - Backend uses `config` from env (e.g. `JWT_SECRET`, `ADMIN_API_KEY`, `DATABASE_URL`).
 - `.env` and `.env.*.local` are in `.gitignore`.
+- **Seed script:** Default admin password is no longer logged; production requires `SEED_ADMIN_PASSWORD` (see `backend/prisma/seed.js` and `backend/.env.example`).
 - Pino logger redacts auth-related fields (e.g. `authorization`, `cookie`, `verification`, `sessionId` in response body).
 
 ### Risks
