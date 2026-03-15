@@ -10,7 +10,16 @@
  */
 export const parseExamDateTime = (dateStr, timeStr) => {
     if (!dateStr) return new Date();
-    const [year, month, day] = dateStr.split('-').map(Number);
+
+    // Support both plain dates (YYYY-MM-DD) and ISO strings (YYYY-MM-DDTHH:mm:ss.sssZ)
+    // For ISO strings we intentionally ignore the time zone offset and only keep the
+    // calendar date portion so that exams do not shift days across time zones.
+    const base = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [yearRaw, monthRaw, dayRaw] = base.split('-').map(Number);
+    const year = Number.isInteger(yearRaw) ? yearRaw : new Date().getFullYear();
+    const month = Number.isInteger(monthRaw) ? monthRaw : 1;
+    const day = Number.isInteger(dayRaw) ? dayRaw : 1;
+
     if (!timeStr || !timeStr.trim()) {
         return new Date(year, month - 1, day, 0, 0);
     }
@@ -31,7 +40,9 @@ export const parseExamDateTime = (dateStr, timeStr) => {
  */
 export const formatDate = (dateStr) => {
     if (!dateStr) return { day: '--', month: '---', year: '----' };
-    const [year, month, day] = dateStr.split('-');
+    // Accept ISO strings by stripping time part if present
+    const base = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [year, month, day] = base.split('-');
     const months = [
         'Jan',
         'Feb',

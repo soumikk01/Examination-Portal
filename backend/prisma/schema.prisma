@@ -8,36 +8,86 @@ datasource db {
 }
 
 model Student {
-  id             Int     @id @default(autoincrement())
-  collegeId      String  @unique(map: "sqlite_autoindex_Students_1") @map("collegeId")
+  id             Int      @id @default(autoincrement())
+  collegeId      String   @unique(map: "sqlite_autoindex_Students_1") @map("collegeId")
   name           String
   degree         String?
   department     String?
-  studentRoll    String? @unique @map("studentRoll")
-  studentReg     String? @map("studentReg")
-  examinationSem String? @map("examinationSem")
+  studentRoll    String?  @unique @map("studentRoll")
+  studentReg     String?  @map("studentReg")
+  examinationSem String?  @map("examinationSem")
   batch          String?
   sessionId      String?
   lastLogin      DateTime?
+
+  // New fields used for exam visibility and filtering
+  program        Program?
+  branch         String?
+  semester       String?
+
   exams          Exam[]
 
   @@map("Students")
 }
 
 model Exam {
-  id           Int      @id @default(autoincrement())
-  studentId    Int?     @map("studentId")
-  examId       String?  @unique(map: "sqlite_autoindex_Exams_1") @map("examId")
-  subject      String?
-  score        Int?
-  date         String?
+  id           Int          @id @default(autoincrement())
+  examId       String
+  subject      String
+  date         DateTime?
   time         String?
   room         String?
-  examType     String?  @default("Regular") @map("examType")
-  examCategory String?  @default("ODD") @map("examCategory")
-  student      Student? @relation(fields: [studentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  examType     ExamType
+  examMode     ExamMode
+  examCategory ExamCategory
+  program      Program
+  branch       String
+  semester     String
+  status       ExamStatus   @default(DRAFT)
+  visibleFrom  DateTime?
+  visibleTo    DateTime?
 
+  studentId    Int?
+  student      Student?     @relation(fields: [studentId], references: [id])
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([status, program, branch, semester, date])
+  @@index([studentId, date])
   @@map("Exams")
+}
+
+enum ExamType {
+  TEST_I
+  TEST_II
+  END_SEM
+}
+
+enum ExamMode {
+  REGULAR
+  BACKLOG
+}
+
+enum ExamCategory {
+  ODD
+  EVEN
+}
+
+enum Program {
+  BTECH
+  MTECH
+  DIPLOMA
+  MCA
+  BCA
+  BBA
+}
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  ARCHIVED
 }
 
 model Staff {

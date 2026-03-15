@@ -6,11 +6,13 @@ import {
   Users,
   Grid3X3,
   LogOut,
+  ListOrdered,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/exams', label: 'Exams', icon: FileQuestion },
+  { to: '/exam-list', label: 'Exam list', icon: ListOrdered },
   { to: '/rooms', label: 'Rooms', icon: DoorOpen },
   { to: '/students', label: 'Students', icon: Users },
   { to: '/seating', label: 'Seating', icon: Grid3X3 },

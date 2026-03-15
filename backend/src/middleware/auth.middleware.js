@@ -17,7 +17,13 @@ export const verifyToken = async (req, res, next) => {
 
     const student = await prisma.student.findUnique({
       where: { id: decoded.id },
-      select: { sessionId: true },
+      select: {
+        sessionId: true,
+        collegeId: true,
+        program: true,
+        branch: true,
+        semester: true,
+      },
     });
 
     if (!student || student.sessionId !== decoded.sessionId) {
@@ -27,7 +33,8 @@ export const verifyToken = async (req, res, next) => {
       });
     }
 
-    req.user = decoded;
+    // Merge decoded token payload with latest student fields from DB
+    req.user = { ...decoded, ...student };
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid or expired token.' });
