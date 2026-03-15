@@ -318,6 +318,7 @@ table {
 .space-x-2 > * + * { margin-left: 0.5rem; }
 
 .backdrop-blur-sm {
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
