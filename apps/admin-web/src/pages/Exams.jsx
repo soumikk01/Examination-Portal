@@ -21,6 +21,9 @@ const PROGRAM_BRANCHES = {
   ],
   'M.Tech': [],
   Diploma: ['EE', 'ME'],
+  MCA: ['MCA'],
+  BCA: ['BCA'],
+  BBA: ['BBA'],
 };
 const PROGRAM_SEMESTERS = {
   'B.Tech': ['1', '2', '3', '4', '5', '6', '7', '8'],
@@ -123,8 +126,8 @@ const Exams = () => {
   const mapExamType = (label) => {
     if (!label) return undefined;
     const normalized = label.toLowerCase();
-    if (normalized.includes('test i')) return 'TEST_I';
     if (normalized.includes('test ii')) return 'TEST_II';
+    if (normalized.includes('test i')) return 'TEST_I';
     return 'END_SEM';
   };
 
