@@ -23,7 +23,7 @@ apiClient.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor: never expose raw Axios messages (e.g. "Request failed with status code 429")
 apiClient.interceptors.response.use(
     (response) => response.data,
     (error) => {
@@ -36,7 +36,14 @@ apiClient.interceptors.response.use(
             window.location.href = '/';
         }
 
-        const message = response?.data?.error || error.message || 'Network error';
+        let message;
+        if (response?.status === 429) {
+            message = 'Too many requests. Please try again in a few minutes.';
+        } else if (!response) {
+            message = 'Connection problem. Please try again.';
+        } else {
+            message = response?.data?.error || 'Something went wrong. Please try again.';
+        }
         const status = response?.status || 0;
         const data = response?.data || null;
 
