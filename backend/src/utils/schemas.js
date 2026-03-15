@@ -10,6 +10,7 @@ export const studentSchema = z.object({
   batch: z.string().optional().nullable(),
 });
 
+// Legacy single-exam schema (kept for reference, no longer used)
 export const examSchema = z.object({
   examId: z.string().min(1, 'Exam ID is required'),
   subject: z.string().min(1, 'Subject is required'),
@@ -20,6 +21,31 @@ export const examSchema = z.object({
   examType: z.enum(['Regular', 'Supply', 'Re-evaluation', 'Backlog', 'Test']).default('Regular'),
   examCategory: z.enum(['ODD', 'EVEN']).default('ODD'),
   studentId: z.number().int().positive().optional().nullable(),
+});
+
+// New bulk exam creation schema used by POST /exams
+export const examFormSchema = z.object({
+  program: z.enum(['BTECH', 'MTECH', 'DIPLOMA', 'MCA', 'BCA', 'BBA']),
+  branch: z.string().min(1, 'Branch is required'),
+  semester: z.string().min(1, 'Semester is required'),
+  examType: z.enum(['TEST_I', 'TEST_II', 'END_SEM']),
+  examMode: z.enum(['REGULAR', 'BACKLOG']),
+  examCategory: z.enum(['ODD', 'EVEN']),
+  time: z.string().min(1).optional().nullable(),
+  room: z.string().min(1).optional().nullable(),
+  subjects: z
+    .array(
+      z.object({
+        examId: z.string().min(1, 'Subject code is required'),
+        subject: z.string().min(1, 'Subject name is required'),
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+      }),
+    )
+    .min(1, 'At least one subject is required'),
+  assignedStudents: z.array(z.number().int().positive()).optional().default([]),
+  includeScheduleOnly: z.boolean().optional().default(true),
 });
 
 export const verificationSchema = z.object({

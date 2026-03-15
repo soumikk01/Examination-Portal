@@ -1,25 +1,121 @@
 import prisma from '../../database/database.js';
 
-export async function list() {
+export async function list(filters = {}) {
+  const { status, program, branch, semester, fromDate, toDate } = filters;
+
   return prisma.exam.findMany({
+    where: {
+      ...(status ? { status } : {}),
+      ...(program ? { program } : {}),
+      ...(branch ? { branch } : {}),
+      ...(semester ? { semester } : {}),
+      ...(fromDate || toDate
+        ? {
+            date: {
+              ...(fromDate ? { gte: fromDate } : {}),
+              ...(toDate ? { lte: toDate } : {}),
+            },
+          }
+        : {}),
+    },
     orderBy: [{ date: 'asc' }, { time: 'asc' }],
     include: { student: { select: { collegeId: true, name: true } } },
   });
 }
 
-export async function getById(id) {
-  return prisma.exam.findUnique({
+// called from admin Exams.jsx – creates many rows from one form submit
+export async function createManyFromForm(payload) {
+  const {
+    program,
+    branch,
+    semester,
+    examType,
+    examMode,
+    examCategory,
+    time,
+    room,
+    subjects, // [{ examId, subject, date }]
+    assignedStudents, // [studentId, ...]
+    includeScheduleOnly,
+  } = payload;
+
+  const base = {
+    program,
+    branch,
+    semester,
+    examType,
+    examMode,
+    examCategory,
+    time: time || null,
+    room: room || null,
+    status: 'DRAFT',
+  };
+
+  const rows = [];
+
+  if (includeScheduleOnly) {
+    for (const s of subjects || []) {
+      rows.push({
+        ...base,
+        examId: s.examId,
+        subject: s.subject,
+        date: s.date ? new Date(s.date) : null,
+        studentId: null,
+      });
+    }
+  }
+
+  for (const studentId of assignedStudents || []) {
+    for (const s of subjects || []) {
+      rows.push({
+        ...base,
+        examId: s.examId,
+        subject: s.subject,
+        date: s.date ? new Date(s.date) : null,
+        studentId,
+      });
+    }
+  }
+
+  if (rows.length === 0) {
+    throw new Error('No exams to create – add subjects and/or students.');
+  }
+
+  await prisma.exam.createMany({ data: rows });
+}
+
+export async function updateStatus(id, status, { visibleFrom, visibleTo } = {}) {
+  return prisma.exam.update({
     where: { id },
-    include: { student: { select: { collegeId: true, name: true } } },
+    data: {
+      status,
+      visibleFrom: visibleFrom ?? undefined,
+      visibleTo: visibleTo ?? undefined,
+    },
   });
 }
 
-export async function create(data) {
-  const { studentId, ...rest } = data;
-  return prisma.exam.create({
-    data: {
-      ...rest,
-      ...(studentId != null ? { studentId } : {}),
+// student-facing list based on their program/branch/semester
+export async function listForStudent(student) {
+  const now = new Date();
+
+  return prisma.exam.findMany({
+    where: {
+      status: 'PUBLISHED',
+      // Only filter by program/branch/semester when they are present on the student
+      ...(student.program ? { program: student.program } : {}),
+      ...(student.branch ? { branch: student.branch } : {}),
+      ...(student.semester ? { semester: student.semester } : {}),
+      OR: [{ studentId: null }, { studentId: student.id }],
+      AND: [
+        {
+          OR: [{ visibleFrom: null }, { visibleFrom: { lte: now } }],
+        },
+        {
+          OR: [{ visibleTo: null }, { visibleTo: { gte: now } }],
+        },
+      ],
     },
+    orderBy: [{ date: 'asc' }, { time: 'asc' }],
   });
 }

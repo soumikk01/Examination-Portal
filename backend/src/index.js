@@ -12,7 +12,7 @@ import redis from './utils/redis.js';
 import { config } from './config/config.js';
 import { verifyToken, authorizeStudent, authorizeAdmin, validate } from './middleware/auth.middleware.js';
 import { verificationSchema, adminLoginSchema } from './utils/schemas.js';
-import { studentSchema, examSchema } from './utils/schemas.js';
+import { studentSchema, examFormSchema } from './utils/schemas.js';
 import * as authController from './modules/auth/auth.controller.js';
 import * as studentController from './modules/students/student.controller.js';
 import * as examController from './modules/exams/exam.controller.js';
@@ -138,9 +138,12 @@ v1Router.get('/students', authorizeAdmin, studentController.list);
 v1Router.get('/student/*', verifyToken, authorizeStudent, studentController.getProfile);
 v1Router.post('/student', authorizeAdmin, validate(studentSchema), studentController.register);
 
-v1Router.get('/exams', examController.list);
-v1Router.get('/exams/:id', examController.getById);
-v1Router.post('/exams', authorizeAdmin, validate(examSchema), examController.create);
+// Exams - admin + student
+v1Router.get('/exams', authorizeAdmin, examController.list);
+v1Router.post('/exams', authorizeAdmin, validate(examFormSchema), examController.createManyFromForm);
+v1Router.patch('/exams/:id/status', authorizeAdmin, examController.updateStatus);
+// Student exams: only require a valid student token (no URL-based collegeId check)
+v1Router.get('/student/exams', verifyToken, examController.listForStudent);
 
 v1Router.get('/rooms', roomController.list);
 v1Router.get('/rooms/:id', roomController.getById);

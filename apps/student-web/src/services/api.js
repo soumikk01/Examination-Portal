@@ -75,6 +75,8 @@ export const api = {
     getStudentProfile: (collegeId) =>
         apiClient.get(`/student/${encodeURIComponent(collegeId)}`),
 
+    getStudentExams: () => apiClient.get('/student/exams'),
+
     logout: () => {
         localStorage.removeItem('examination_portal_token');
         localStorage.removeItem('examination_portal_student');

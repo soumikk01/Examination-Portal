@@ -10,7 +10,24 @@
  */
 export const parseExamDateTime = (dateStr, timeStr) => {
     if (!dateStr) return new Date();
-    const [year, month, day] = dateStr.split('-').map(Number);
+
+    // Support both plain dates (YYYY-MM-DD) and ISO strings (YYYY-MM-DDTHH:mm:ss.sssZ)
+    let year;
+    let month;
+    let day;
+
+    if (dateStr.includes('T')) {
+        const iso = new Date(dateStr);
+        if (Number.isNaN(iso.getTime())) {
+            return new Date();
+        }
+        year = iso.getFullYear();
+        month = iso.getMonth() + 1;
+        day = iso.getDate();
+    } else {
+        [year, month, day] = dateStr.split('-').map(Number);
+    }
+
     if (!timeStr || !timeStr.trim()) {
         return new Date(year, month - 1, day, 0, 0);
     }
@@ -31,7 +48,9 @@ export const parseExamDateTime = (dateStr, timeStr) => {
  */
 export const formatDate = (dateStr) => {
     if (!dateStr) return { day: '--', month: '---', year: '----' };
-    const [year, month, day] = dateStr.split('-');
+    // Accept ISO strings by stripping time part if present
+    const base = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [year, month, day] = base.split('-');
     const months = [
         'Jan',
         'Feb',
