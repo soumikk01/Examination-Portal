@@ -6,11 +6,13 @@ const Dashboard = () => {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [unreachable, setUnreachable] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setError(null);
+        setUnreachable(false);
         const [healthData, examsData] = await Promise.all([
           api.get('/health'),
           api.get('/exams'),
@@ -18,7 +20,21 @@ const Dashboard = () => {
         setHealth(healthData);
         setExams(Array.isArray(examsData) ? examsData : []);
       } catch (err) {
-        setError(err.message || 'Failed to load dashboard');
+        const status = err.response?.status;
+        if (status === 429) {
+          setUnreachable(false);
+          setError('Too many requests. Please try again in a few minutes.');
+          return;
+        }
+        const isUnreachable =
+          !err.response &&
+          (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error'));
+        setUnreachable(isUnreachable);
+        setError(
+          isUnreachable
+            ? null
+            : err.response?.data?.error || err.message || 'Failed to load dashboard'
+        );
       } finally {
         setLoading(false);
       }
@@ -34,11 +50,15 @@ const Dashboard = () => {
     );
   }
 
-  if (error) {
+  if (error || unreachable) {
     return (
       <div className="admin-card">
         <p className="admin-status-err">
-          API unreachable. Start the backend (e.g. <code>cd backend && npm run dev</code>). {error}
+          {unreachable ? (
+            <>API unreachable. Start the backend (e.g. <code>cd backend && npm run dev</code>).</>
+          ) : (
+            error
+          )}
         </p>
       </div>
     );

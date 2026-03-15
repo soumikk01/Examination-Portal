@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
+import { getUserFriendlyApiError } from '../utils/apiError';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -21,7 +22,7 @@ const Login = () => {
       localStorage.setItem('examination_portal_admin_staff', JSON.stringify(data.staff));
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Login failed');
+      setError(getUserFriendlyApiError(err, 'Login failed'));
     } finally {
       setLoading(false);
     }

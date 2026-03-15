@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { getUserFriendlyApiError } from '../utils/apiError';
 
 const EXAM_TYPES = ['Regular', 'Backlog', 'Test', 'Supply', 'Re-evaluation'];
 const EXAM_CATEGORIES = ['ODD', 'EVEN'];
@@ -34,7 +35,7 @@ const Exams = () => {
         setExams(Array.isArray(examsData) ? examsData : []);
         setStudents(Array.isArray(studentsData) ? studentsData : []);
       })
-      .catch((err) => setError(err.message || 'Failed to load exams'))
+      .catch((err) => setError(getUserFriendlyApiError(err, 'Failed to load exams')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -67,7 +68,7 @@ const Exams = () => {
         setForm({ ...initialForm });
         loadExams();
       })
-      .catch((err) => setMessage(err.response?.data?.error || err.message || 'Failed to add exam'))
+      .catch((err) => setMessage(getUserFriendlyApiError(err, 'Failed to add exam')))
       .finally(() => setSubmitting(false));
   };
 
@@ -78,138 +79,152 @@ const Exams = () => {
     <>
       <h1 style={{ marginBottom: '1rem', fontSize: '1.35rem' }}>Exam schedule</h1>
 
-      <div className="admin-card" style={{ marginBottom: '1.5rem' }}>
-        <h2>Add exam</h2>
-        <p style={{ marginBottom: '1rem' }}>Add an exam with date, room, subject. Choose type (Regular, Backlog, Test, etc.) and category (ODD/EVEN). Optionally assign to a student.</p>
-        {message && (
-          <p className={message.includes('success') ? 'admin-status-ok' : 'admin-status-err'} style={{ marginBottom: '0.75rem' }}>
-            {message}
-          </p>
-        )}
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', maxWidth: 720 }}>
-          <input
-            type="text"
-            name="examId"
-            placeholder="Exam code (e.g. CSE101-ODD)"
-            value={form.examId}
-            onChange={handleChange}
-            required
-            style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
-          />
-          <input
-            type="text"
-            name="subject"
-            placeholder="Subject"
-            value={form.subject}
-            onChange={handleChange}
-            required
-            style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
-          />
-          <input
-            type="date"
-            name="date"
-            value={form.date}
-            onChange={handleChange}
-            required
-            style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
-          />
-          <input
-            type="text"
-            name="time"
-            placeholder="Time (e.g. 09:00 AM)"
-            value={form.time}
-            onChange={handleChange}
-            style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
-          />
-          <input
-            type="text"
-            name="room"
-            placeholder="Room"
-            value={form.room}
-            onChange={handleChange}
-            style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
-          />
-          <select
-            name="examType"
-            value={form.examType}
-            onChange={handleChange}
-            style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
-          >
-            {EXAM_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          <select
-            name="examCategory"
-            value={form.examCategory}
-            onChange={handleChange}
-            style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
-          >
-            {EXAM_CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <select
-            name="studentId"
-            value={form.studentId}
-            onChange={handleChange}
-            style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
-          >
-            <option value="">No student (schedule only)</option>
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>{s.collegeId} – {s.name}</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              padding: '0.5rem 1rem',
-              background: 'var(--admin-primary, #2563eb)',
-              color: 'white',
-              border: 'none',
-              borderRadius: 8,
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.7 : 1,
-            }}
-          >
-            {submitting ? 'Adding…' : 'Add exam'}
-          </button>
-        </form>
-      </div>
+      <div className="exams-page-layout">
+        {/* Left sidebar: Exam list */}
+        <div
+          className="admin-card exams-sidebar"
+          style={{
+            position: 'sticky',
+            top: '1rem',
+            maxHeight: 'calc(100vh - 2rem)',
+            overflow: 'auto',
+          }}
+        >
+          <h2>Exam list</h2>
+          {exams.length === 0 ? (
+            <p>No exams in the system yet. Add one in the form.</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Room</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Student</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exams.map((exam) => (
+                    <tr key={exam.id}>
+                      <td>{exam.subject ?? '—'}</td>
+                      <td>{exam.date ?? '—'}</td>
+                      <td>{exam.time ?? '—'}</td>
+                      <td>{exam.room ?? '—'}</td>
+                      <td>{exam.examType ?? '—'}</td>
+                      <td>{exam.examCategory ?? '—'}</td>
+                      <td>{exam.student ? `${exam.student.collegeId} (${exam.student.name})` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
-      <div className="admin-card">
-        <h2>Exam list</h2>
-        {exams.length === 0 ? (
-          <p>No exams in the system yet. Add one above.</p>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Subject</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Room</th>
-                <th>Type</th>
-                <th>Category</th>
-                <th>Student</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exams.map((exam) => (
-                <tr key={exam.id}>
-                  <td>{exam.subject ?? '—'}</td>
-                  <td>{exam.date ?? '—'}</td>
-                  <td>{exam.time ?? '—'}</td>
-                  <td>{exam.room ?? '—'}</td>
-                  <td>{exam.examType ?? '—'}</td>
-                  <td>{exam.examCategory ?? '—'}</td>
-                  <td>{exam.student ? `${exam.student.collegeId} (${exam.student.name})` : '—'}</td>
-                </tr>
+        {/* Main: Add exam form */}
+        <div className="admin-card">
+          <h2>Add exam</h2>
+          <p style={{ marginBottom: '1rem' }}>Add an exam with date, room, subject. Choose type (Regular, Backlog, Test, etc.) and category (ODD/EVEN). Optionally assign to a student.</p>
+          {message && (
+            <p className={message.includes('success') ? 'admin-status-ok' : 'admin-status-err'} style={{ marginBottom: '0.75rem' }}>
+              {message}
+            </p>
+          )}
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', maxWidth: 720 }}>
+            <input
+              type="text"
+              name="examId"
+              placeholder="Exam code (e.g. CSE101-ODD)"
+              value={form.examId}
+              onChange={handleChange}
+              required
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
+            />
+            <input
+              type="text"
+              name="subject"
+              placeholder="Subject"
+              value={form.subject}
+              onChange={handleChange}
+              required
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
+            />
+            <input
+              type="date"
+              name="date"
+              value={form.date}
+              onChange={handleChange}
+              required
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
+            />
+            <input
+              type="text"
+              name="time"
+              placeholder="Time (e.g. 09:00 AM)"
+              value={form.time}
+              onChange={handleChange}
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
+            />
+            <input
+              type="text"
+              name="room"
+              placeholder="Room"
+              value={form.room}
+              onChange={handleChange}
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
+            />
+            <select
+              name="examType"
+              value={form.examType}
+              onChange={handleChange}
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
+            >
+              {EXAM_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
               ))}
-            </tbody>
-          </table>
-        )}
+            </select>
+            <select
+              name="examCategory"
+              value={form.examCategory}
+              onChange={handleChange}
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
+            >
+              {EXAM_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <select
+              name="studentId"
+              value={form.studentId}
+              onChange={handleChange}
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
+            >
+              <option value="">No student (schedule only)</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>{s.collegeId} – {s.name}</option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{
+                padding: '0.5rem 1rem',
+                background: 'var(--admin-primary, #2563eb)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                opacity: submitting ? 0.7 : 1,
+              }}
+            >
+              {submitting ? 'Adding…' : 'Add exam'}
+            </button>
+          </form>
+        </div>
       </div>
     </>
   );

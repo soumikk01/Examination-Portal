@@ -103,6 +103,20 @@ a {
   padding: 1.5rem;
 }
 
+/* Exams page: Exam list (left sidebar) + Add exam (main) */
+.exams-page-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .exams-page-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Cards */
 .admin-card {
   background: var(--admin-card-bg);

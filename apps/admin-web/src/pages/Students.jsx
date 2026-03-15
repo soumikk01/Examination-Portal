@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../services/api';
+import { getUserFriendlyApiError } from '../utils/apiError';
 
 const initialForm = {
   collegeId: '',
@@ -28,7 +29,7 @@ const Students = () => {
         setForm(initialForm);
       })
       .catch((err) =>
-        setMessage(err.response?.data?.error || err.message || 'Registration failed')
+        setMessage(getUserFriendlyApiError(err, 'Registration failed'))
       );
   };
 
