@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
+import logo from '../assets/logo.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -31,8 +32,19 @@ const Login = () => {
   return (
     <div className="admin-login-page">
       <div className="admin-login-card">
+        <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+          <img
+            src={logo}
+            alt="JIS College of Engineering, Kalyani"
+            style={{
+              width: '80px',
+              height: '80px',
+              objectFit: 'contain',
+            }}
+          />
+        </div>
         <h1>Admin Login</h1>
-        <p>Sign in with your staff email and password.</p>
+        <p>Sign in with your college email and password.</p>
         <form onSubmit={handleSubmit} style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <label htmlFor="admin-email" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.35rem', color: 'var(--admin-text)' }}>
