@@ -24,6 +24,8 @@ export const examSchema = z.object({
 });
 
 // New bulk exam creation schema used by POST /exams
+// Branch and semester are required here to match the Prisma Exam model,
+// which defines both fields as non-nullable String columns.
 export const examFormSchema = z.object({
   program: z.enum(['BTECH', 'MTECH', 'DIPLOMA', 'MCA', 'BCA', 'BBA']),
   branch: z.string().min(1, 'Branch is required'),

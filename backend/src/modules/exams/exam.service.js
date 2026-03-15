@@ -59,7 +59,8 @@ export async function createManyFromForm(payload) {
         ...base,
         examId: s.examId,
         subject: s.subject,
-        date: s.date ? new Date(s.date) : null,
+        // Interpret admin's YYYY-MM-DD as a local calendar date, not UTC
+        date: s.date ? new Date(`${s.date}T00:00:00`) : null,
         studentId: null,
       });
     }
@@ -71,7 +72,8 @@ export async function createManyFromForm(payload) {
         ...base,
         examId: s.examId,
         subject: s.subject,
-        date: s.date ? new Date(s.date) : null,
+        // Same local calendar-date interpretation for student-specific rows
+        date: s.date ? new Date(`${s.date}T00:00:00`) : null,
         studentId,
       });
     }

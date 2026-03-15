@@ -12,21 +12,13 @@ export const parseExamDateTime = (dateStr, timeStr) => {
     if (!dateStr) return new Date();
 
     // Support both plain dates (YYYY-MM-DD) and ISO strings (YYYY-MM-DDTHH:mm:ss.sssZ)
-    let year;
-    let month;
-    let day;
-
-    if (dateStr.includes('T')) {
-        const iso = new Date(dateStr);
-        if (Number.isNaN(iso.getTime())) {
-            return new Date();
-        }
-        year = iso.getFullYear();
-        month = iso.getMonth() + 1;
-        day = iso.getDate();
-    } else {
-        [year, month, day] = dateStr.split('-').map(Number);
-    }
+    // For ISO strings we intentionally ignore the time zone offset and only keep the
+    // calendar date portion so that exams do not shift days across time zones.
+    const base = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [yearRaw, monthRaw, dayRaw] = base.split('-').map(Number);
+    const year = Number.isInteger(yearRaw) ? yearRaw : new Date().getFullYear();
+    const month = Number.isInteger(monthRaw) ? monthRaw : 1;
+    const day = Number.isInteger(dayRaw) ? dayRaw : 1;
 
     if (!timeStr || !timeStr.trim()) {
         return new Date(year, month - 1, day, 0, 0);
