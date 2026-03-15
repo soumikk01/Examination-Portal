@@ -39,6 +39,15 @@ export async function createManyFromForm(payload) {
     includeScheduleOnly,
   } = payload;
 
+  const toUtcMidnight = (dateStr) => {
+    if (!dateStr) return null;
+    const [yearRaw, monthRaw, dayRaw] = dateStr.split('-').map(Number);
+    const year = Number.isInteger(yearRaw) ? yearRaw : new Date().getUTCFullYear();
+    const month = Number.isInteger(monthRaw) ? monthRaw - 1 : 0;
+    const day = Number.isInteger(dayRaw) ? dayRaw : 1;
+    return new Date(Date.UTC(year, month, day));
+  };
+
   const base = {
     program,
     branch,
@@ -59,8 +68,8 @@ export async function createManyFromForm(payload) {
         ...base,
         examId: s.examId,
         subject: s.subject,
-        // Interpret admin's YYYY-MM-DD as a local calendar date, not UTC
-        date: s.date ? new Date(`${s.date}T00:00:00`) : null,
+        // Store as UTC midnight for the intended calendar date
+        date: s.date ? toUtcMidnight(s.date) : null,
         studentId: null,
       });
     }
@@ -72,8 +81,8 @@ export async function createManyFromForm(payload) {
         ...base,
         examId: s.examId,
         subject: s.subject,
-        // Same local calendar-date interpretation for student-specific rows
-        date: s.date ? new Date(`${s.date}T00:00:00`) : null,
+        // Same UTC calendar-date interpretation for student-specific rows
+        date: s.date ? toUtcMidnight(s.date) : null,
         studentId,
       });
     }
