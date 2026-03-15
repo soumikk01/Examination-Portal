@@ -15,10 +15,11 @@ export const examSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   score: z.number().min(0, 'Score must be positive').optional().nullable(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
-  time: z.string().optional(),
-  room: z.string().optional(),
-  examType: z.enum(['Regular', 'Supply', 'Re-evaluation']).default('Regular'),
+  time: z.string().optional().nullable(),
+  room: z.string().optional().nullable(),
+  examType: z.enum(['Regular', 'Supply', 'Re-evaluation', 'Backlog', 'Test']).default('Regular'),
   examCategory: z.enum(['ODD', 'EVEN']).default('ODD'),
+  studentId: z.number().int().positive().optional().nullable(),
 });
 
 export const verificationSchema = z.object({

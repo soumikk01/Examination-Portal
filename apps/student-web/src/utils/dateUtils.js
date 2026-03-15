@@ -9,10 +9,16 @@
  * @returns {Date}
  */
 export const parseExamDateTime = (dateStr, timeStr) => {
-    if (!dateStr || !timeStr) return new Date();
+    if (!dateStr) return new Date();
     const [year, month, day] = dateStr.split('-').map(Number);
-    const [time, period] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':').map(Number);
+    if (!timeStr || !timeStr.trim()) {
+        return new Date(year, month - 1, day, 0, 0);
+    }
+    const parts = timeStr.trim().split(' ');
+    const [time, period] = parts.length >= 2 ? [parts[0], parts[1]] : [parts[0], 'AM'];
+    const [h, m] = time.split(':').map(Number);
+    let hours = Number.isInteger(h) ? h : 0;
+    const minutes = Number.isInteger(m) ? m : 0;
     if (period === 'PM' && hours !== 12) hours += 12;
     if (period === 'AM' && hours === 12) hours = 0;
     return new Date(year, month - 1, day, hours, minutes);

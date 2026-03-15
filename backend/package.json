@@ -7,6 +7,8 @@
         "start": "node src/index.js",
         "dev": "node --watch src/index.js",
         "db:seed": "node prisma/seed.js",
+        "db:reset": "node scripts/reset-db.js",
+        "db:push": "prisma db push",
         "postinstall": "prisma generate",
         "lint": "eslint src --ext .js --report-unused-disable-directives --max-warnings 0",
         "lint:fix": "eslint src --ext .js --fix",

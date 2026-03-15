@@ -1,5 +1,14 @@
 import * as studentService from './student.service.js';
 
+export async function list(req, res, next) {
+  try {
+    const students = await studentService.list();
+    res.json(students);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getProfile(req, res, next) {
   const collegeId = decodeURIComponent(req.params[0]);
 

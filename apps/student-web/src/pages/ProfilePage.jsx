@@ -14,12 +14,13 @@ const ProfilePage = () => {
     const [student, setStudent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [examTypeFilter, setExamTypeFilter] = useState('ALL');
+    const [examFilter, setExamFilter] = useState('ALL');
 
-    const examTypes = ['ALL', 'ODD', 'EVEN', 'TEST-I', 'TEST-II'];
+    // Filter options: by category (ODD, EVEN) or by type (Regular, Backlog, Test)
+    const examFilterOptions = ['ALL', 'ODD', 'EVEN', 'Regular', 'Backlog', 'Test'];
 
-    const processedExams = React.useMemo(() => {
-        if (!student?.exams) return [];
+    const { upcomingExams, goneExams } = React.useMemo(() => {
+        if (!student?.exams) return { upcomingExams: [], goneExams: [] };
 
         const now = new Date();
         let exams = student.exams.map((exam) => {
@@ -31,16 +32,19 @@ const ProfilePage = () => {
             };
         });
 
-        // Filter by exam type if not ALL
-        if (examTypeFilter !== 'ALL') {
-            exams = exams.filter((e) => e.examCategory && e.examCategory === examTypeFilter);
+        if (examFilter !== 'ALL') {
+            const isCategory = ['ODD', 'EVEN'].includes(examFilter);
+            exams = exams.filter((e) =>
+                isCategory
+                    ? e.examCategory === examFilter
+                    : (e.examType || 'Regular') === examFilter
+            );
         }
 
         const upcoming = exams.filter((e) => !e.isPassed).sort((a, b) => a.dateTime - b.dateTime);
-        const past = exams.filter((e) => e.isPassed).sort((a, b) => b.dateTime - a.dateTime);
-
-        return [...upcoming, ...past];
-    }, [student, examTypeFilter]);
+        const gone = exams.filter((e) => e.isPassed).sort((a, b) => b.dateTime - a.dateTime);
+        return { upcomingExams: upcoming, goneExams: gone };
+    }, [student, examFilter]);
 
     useEffect(() => {
         const fetchStudent = async () => {
@@ -130,12 +134,12 @@ const ProfilePage = () => {
         <PageLayout>
             <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
                 <div className="flex justify-between items-center mb-8">
-                    {/* Filter Buttons - Left Side */}
+                    {/* Filter: All, ODD, EVEN, Regular, Backlog, Test */}
                     <div className="flex gap-2 flex-wrap">
-                        {examTypes.map((type) => (
+                        {examFilterOptions.map((opt) => (
                             <button
-                                key={type}
-                                onClick={() => setExamTypeFilter(type)}
+                                key={opt}
+                                onClick={() => setExamFilter(opt)}
                                 onMouseEnter={(e) => {
                                     e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
                                     e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
@@ -143,7 +147,7 @@ const ProfilePage = () => {
                                 onMouseLeave={(e) => {
                                     e.currentTarget.style.transform = 'translateY(0) scale(1)';
                                     e.currentTarget.style.boxShadow =
-                                        examTypeFilter === type ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none';
+                                        examFilter === opt ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none';
                                 }}
                                 onMouseDown={(e) => {
                                     e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
@@ -161,12 +165,12 @@ const ProfilePage = () => {
                                     border: 'none',
                                     cursor: 'pointer',
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    backgroundColor: examTypeFilter === type ? '#4f46e5' : '#e0e7ff',
-                                    color: examTypeFilter === type ? 'white' : '#4f46e5',
-                                    boxShadow: examTypeFilter === type ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none',
+                                    backgroundColor: examFilter === opt ? '#4f46e5' : '#e0e7ff',
+                                    color: examFilter === opt ? 'white' : '#4f46e5',
+                                    boxShadow: examFilter === opt ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none',
                                 }}
                             >
-                                {type}
+                                {opt}
                             </button>
                         ))}
                     </div>
@@ -213,38 +217,53 @@ const ProfilePage = () => {
                     </div>
                 </Card>
 
-                {/* Exam Schedule Card */}
+                {/* Exam Schedule Card: Upcoming & Gone */}
                 <Card style={{ backgroundColor: 'white' }}>
                     <h3 className="text-2xl font-bold text-[#2d368e] border-b pb-4 mb-6">📅 Exam Schedule</h3>
-                    {processedExams.length > 0 ? (
+                    {upcomingExams.length > 0 || goneExams.length > 0 ? (
                         <>
-                            {/* Show message if all exams are completed */}
-                            {processedExams.every((e) => e.isPassed) && (
+                            {upcomingExams.length === 0 && goneExams.length > 0 && (
                                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-6 rounded-xl mb-6 text-center">
                                     <span className="text-4xl mb-2 block">🎉</span>
-                                    <h4 className="text-xl font-bold text-green-700 mb-2">
-                                        {examTypeFilter !== 'ALL'
-                                            ? `All ${examTypeFilter} Exams Completed!`
-                                            : 'All Exams Completed!'}
-                                    </h4>
+                                    <h4 className="text-xl font-bold text-green-700 mb-2">All exams completed!</h4>
                                     <p className="text-green-600">
-                                        {examTypeFilter !== 'ALL'
-                                            ? `You have completed all your ${examTypeFilter} semester exams.`
-                                            : 'Congratulations! You have completed all your scheduled exams. Enjoy your break!'}
+                                        {examFilter !== 'ALL'
+                                            ? `All ${examFilter} exams are done.`
+                                            : 'Congratulations! You have completed all your scheduled exams.'}
                                     </p>
                                 </div>
                             )}
-                            <div className="space-y-4">
-                                {processedExams.map((exam) => {
-                                    const isFirstUpcoming =
-                                        !exam.isPassed && processedExams.filter((e) => !e.isPassed).indexOf(exam) === 0;
-                                    return <ExamCard key={exam.examId} exam={exam} isNext={isFirstUpcoming} />;
-                                })}
-                            </div>
+
+                            {upcomingExams.length > 0 && (
+                                <>
+                                    <h4 className="text-lg font-semibold text-[#2d368e] mb-3">Upcoming exams</h4>
+                                    <div className="space-y-4 mb-8">
+                                        {upcomingExams.map((exam, idx) => (
+                                            <ExamCard
+                                                key={exam.examId || exam.id}
+                                                exam={exam}
+                                                isNext={idx === 0}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {goneExams.length > 0 && (
+                                <>
+                                    <h4 className="text-lg font-semibold text-[#2d368e] mb-3">Gone exams</h4>
+                                    <div className="space-y-4">
+                                        {goneExams.map((exam) => (
+                                            <ExamCard key={exam.examId || exam.id} exam={exam} isNext={false} />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                         </>
                     ) : (
                         <div className="bg-slate-50 py-12 rounded-xl text-center text-gray-400 italic">
                             No exams scheduled for this student
+                            {examFilter !== 'ALL' && ` (filter: ${examFilter})`}
                         </div>
                     )}
                 </Card>

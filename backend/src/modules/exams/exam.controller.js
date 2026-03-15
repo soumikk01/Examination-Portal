@@ -20,3 +20,15 @@ export async function getById(req, res, next) {
     next(error);
   }
 }
+
+export async function create(req, res, next) {
+  try {
+    const exam = await examService.create(req.body);
+    res.status(201).json(exam);
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ error: 'An exam with this exam ID already exists.' });
+    }
+    next(error);
+  }
+}

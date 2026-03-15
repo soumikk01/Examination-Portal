@@ -23,3 +23,10 @@ export async function getByCollegeId(collegeId) {
 export async function create(data) {
   return prisma.student.create({ data });
 }
+
+export async function list() {
+  return prisma.student.findMany({
+    select: { id: true, collegeId: true, name: true, department: true },
+    orderBy: { collegeId: 'asc' },
+  });
+}
