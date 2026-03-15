@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import pino from 'pino';
+import { config } from '../config/config.js';
 
 const logger = pino({
   transport: {
@@ -7,24 +8,33 @@ const logger = pino({
   },
 });
 
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    if (times > 3) {
-      logger.warn('Redis connection failed. Features requiring Redis will be bypassed.');
-      return null;
-    }
-    return Math.min(times * 100, 3000);
-  },
-});
+const redisUrl = (config.REDIS_URL || '').trim();
 
-redis.on('error', (err) => {
-  logger.error('Redis Error:', err.message);
-});
+const redis = redisUrl
+  ? new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryStrategy(times) {
+        if (times > 3) {
+          logger.warn('Redis connection failed. Features requiring Redis will be bypassed.');
+          return null;
+        }
+        return Math.min(times * 100, 3000);
+      },
+    })
+  : {
+      status: 'disabled',
+      ping: () => Promise.resolve(),
+    };
 
-redis.on('connect', () => {
-  logger.info('Connected to Redis');
-});
+if (redisUrl) {
+  redis.on('error', (err) => {
+    logger.error('Redis Error:', err.message);
+  });
+
+  redis.on('connect', () => {
+    logger.info('Connected to Redis');
+  });
+}
 
 export const cache = {
   async get(key) {

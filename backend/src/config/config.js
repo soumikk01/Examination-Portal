@@ -7,7 +7,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.string().transform(Number).default('8787'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
+  REDIS_URL: z.string().optional().default(''),
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
   ADMIN_API_KEY: z.string().min(1, 'ADMIN_API_KEY is required'),
   // Comma-separated: student-web (5173), admin-web (5174)
