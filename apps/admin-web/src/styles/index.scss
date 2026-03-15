@@ -49,38 +49,38 @@ a {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-}
 
-.admin-sidebar-brand {
-  padding: 1.25rem 1.5rem;
-  font-weight: 700;
-  font-size: 1.1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
+  &-brand {
+    padding: 1.25rem 1.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
 
-.admin-sidebar-nav {
-  flex: 1;
-  padding: 0.75rem 0;
-}
+  &-nav {
+    flex: 1;
+    padding: 0.75rem 0;
+  }
 
-.admin-sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 1.5rem;
-  color: var(--admin-sidebar-text);
-  font-size: 0.95rem;
-  transition: background 0.15s;
-}
+  &-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1.5rem;
+    color: var(--admin-sidebar-text);
+    font-size: 0.95rem;
+    transition: background 0.15s;
 
-.admin-sidebar-link:hover {
-  background: var(--admin-sidebar-hover);
-  color: #fff;
-}
+    &:hover {
+      background: var(--admin-sidebar-hover);
+      color: #fff;
+    }
 
-.admin-sidebar-link.active {
-  background: var(--admin-sidebar-active);
-  color: #fff;
+    &.active {
+      background: var(--admin-sidebar-active);
+      color: #fff;
+    }
+  }
 }
 
 .admin-main {
@@ -109,10 +109,8 @@ a {
   grid-template-columns: minmax(320px, 420px) 1fr;
   gap: 1.5rem;
   align-items: start;
-}
 
-@media (max-width: 960px) {
-  .exams-page-layout {
+  @media (max-width: 960px) {
     grid-template-columns: 1fr;
   }
 }
@@ -125,18 +123,18 @@ a {
   border: 1px solid var(--admin-border);
   padding: 1.25rem;
   margin-bottom: 1rem;
-}
 
-.admin-card h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  color: var(--admin-text);
-}
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--admin-text);
+  }
 
-.admin-card p {
-  color: var(--admin-text-muted);
-  font-size: 0.9rem;
+  p {
+    color: var(--admin-text-muted);
+    font-size: 0.9rem;
+  }
 }
 
 /* Stats */
@@ -185,23 +183,23 @@ a {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-}
 
-.admin-table th,
-.admin-table td {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  border-bottom: 1px solid var(--admin-border);
-}
+  th,
+  td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--admin-border);
+  }
 
-.admin-table th {
-  font-weight: 600;
-  color: var(--admin-text-muted);
-  background: #f8fafc;
-}
+  th {
+    font-weight: 600;
+    color: var(--admin-text-muted);
+    background: #f8fafc;
+  }
 
-.admin-table tr:hover td {
-  background: #f8fafc;
+  tr:hover td {
+    background: #f8fafc;
+  }
 }
 
 /* Buttons */
@@ -216,15 +214,15 @@ a {
   cursor: pointer;
   border: none;
   transition: background 0.15s;
-}
 
-.admin-btn-primary {
-  background: var(--admin-primary);
-  color: #fff;
-}
+  &-primary {
+    background: var(--admin-primary);
+    color: #fff;
 
-.admin-btn-primary:hover {
-  background: var(--admin-primary-hover);
+    &:hover {
+      background: var(--admin-primary-hover);
+    }
+  }
 }
 
 /* Login page (standalone) */
@@ -243,15 +241,15 @@ a {
   width: 100%;
   max-width: 380px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
 
-.admin-login-card h1 {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-}
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
 
-.admin-login-card p {
-  color: var(--admin-text-muted);
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
+  p {
+    color: var(--admin-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
 }

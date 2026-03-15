@@ -97,7 +97,7 @@ const Login = () => {
             type="submit"
             className="admin-btn admin-btn-primary"
             disabled={loading}
-            style={{ marginTop: '0.25rem' }}
+            style={{ marginTop: '0.25rem', width: '100%', justifyContent: 'center' }}
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
