@@ -1,5 +1,5 @@
 services:
-  # API Service (Express + SQLite)
+  # API Service (Express + Prisma → Supabase)
   api:
     build:
       context: ../backend
@@ -7,14 +7,17 @@ services:
     container_name: exam-portal-api
     ports:
       - "8787:8787"
-    volumes:
-      - api-data:/app/data
+    env_file:
+      - ../backend/.env
     environment:
       - NODE_ENV=production
       - PORT=8787
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
     restart: unless-stopped
 
-  # Student Frontend Service (React + Nginx)
+  # Student Frontend (React + Nginx)
   student-web:
     build:
       context: ../apps/student-web
@@ -26,7 +29,19 @@ services:
       - api
     restart: unless-stopped
 
-  # Redis Service
+  # Admin Frontend (React + Nginx)
+  admin-web:
+    build:
+      context: ../apps/admin-web
+      dockerfile: Dockerfile
+    container_name: exam-portal-admin-web
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # Redis (caching / rate limit)
   redis:
     image: redis:alpine
     container_name: exam-portal-redis
@@ -34,6 +49,4 @@ services:
       - "6379:6379"
     restart: unless-stopped
 
-volumes:
-  api-data:
-    driver: local
+volumes: {}

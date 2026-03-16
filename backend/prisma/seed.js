@@ -3,6 +3,16 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+// All dropdown options stored in DB – no hardcoded lists in codebase
+const PROGRAM_OPTIONS = [
+  { code: 'BTECH', name: 'B.Tech', branches: ['CSE', 'CSE (CST)', 'CSE (AI ML)', 'IT', 'ECE', 'EE', 'ME', 'CE', 'BME', 'AE'], semesters: ['1', '2', '3', '4', '5', '6', '7', '8'] },
+  { code: 'MTECH', name: 'M.Tech', branches: [], semesters: ['1', '2', '3', '4'] },
+  { code: 'DIPLOMA', name: 'Diploma', branches: ['EE', 'ME'], semesters: ['1', '2', '3', '4', '5', '6'] },
+  { code: 'MCA', name: 'MCA', branches: ['MCA'], semesters: ['1', '2', '3', '4'] },
+  { code: 'BCA', name: 'BCA', branches: ['BCA'], semesters: ['1', '2', '3', '4', '5', '6'] },
+  { code: 'BBA', name: 'BBA', branches: ['BBA'], semesters: ['1', '2', '3', '4', '5', '6'] },
+];
+
 const DEFAULT_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@example.com';
 // In production, require SEED_ADMIN_PASSWORD to be set; in dev, allow default for convenience
 const DEFAULT_ADMIN_PASSWORD =
@@ -29,6 +39,47 @@ const SAMPLE_STUDENTS = [
 ];
 
 async function main() {
+  // Seed program / branch / semester options (from DB only – no data in codebase)
+  for (const prog of PROGRAM_OPTIONS) {
+    await prisma.programOption.upsert({
+      where: { code: prog.code },
+      create: { code: prog.code, name: prog.name },
+      update: { name: prog.name },
+    });
+    await prisma.branchOption.deleteMany({ where: { programCode: prog.code } });
+    if (prog.branches.length) {
+      await prisma.branchOption.createMany({
+        data: prog.branches.map((name) => ({ programCode: prog.code, name })),
+        skipDuplicates: true,
+      });
+    }
+    await prisma.semesterOption.deleteMany({ where: { programCode: prog.code } });
+    await prisma.semesterOption.createMany({
+      data: prog.semesters.map((number) => ({ programCode: prog.code, number })),
+      skipDuplicates: true,
+    });
+  }
+  console.log('Program / branch / semester options seeded.');
+
+  // Exam dropdown options – stored in Supabase only (values match Prisma enums)
+  const APP_OPTIONS = [
+    { category: 'examType', value: 'TEST_I', label: 'Test I', sortOrder: 1 },
+    { category: 'examType', value: 'TEST_II', label: 'Test II', sortOrder: 2 },
+    { category: 'examType', value: 'END_SEM', label: 'End Sem', sortOrder: 3 },
+    { category: 'examMode', value: 'REGULAR', label: 'Regular', sortOrder: 1 },
+    { category: 'examMode', value: 'BACKLOG', label: 'Backlog', sortOrder: 2 },
+    { category: 'examCategory', value: 'ODD', label: 'ODD', sortOrder: 1 },
+    { category: 'examCategory', value: 'EVEN', label: 'EVEN', sortOrder: 2 },
+  ];
+  for (const opt of APP_OPTIONS) {
+    await prisma.appOption.upsert({
+      where: { category_value: { category: opt.category, value: opt.value } },
+      create: opt,
+      update: { label: opt.label, sortOrder: opt.sortOrder },
+    });
+  }
+  console.log('Exam options (examType, examMode, examCategory) seeded.');
+
   const existingStaff = await prisma.staff.findUnique({
     where: { email: DEFAULT_ADMIN_EMAIL },
   });
@@ -65,12 +116,12 @@ async function main() {
   if (sampleStudent) {
     const baseYear = new Date().getFullYear();
     const exams = [
-      { examId: 'CSE101-ODD-R', subject: 'Data Structures', date: `${baseYear - 1}-12-01`, time: '10:00 AM', room: 'R-201', examType: 'Regular', examCategory: 'ODD', studentId: sampleStudent.id },
-      { examId: 'CSE102-ODD-R', subject: 'Discrete Mathematics', date: `${baseYear - 1}-12-05`, time: '10:00 AM', room: 'R-202', examType: 'Regular', examCategory: 'ODD', studentId: sampleStudent.id },
-      { examId: 'MATH101-BACKLOG', subject: 'Engineering Mathematics (Backlog)', date: `${baseYear - 1}-11-20`, time: '02:00 PM', room: 'R-105', examType: 'Backlog', examCategory: 'EVEN', studentId: sampleStudent.id },
-      { examId: 'CSE201-TEST', subject: 'Algorithms (Test)', date: `${baseYear}-04-10`, time: '09:00 AM', room: 'R-301', examType: 'Test', examCategory: 'ODD', studentId: sampleStudent.id },
-      { examId: 'CSE202-EVEN-R', subject: 'Database Systems', date: `${baseYear}-04-15`, time: '10:00 AM', room: 'R-302', examType: 'Regular', examCategory: 'EVEN', studentId: sampleStudent.id },
-      { examId: 'CSE203-EVEN-R', subject: 'Operating Systems', date: `${baseYear}-04-20`, time: '10:00 AM', room: 'R-303', examType: 'Regular', examCategory: 'EVEN', studentId: sampleStudent.id },
+      { examId: 'CSE101-ODD-R', subject: 'Data Structures', date: new Date(`${baseYear - 1}-12-01`), time: '10:00 AM', room: 'R-201', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'ODD', program: 'BTECH', branch: 'CSE', semester: '3', studentId: sampleStudent.id },
+      { examId: 'CSE102-ODD-R', subject: 'Discrete Mathematics', date: new Date(`${baseYear - 1}-12-05`), time: '10:00 AM', room: 'R-202', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'ODD', program: 'BTECH', branch: 'CSE', semester: '3', studentId: sampleStudent.id },
+      { examId: 'MATH101-BACKLOG', subject: 'Engineering Mathematics (Backlog)', date: new Date(`${baseYear - 1}-11-20`), time: '02:00 PM', room: 'R-105', examType: 'END_SEM', examMode: 'BACKLOG', examCategory: 'EVEN', program: 'BTECH', branch: 'CSE', semester: '2', studentId: sampleStudent.id },
+      { examId: 'CSE201-TEST', subject: 'Algorithms (Test)', date: new Date(`${baseYear}-04-10`), time: '09:00 AM', room: 'R-301', examType: 'TEST_I', examMode: 'REGULAR', examCategory: 'ODD', program: 'BTECH', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
+      { examId: 'CSE202-EVEN-R', subject: 'Database Systems', date: new Date(`${baseYear}-04-15`), time: '10:00 AM', room: 'R-302', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'EVEN', program: 'BTECH', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
+      { examId: 'CSE203-EVEN-R', subject: 'Operating Systems', date: new Date(`${baseYear}-04-20`), time: '10:00 AM', room: 'R-303', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'EVEN', program: 'BTECH', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
     ];
     for (const exam of exams) {
       const exists = await prisma.exam.findUnique({ where: { examId: exam.examId } });

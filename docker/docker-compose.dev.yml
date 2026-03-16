@@ -1,8 +1,8 @@
 # Development configuration with hot reload
-# Run from repo root: docker-compose -f docker/docker-compose.dev.yml up
+# Run from repo root: docker compose -f docker/docker-compose.dev.yml up
 
 services:
-  # API Service (Express + SQLite) - Development Mode
+  # API (Express + Prisma) - development
   api:
     build:
       context: ../backend
@@ -12,13 +12,17 @@ services:
       - "8787:8787"
     volumes:
       - ../backend/src:/app/src
-      - api-data:/app/data
+    env_file:
+      - ../backend/.env
     environment:
       - NODE_ENV=development
       - PORT=8787
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
     restart: unless-stopped
 
-  # Student Frontend Service (React + Vite) - Development Mode
+  # Student frontend (Vite dev server)
   student-web:
     build:
       context: ../apps/student-web
@@ -35,6 +39,11 @@ services:
       - api
     restart: unless-stopped
 
-volumes:
-  api-data:
-    driver: local
+  redis:
+    image: redis:alpine
+    container_name: exam-portal-redis-dev
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes: {}

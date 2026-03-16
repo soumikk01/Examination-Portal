@@ -24,9 +24,23 @@ export async function create(data) {
   return prisma.student.create({ data });
 }
 
-export async function list() {
+export async function list(filters = {}) {
+  const { program, branch, semester } = filters;
   return prisma.student.findMany({
-    select: { id: true, collegeId: true, name: true, department: true },
+    where: {
+      ...(program ? { program } : {}),
+      ...(branch ? { branch } : {}),
+      ...(semester ? { semester } : {}),
+    },
+    select: {
+      id: true,
+      collegeId: true,
+      name: true,
+      department: true,
+      program: true,
+      branch: true,
+      semester: true,
+    },
     orderBy: { collegeId: 'asc' },
   });
 }

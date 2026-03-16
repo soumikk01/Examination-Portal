@@ -3,13 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Student {
   id             Int      @id @default(autoincrement())
-  collegeId      String   @unique(map: "sqlite_autoindex_Students_1") @map("collegeId")
+  collegeId      String   @unique @map("collegeId")
   name           String
   degree         String?
   department     String?
@@ -99,4 +100,44 @@ model Staff {
   updatedAt    DateTime @updatedAt @map("updatedAt")
 
   @@map("Staff")
+}
+
+// Dropdown options – all data from DB, no hardcoded lists in codebase
+model ProgramOption {
+  id        Int     @id @default(autoincrement())
+  code      String  @unique // e.g. BTECH – must match Program enum / student.exam usage
+  name      String  // e.g. B.Tech
+  branches  BranchOption[]
+  semesters SemesterOption[]
+  @@map("ProgramOptions")
+}
+
+model BranchOption {
+  id          Int           @id @default(autoincrement())
+  programCode String
+  name        String
+  program    ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
+  @@unique([programCode, name])
+  @@map("BranchOptions")
+}
+
+model SemesterOption {
+  id          Int           @id @default(autoincrement())
+  programCode String
+  number      String        // "1", "2", …
+  program    ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
+  @@unique([programCode, number])
+  @@map("SemesterOptions")
+}
+
+// Exam dropdown options – stored in Supabase only (value must match Prisma enums)
+model AppOption {
+  id       Int    @id @default(autoincrement())
+  category String // examType | examMode | examCategory
+  value    String // TEST_I, REGULAR, ODD
+  label    String // Test I, Regular, ODD
+  sortOrder Int   @default(0) @map("sortOrder")
+  @@unique([category, value])
+  @@index([category])
+  @@map("AppOptions")
 }

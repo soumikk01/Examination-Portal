@@ -1,20 +1,25 @@
 #!/usr/bin/env node
 /**
- * Reset the SQLite database: remove the DB file (if corrupted or to start fresh),
- * run prisma db push, then seed. Stop the backend before running.
+ * Reset the database: push schema and seed.
+ * - SQLite: removes the DB file first (stop backend before running).
+ * - PostgreSQL (e.g. Supabase): push + seed only.
  * Usage: node scripts/reset-db.js   OR  npm run db:reset
  */
 import { unlinkSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '.env') });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const defaultDbPath = join(root, 'data', 'examination.db');
+const isSqlite = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('file:');
 
 function main() {
-  if (existsSync(defaultDbPath)) {
+  if (isSqlite && existsSync(defaultDbPath)) {
     try {
       unlinkSync(defaultDbPath);
       console.log('Removed existing database:', defaultDbPath);
@@ -27,7 +32,7 @@ function main() {
       }
       throw err;
     }
-  } else {
+  } else if (isSqlite) {
     console.log('No existing database file at', defaultDbPath);
   }
 

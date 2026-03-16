@@ -2,7 +2,12 @@ import * as studentService from './student.service.js';
 
 export async function list(req, res, next) {
   try {
-    const students = await studentService.list();
+    const { program, branch, semester } = req.query;
+    const students = await studentService.list({
+      program: program || undefined,
+      branch: branch || undefined,
+      semester: semester || undefined,
+    });
     res.json(students);
   } catch (error) {
     next(error);

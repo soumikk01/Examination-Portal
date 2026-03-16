@@ -2,48 +2,23 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
 
-const EXAM_TYPES = ['Test I', 'Test II', 'End Sem'];
-const EXAM_MODES = ['Regular', 'Backlog'];
-const EXAM_CATEGORIES = ['ODD', 'EVEN'];
-const PROGRAMS = ['B.Tech', 'M.Tech', 'Diploma', 'MCA', 'BCA', 'BBA'];
-const PROGRAM_BRANCHES = {
-  'B.Tech': [
-    'CSE',
-    'CSE (CST)',
-    'CSE (AI ML)',
-    'IT',
-    'ECE',
-    'EE',
-    'ME',
-    'CE',
-    'BME',
-    'AE',
-  ],
-  'M.Tech': [],
-  Diploma: ['EE', 'ME'],
-  MCA: ['MCA'],
-  BCA: ['BCA'],
-  BBA: ['BBA'],
-};
-const PROGRAM_SEMESTERS = {
-  'B.Tech': ['1', '2', '3', '4', '5', '6', '7', '8'],
-  'M.Tech': ['1', '2', '3', '4'],
-  Diploma: ['1', '2', '3', '4', '5', '6'],
-  MCA: ['1', '2', '3', '4'],
-  BCA: ['1', '2', '3', '4', '5', '6'],
-  BBA: ['1', '2', '3', '4', '5', '6'],
-};
-
 const Exams = () => {
   const [students, setStudents] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [semesters, setSemesters] = useState([]);
+  const [examTypes, setExamTypes] = useState([]);
+  const [examModes, setExamModes] = useState([]);
+  const [examCategories, setExamCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [studentsLoading, setStudentsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
     time: '',
     room: '',
-    examType: 'Test I',
-    examMode: 'Regular',
-    examCategory: 'ODD',
+    examType: '',
+    examMode: '',
+    examCategory: '',
     branch: '',
     program: '',
     semester: '',
@@ -58,16 +33,77 @@ const Exams = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    api
-      .get('/students')
-      .then((studentsData) => {
-        setStudents(Array.isArray(studentsData) ? studentsData : []);
-      })
-      .catch((err) =>
-        setError(getUserFriendlyApiError(err, 'Failed to load students')),
-      )
-      .finally(() => setLoading(false));
+    api.get('/options/programs').then((data) => setPrograms(Array.isArray(data) ? data : [])).catch(() => setPrograms([]));
+    api.get('/options/exam-options').then((data) => {
+      if (data && typeof data === 'object') {
+        setExamTypes(Array.isArray(data.examTypes) ? data.examTypes : []);
+        setExamModes(Array.isArray(data.examModes) ? data.examModes : []);
+        setExamCategories(Array.isArray(data.examCategories) ? data.examCategories : []);
+      }
+    }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (examTypes.length && examModes.length && examCategories.length && !form.examType) {
+      setForm((f) => ({
+        ...f,
+        examType: examTypes[0].value,
+        examMode: examModes[0].value,
+        examCategory: examCategories[0].value,
+      }));
+    }
+  }, [examTypes, examModes, examCategories]);
+
+  useEffect(() => {
+    if (!form.program) {
+      setBranches([]);
+      setSemesters([]);
+      return;
+    }
+    const controller = new AbortController();
+    const { signal } = controller;
+    Promise.all([
+      api.get('/options/branches', { params: { program: form.program }, signal }).then((data) => setBranches(Array.isArray(data) ? data : [])),
+      api.get('/options/semesters', { params: { program: form.program }, signal }).then((data) => setSemesters(Array.isArray(data) ? data : [])),
+    ]).catch((err) => {
+      if (err?.code !== 'ERR_CANCELED') {
+        setBranches([]);
+        setSemesters([]);
+      }
+    });
+    return () => controller.abort();
+  }, [form.program]);
+
+  // Fetch students; when program/branch/semester are selected, only matching students are returned.
+  // Use studentsLoading so the form stays visible; only the initial load uses page-level loading.
+  // AbortController ensures only the latest request updates state when filters change rapidly.
+  // Preserve assignedStudents: keep only IDs that still exist in the new list (avoid data loss on filter change).
+  useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+    setStudentsLoading(true);
+    const params = {};
+    if (form.program) params.program = form.program;
+    if (form.branch) params.branch = form.branch;
+    if (form.semester) params.semester = form.semester;
+    api
+      .get('/students', { params, signal })
+      .then((studentsData) => {
+        const list = Array.isArray(studentsData) ? studentsData : [];
+        setStudents(list);
+        setAssignedStudents((prev) => prev.filter((sid) => list.some((s) => s.id === sid)));
+      })
+      .catch((err) => {
+        if (err?.code !== 'ERR_CANCELED') {
+          setError(getUserFriendlyApiError(err, 'Failed to load students'));
+        }
+      })
+      .finally(() => {
+        setStudentsLoading(false);
+        setLoading(false);
+      });
+    return () => controller.abort();
+  }, [form.program, form.branch, form.semester]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -123,22 +159,6 @@ const Exams = () => {
     setAssignedStudents((prev) => prev.filter((sid) => sid !== id));
   };
 
-  const mapExamType = (label) => {
-    if (!label) return undefined;
-    const normalized = label.toLowerCase();
-    if (normalized.includes('test ii')) return 'TEST_II';
-    if (normalized.includes('test i')) return 'TEST_I';
-    return 'END_SEM';
-  };
-
-  const mapExamMode = (label) => (label ? label.toUpperCase().replace(' ', '_') : undefined);
-
-  const mapProgram = (label) => {
-    if (!label) return undefined;
-    const clean = label.replace('.', '').replace(/\s+/g, '').toUpperCase();
-    return clean;
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     setMessage('');
@@ -159,11 +179,11 @@ const Exams = () => {
     }
 
     const payload = {
-      program: mapProgram(form.program),
+      program: form.program,
       branch: form.branch || undefined,
       semester: form.semester || undefined,
-      examType: mapExamType(form.examType),
-      examMode: mapExamMode(form.examMode),
+      examType: form.examType,
+      examMode: form.examMode,
       examCategory: form.examCategory,
       time: form.time.trim() || undefined,
       room: form.room.trim() || undefined,
@@ -179,9 +199,9 @@ const Exams = () => {
         setForm({
           time: '',
           room: '',
-          examType: 'Test I',
-          examMode: 'Regular',
-          examCategory: 'ODD',
+          examType: examTypes[0]?.value ?? '',
+          examMode: examModes[0]?.value ?? '',
+          examCategory: examCategories[0]?.value ?? '',
           branch: '',
           program: '',
           semester: '',
@@ -196,14 +216,14 @@ const Exams = () => {
   };
 
   const isPrimarySelected = !!(form.program && form.branch && form.semester);
-  const branchOptions =
-    form.program && PROGRAM_BRANCHES[form.program]?.length
-      ? PROGRAM_BRANCHES[form.program]
-      : [];
-  const semesterOptions =
-    form.program && PROGRAM_SEMESTERS[form.program]?.length
-      ? PROGRAM_SEMESTERS[form.program]
-      : PROGRAM_SEMESTERS['B.Tech'];
+  const isSubmitDisabled =
+    submitting ||
+    !isPrimarySelected ||
+    !form.examType ||
+    !form.examMode ||
+    !form.examCategory;
+  const branchOptions = branches;
+  const semesterOptions = semesters;
 
   if (loading) return <div className="admin-card"><p>Loading exams…</p></div>;
   if (error) return <div className="admin-card"><p className="admin-status-err">{error}</p></div>;
@@ -236,8 +256,8 @@ const Exams = () => {
                   style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
                 >
                   <option value="">All programs</option>
-                  {PROGRAMS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
+                  {programs.map((p) => (
+                    <option key={p.code} value={p.code}>{p.name}</option>
                   ))}
                 </select>
                 <select
@@ -294,8 +314,8 @@ const Exams = () => {
                   disabled={!isPrimarySelected}
                   style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
                 >
-                  {EXAM_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                  {examTypes.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
                 <select
@@ -305,8 +325,8 @@ const Exams = () => {
                   disabled={!isPrimarySelected}
                   style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
                 >
-                  {EXAM_MODES.map((m) => (
-                    <option key={m} value={m}>{m}</option>
+                  {examModes.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
                   ))}
                 </select>
                 <select
@@ -316,8 +336,8 @@ const Exams = () => {
                   disabled={!isPrimarySelected}
                   style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8 }}
                 >
-                  {EXAM_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                  {examCategories.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
                 </select>
               </div>
@@ -431,6 +451,9 @@ const Exams = () => {
             {/* Attach students */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <h3 style={{ margin: 0, fontSize: '1rem' }}>Attach students to this exam</h3>
+              {studentsLoading && (
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--admin-text-muted)' }}>Loading students…</p>
+              )}
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
                 <input
                   type="checkbox"
@@ -446,7 +469,7 @@ const Exams = () => {
                   name="studentToAdd"
                   value={studentToAdd}
                   onChange={handleStudentToAddChange}
-                  disabled={!isPrimarySelected}
+                  disabled={!isPrimarySelected || studentsLoading}
                   style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--admin-border)', borderRadius: 8, minWidth: 260 }}
                 >
                   <option value="">Select student to attach</option>
@@ -510,15 +533,15 @@ const Exams = () => {
 
             <button
               type="submit"
-              disabled={submitting || !isPrimarySelected}
+              disabled={isSubmitDisabled}
               style={{
                 padding: '0.5rem 1rem',
                 background: 'var(--admin-primary, #2563eb)',
                 color: 'white',
                 border: 'none',
                 borderRadius: 8,
-                cursor: submitting || !isPrimarySelected ? 'not-allowed' : 'pointer',
-                opacity: submitting || !isPrimarySelected ? 0.7 : 1,
+                cursor: isSubmitDisabled ? 'not-allowed' : 'pointer',
+                opacity: isSubmitDisabled ? 0.7 : 1,
               }}
             >
               {submitting ? 'Adding…' : 'Add exam'}

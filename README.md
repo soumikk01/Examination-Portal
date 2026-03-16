@@ -17,6 +17,7 @@
 ## 📋 Table of Contents
 
 - [Features](#-features)
+- [Documentation](#-documentation)
 - [Backend](#-backend)
 - [Backend Security](#-backend-security)
 - [Frontend](#-frontend)
@@ -54,16 +55,37 @@
 
 ---
 
+## 📚 Documentation
+
+All project documentation is centralized here. Use these guides for setup, deployment, and operations.
+
+| Document | Location | Purpose |
+|----------|----------|---------|
+| **Supabase setup** | [backend/SUPABASE_SETUP.md](backend/SUPABASE_SETUP.md) | Step-by-step: connect to Supabase, create `.env`, run migrations and seed. Use after cloning or for first-time DB setup. |
+| **Database options** | [backend/DATABASE.md](backend/DATABASE.md) | PostgreSQL (Supabase), MySQL, or self-hosted; data flow and table roles. |
+| **Production deployment** | [backend/PRODUCTION.md](backend/PRODUCTION.md) | Production checklist: env vars, Supabase, backend, frontends, security. |
+| **Docker (servers & commands)** | [docker/README.md](docker/README.md) | How many servers to run, local vs Docker, ports, backend env for containers. |
+| **Docker commands explained** | [docker/DOCKER_COMMANDS.md](docker/DOCKER_COMMANDS.md) | What each Docker Compose command and flag does; fixing container conflicts. |
+| **Security & code audit** | [SECURITY_AND_CODE_AUDIT.md](SECURITY_AND_CODE_AUDIT.md) | Security review, recommendations, and audit notes. |
+
+**Quick links**
+
+- **I just cloned** → [SUPABASE_SETUP.md](backend/SUPABASE_SETUP.md) (get DB working).
+- **Deploy to production** → [PRODUCTION.md](backend/PRODUCTION.md).
+- **Run with Docker** → [docker/README.md](docker/README.md) and [DOCKER_COMMANDS.md](docker/DOCKER_COMMANDS.md).
+
+---
+
 ## 🔧 Backend
 
-The API is built with **Express.js**, **Prisma**, **SQLite**, and **Redis**, designed for reliability and security.
+The API is built with **Express.js**, **Prisma** (PostgreSQL via Supabase), and **Redis**, designed for reliability and security.
 
 ### Backend Features
 
 | Area | Description |
 |------|-------------|
 | **Auth** | Student login (College ID + last 3 digits of roll), Admin login (email + bcrypt password), JWT (8h expiry), session invalidation on re-login |
-| **Data** | Students, Exams, Rooms, Seating; Prisma ORM with SQLite; optional Redis for caching |
+| **Data** | Students, Exams, Rooms, Seating; Prisma ORM with PostgreSQL (Supabase); optional Redis for caching |
 | **Health** | `GET /api/v1/health` reports database and Redis status (UP/DEGRADED) |
 | **Validation** | Zod schemas for all auth and student registration inputs |
 | **Logging** | Pino with request IDs, level by status, redaction of secrets |
@@ -145,8 +167,10 @@ Examination-Portal-3/
 │   └── workflows/
 │       └── ci.yml                 # CI: lint, test, build (student-web + backend), Docker build
 ├── docker/
-│   ├── docker-compose.yml         # Production: api, student-web, redis
-│   └── docker-compose.dev.yml    # Dev: api + student-web with hot reload
+│   ├── README.md                  # Servers to run, Docker commands, env
+│   ├── DOCKER_COMMANDS.md         # Command reference and explanations
+│   ├── docker-compose.yml         # Production: api, student-web, admin-web, redis
+│   └── docker-compose.dev.yml     # Dev: api + student-web + redis, hot reload
 ├── apps/
 │   ├── student-web/               # Student-facing React + Vite app
 │   │   ├── src/
@@ -172,8 +196,11 @@ Examination-Portal-3/
 │       └── package.json
 ├── backend/                      # Express API
 │   ├── prisma/
-│   │   ├── schema.prisma         # Student, Exam, Staff models (SQLite)
-│   │   └── seed.js               # Seed admin (SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD)
+│   │   ├── schema.prisma         # Student, Exam, Staff, options (PostgreSQL)
+│   │   └── seed.js               # Seed admin, options, sample data
+│   ├── SUPABASE_SETUP.md         # Supabase connection and first-time setup
+│   ├── DATABASE.md               # DB options (PostgreSQL / MySQL)
+│   ├── PRODUCTION.md             # Production deployment checklist
 │   ├── src/
 │   │   ├── config/               # config.js (Zod-validated env)
 │   │   ├── database/             # database.js (Prisma client)
@@ -188,13 +215,12 @@ Examination-Portal-3/
 │   │   │   ├── redis.js
 │   │   │   └── schemas.js        # Zod: studentSchema, verificationSchema, adminLoginSchema
 │   │   └── index.js              # Express app, helmet, CORS, rate limit, routes, error handler
-│   ├── .env.example
+│   ├── .env.example               # DATABASE_URL, DIRECT_URL, REDIS_URL, etc.
 │   ├── Dockerfile
 │   └── package.json
-├── data/                         # SQLite DB (e.g. examination.db) — often gitignored
 ├── package.json                  # Root scripts: client, server, admin, test
-├── README.md
-└── SECURITY_AND_CODE_AUDIT.md
+├── README.md                     # This file
+└── SECURITY_AND_CODE_AUDIT.md    # Security audit and recommendations
 ```
 
 ---
@@ -230,7 +256,8 @@ Examination-Portal-3/
 
 **Backend env:** Copy `backend/.env.example` to `backend/.env` and set:
 
-- `PORT`, `NODE_ENV`, `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `ADMIN_API_KEY`, `CORS_ORIGIN`
+- `DATABASE_URL`, `DIRECT_URL` (Supabase — see [SUPABASE_SETUP.md](backend/SUPABASE_SETUP.md))
+- `PORT`, `NODE_ENV`, `REDIS_URL`, `JWT_SECRET`, `ADMIN_API_KEY`, `CORS_ORIGIN`
 - Optional: `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` for `npm run db:seed`
 
 ### Student Web (`cd apps/student-web`)
@@ -260,12 +287,15 @@ Examination-Portal-3/
 
 | Command | Description |
 |---------|-------------|
-| `docker compose -f docker/docker-compose.yml up --build` | Run api + student-web + redis (student app on port 80) |
-| `docker compose -f docker/docker-compose.dev.yml up` | Dev setup with hot reload (api 8787, student-web 5173) |
+| `docker compose -f docker/docker-compose.yml up -d` | Run api + student-web + admin-web + redis (detached) |
+| `docker compose -f docker/docker-compose.yml up -d --build` | Rebuild images and start |
+| `docker compose -f docker/docker-compose.dev.yml up -d` | Dev: api + student-web + redis, hot reload |
+
+See [docker/README.md](docker/README.md) and [docker/DOCKER_COMMANDS.md](docker/DOCKER_COMMANDS.md) for full details and troubleshooting.
 
 **URLs**
 
-- **With Docker (prod):** Student app → http://localhost (80)
+- **With Docker (prod):** API → http://localhost:8787, Student → http://localhost (80), Admin → http://localhost:8080
 - **Without Docker:** Student → http://localhost:5173, Admin → http://localhost:5174, API → http://localhost:8787
 
 ---
@@ -275,8 +305,8 @@ Examination-Portal-3/
 | Layer | Technologies |
 |-------|--------------|
 | **Frontend** | React 18, Vite 5, Tailwind CSS 4, Framer Motion, Lucide React, React Router 7, Axios |
-| **Backend** | Node.js 20, Express 4, Prisma, better-sqlite3, ioredis, Helmet, CORS, express-rate-limit, compression, JWT, bcryptjs, Zod, Pino |
-| **Database** | SQLite (Prisma) |
+| **Backend** | Node.js 20, Express 4, Prisma, PostgreSQL (Supabase), ioredis, Helmet, CORS, express-rate-limit, compression, JWT, bcryptjs, Zod, Pino |
+| **Database** | PostgreSQL via Supabase (see [DATABASE.md](backend/DATABASE.md) for MySQL option) |
 | **DevOps** | Docker, Docker Compose, Nginx (student-web prod), GitHub Actions (CI) |
 
 ---
@@ -319,6 +349,18 @@ Base path: `/api/v1`.
 3. Commit changes (`git commit -m 'Add AmazingFeature'`).
 4. Push to the branch (`git push origin feature/AmazingFeature`).
 5. Open a Pull Request.
+
+---
+
+## 📖 Other options & next steps
+
+| Need | Action |
+|------|--------|
+| **Use MySQL instead of PostgreSQL** | See [backend/DATABASE.md](backend/DATABASE.md) — change Prisma provider and `DATABASE_URL`. |
+| **Self-host database** | Use any PostgreSQL/MySQL host; set `DATABASE_URL` and `DIRECT_URL` in `backend/.env`. |
+| **Run without Redis** | Leave `REDIS_URL` unset or empty; API uses in-memory fallback where applicable. |
+| **Container name conflict** | See [docker/DOCKER_COMMANDS.md](docker/DOCKER_COMMANDS.md) — `docker rm -f <name>` or `docker compose down` then `up -d`. |
+| **First deploy** | Follow [backend/PRODUCTION.md](backend/PRODUCTION.md) and [backend/SUPABASE_SETUP.md](backend/SUPABASE_SETUP.md). |
 
 ---
 

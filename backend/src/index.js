@@ -18,6 +18,7 @@ import * as studentController from './modules/students/student.controller.js';
 import * as examController from './modules/exams/exam.controller.js';
 import * as roomController from './modules/rooms/room.controller.js';
 import * as seatingController from './modules/seating/seating.controller.js';
+import * as optionsController from './modules/options/options.controller.js';
 
 const app = express();
 const { PORT, CORS_ORIGIN } = config;
@@ -133,6 +134,12 @@ v1Router.get('/health', async (req, res) => {
 
 v1Router.post('/auth/login', validate(verificationSchema), authController.login);
 v1Router.post('/auth/admin/login', validate(adminLoginSchema), authController.adminLogin);
+
+// Options (programs, branches, semesters) – from DB, no hardcoded data
+v1Router.get('/options/programs', authorizeAdmin, optionsController.getPrograms);
+v1Router.get('/options/branches', authorizeAdmin, optionsController.getBranches);
+v1Router.get('/options/semesters', authorizeAdmin, optionsController.getSemesters);
+v1Router.get('/options/exam-options', authorizeAdmin, optionsController.getExamOptions);
 
 v1Router.get('/students', authorizeAdmin, studentController.list);
 v1Router.get('/student/*', verifyToken, authorizeStudent, studentController.getProfile);
