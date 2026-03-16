@@ -1,10 +1,12 @@
 # Dependencies
 node_modules/
 
-# Environment variables
+# Environment variables (never commit secrets)
 .env
 .env.local
 .env.*.local
+**/.env.development
+**/.env.production
 
 # Build output
 dist/
@@ -29,7 +31,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Backend
+# Backend (PostgreSQL only)
 backend/node_modules/
 backend/dist/
 *.db

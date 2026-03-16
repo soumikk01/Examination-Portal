@@ -1,6 +1,23 @@
 import prisma from '../../database/database.js';
 import { cache } from '../../utils/redis.js';
 
+// Profile-safe fields only (no sessionId, no studentRoll – used for login verification)
+const profileSelect = {
+  id: true,
+  collegeId: true,
+  name: true,
+  degree: true,
+  department: true,
+  studentReg: true,
+  examinationSem: true,
+  batch: true,
+  lastLogin: true,
+  program: true,
+  branch: true,
+  semester: true,
+  exams: { select: { id: true, examId: true, subject: true, date: true, time: true, room: true, examType: true, examMode: true, examCategory: true, status: true } },
+};
+
 export async function getByCollegeId(collegeId) {
   const cacheKey = `student:${collegeId}`;
   const cached = await cache.get(cacheKey);
@@ -8,16 +25,13 @@ export async function getByCollegeId(collegeId) {
 
   const student = await prisma.student.findUnique({
     where: { collegeId },
-    include: { exams: true },
+    select: profileSelect,
   });
 
   if (!student) return null;
 
-  const safeStudent = { ...student };
-  delete safeStudent.sessionId;
-  await cache.set(cacheKey, safeStudent, 3600);
-
-  return safeStudent;
+  await cache.set(cacheKey, student, 3600);
+  return student;
 }
 
 export async function create(data) {

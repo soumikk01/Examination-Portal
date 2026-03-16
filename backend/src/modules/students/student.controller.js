@@ -28,7 +28,7 @@ export async function getProfile(req, res, next) {
   }
 }
 
-export async function register(req, res) {
+export async function register(req, res, next) {
   try {
     await studentService.create(req.body);
     res.status(201).json({ message: 'Student registered successfully' });
@@ -36,8 +36,9 @@ export async function register(req, res) {
     if (error.code === 'P2002') {
       return res.status(400).json({
         error: 'Student with this ID or Roll Number already exists.',
+        requestId: req.id,
       });
     }
-    res.status(500).json({ error: 'Registration failed. Please try again.' });
+    next(error);
   }
 }

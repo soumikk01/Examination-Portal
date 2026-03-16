@@ -107,26 +107,35 @@ export async function updateStatus(id, status, { visibleFrom, visibleTo } = {}) 
 }
 
 // student-facing list based on their program/branch/semester
+// Dedupe when both schedule-only (studentId null) and student-specific rows exist for same exam
 export async function listForStudent(student) {
   const now = new Date();
 
-  return prisma.exam.findMany({
+  const rows = await prisma.exam.findMany({
     where: {
       status: 'PUBLISHED',
-      // Only filter by program/branch/semester when they are present on the student
       ...(student.program ? { program: student.program } : {}),
       ...(student.branch ? { branch: student.branch } : {}),
       ...(student.semester ? { semester: student.semester } : {}),
       OR: [{ studentId: null }, { studentId: student.id }],
       AND: [
-        {
-          OR: [{ visibleFrom: null }, { visibleFrom: { lte: now } }],
-        },
-        {
-          OR: [{ visibleTo: null }, { visibleTo: { gte: now } }],
-        },
+        { OR: [{ visibleFrom: null }, { visibleFrom: { lte: now } }] },
+        { OR: [{ visibleTo: null }, { visibleTo: { gte: now } }] },
       ],
     },
     orderBy: [{ date: 'asc' }, { time: 'asc' }],
+  });
+
+  const byKey = new Map();
+  for (const row of rows) {
+    const key = `${row.examId}:${row.subject}:${row.date?.toISOString() ?? ''}`;
+    const existing = byKey.get(key);
+    if (!existing || (row.studentId === student.id && existing.studentId !== student.id)) {
+      byKey.set(key, row);
+    }
+  }
+  return [...byKey.values()].sort((a, b) => {
+    const d = (a.date || 0) - (b.date || 0);
+    return d !== 0 ? d : (a.time || '').localeCompare(b.time || '');
   });
 }

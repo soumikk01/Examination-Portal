@@ -34,6 +34,7 @@ const logger = pino({
     'req.body.studentRoll',
     'req.body.studentReg',
     'req.body.password',
+    'req.body.email',
     'res.body.sessionId',
   ],
   transport: {
@@ -198,9 +199,24 @@ app.use((err, req, res, _next) => {
     });
   }
 
+  // Never send raw DB/Prisma messages to the client (security & UX)
+  const isDbConnectionError =
+    err.name === 'PrismaClientInitializationError' ||
+    err.message?.includes('Authentication failed against database') ||
+    err.message?.includes('database server') ||
+    err.message?.includes('credentials for `postgres`');
+  if (isDbConnectionError) {
+    return res.status(503).json({
+      error: 'Service temporarily unavailable. Please try again later.',
+      requestId: req.id,
+    });
+  }
+
   const status = err.status || 500;
+  const safeMessage =
+    process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
   res.status(status).json({
-    error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+    error: safeMessage,
     requestId: req.id,
   });
 });

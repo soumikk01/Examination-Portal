@@ -57,22 +57,17 @@
 
 ## 📚 Documentation
 
-All project documentation is centralized here. Use these guides for setup, deployment, and operations.
+All project `.md` files are listed below. Use these guides for setup, deployment, and operations.
 
 | Document | Location | Purpose |
 |----------|----------|---------|
+| **Project overview** | [README.md](README.md) (this file) | Features, structure, run commands, API, tech stack. |
 | **Supabase setup** | [backend/SUPABASE_SETUP.md](backend/SUPABASE_SETUP.md) | Step-by-step: connect to Supabase, create `.env`, run migrations and seed. Use after cloning or for first-time DB setup. |
 | **Database options** | [backend/DATABASE.md](backend/DATABASE.md) | PostgreSQL (Supabase), MySQL, or self-hosted; data flow and table roles. |
 | **Production deployment** | [backend/PRODUCTION.md](backend/PRODUCTION.md) | Production checklist: env vars, Supabase, backend, frontends, security. |
 | **Docker (servers & commands)** | [docker/README.md](docker/README.md) | How many servers to run, local vs Docker, ports, backend env for containers. |
 | **Docker commands explained** | [docker/DOCKER_COMMANDS.md](docker/DOCKER_COMMANDS.md) | What each Docker Compose command and flag does; fixing container conflicts. |
 | **Security & code audit** | [SECURITY_AND_CODE_AUDIT.md](SECURITY_AND_CODE_AUDIT.md) | Security review, recommendations, and audit notes. |
-
-**Quick links**
-
-- **I just cloned** → [SUPABASE_SETUP.md](backend/SUPABASE_SETUP.md) (get DB working).
-- **Deploy to production** → [PRODUCTION.md](backend/PRODUCTION.md).
-- **Run with Docker** → [docker/README.md](docker/README.md) and [DOCKER_COMMANDS.md](docker/DOCKER_COMMANDS.md).
 
 ---
 
