@@ -13,30 +13,28 @@ const PROGRAM_OPTIONS = [
   { code: 'BBA', name: 'BBA', branches: ['BBA'], semesters: ['1', '2', '3', '4', '5', '6'] },
 ];
 
-const DEFAULT_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@example.com';
-// In production, require SEED_ADMIN_PASSWORD to be set; in dev, allow default for convenience
-const DEFAULT_ADMIN_PASSWORD =
-  process.env.SEED_ADMIN_PASSWORD ||
-  (process.env.NODE_ENV === 'production'
-    ? (() => {
-        throw new Error('SEED_ADMIN_PASSWORD must be set when seeding in production.');
-      })()
-    : 'Admin@123');
+// Keep seed credentials out of source code (set via .env for predictable logins)
+const DEFAULT_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@local.test';
+const DEFAULT_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
+if (!DEFAULT_ADMIN_PASSWORD) {
+  throw new Error('SEED_ADMIN_PASSWORD is required to seed an admin user.');
+}
 
-// All sample students: login with collegeId and last 3 digits of studentRoll
-const SAMPLE_STUDENTS = [
-  { collegeId: 'JIS/5555/6666', name: 'Sample Student', department: 'CSE', studentRoll: '5555666', batch: '2024' },
-  { collegeId: 'JIS/2024/0001', name: 'Rahul Kumar', department: 'CSE', studentRoll: 'JIS20240001', batch: '2024' },
-  { collegeId: 'JIS/2024/0002', name: 'Priya Sharma', department: 'CSE', studentRoll: 'JIS20240002', batch: '2024' },
-  { collegeId: 'JIS/2024/0003', name: 'Amit Singh', department: 'ECE', studentRoll: 'JIS20240003', batch: '2024' },
-  { collegeId: 'JIS/2024/0004', name: 'Sneha Patel', department: 'ECE', studentRoll: 'JIS20240004', batch: '2024' },
-  { collegeId: 'JIS/2024/0005', name: 'Vikram Reddy', department: 'ME', studentRoll: 'JIS20240005', batch: '2024' },
-  { collegeId: 'JIS/2024/0006', name: 'Ananya Das', department: 'CSE', studentRoll: 'JIS20240006', batch: '2024' },
-  { collegeId: 'JIS/2024/0007', name: 'Rohan Gupta', department: 'IT', studentRoll: 'JIS20240007', batch: '2024' },
-  { collegeId: 'JIS/2024/0008', name: 'Kavya Nair', department: 'IT', studentRoll: 'JIS20240008', batch: '2024' },
-  { collegeId: 'JIS/2024/0009', name: 'Arjun Mehta', department: 'ME', studentRoll: 'JIS20240009', batch: '2024' },
-  { collegeId: 'JIS/2024/0010', name: 'Ishita Banerjee', department: 'ECE', studentRoll: 'JIS20240010', batch: '2024' },
-];
+const SEED_STUDENT_COLLEGE_ID = process.env.SEED_STUDENT_COLLEGE_ID;
+const SEED_STUDENT_ROLL = process.env.SEED_STUDENT_ROLL; // must be 12 digits (numbers only)
+
+function pad(num, size) {
+  return String(num).padStart(size, '0');
+}
+
+function generateCollegeId(year, n) {
+  return `JIS/${year}/${pad(n, 4)}`;
+}
+
+function generateStudentRoll(year, n) {
+  // 12 digits: YYYY + 8-digit sequence (e.g. 202400000001)
+  return `${year}${pad(n, 8)}`;
+}
 
 async function main() {
   // Seed program / branch / semester options (from DB only – no data in codebase)
@@ -97,21 +95,51 @@ async function main() {
     console.log('Default admin already exists:', DEFAULT_ADMIN_EMAIL);
   }
 
-  for (const student of SAMPLE_STUDENTS) {
-    const existing = await prisma.student.findUnique({
-      where: { collegeId: student.collegeId },
+  const studentYear = Number(process.env.SEED_STUDENT_ADMISSION_YEAR || new Date().getFullYear());
+  const studentCount = Number(process.env.SEED_STUDENT_COUNT || 10);
+  const deptPool = ['CSE', 'IT', 'ECE', 'ME', 'EE', 'CE'];
+
+  const studentsToCreate = [];
+
+  if (SEED_STUDENT_COLLEGE_ID || SEED_STUDENT_ROLL) {
+    if (!SEED_STUDENT_COLLEGE_ID || !SEED_STUDENT_ROLL) {
+      throw new Error('Set both SEED_STUDENT_COLLEGE_ID and SEED_STUDENT_ROLL (12 digits) or neither.');
+    }
+    if (!/^\d{12}$/.test(SEED_STUDENT_ROLL)) {
+      throw new Error('SEED_STUDENT_ROLL must be exactly 12 digits.');
+    }
+    studentsToCreate.push({
+      collegeId: SEED_STUDENT_COLLEGE_ID,
+      name: 'Seed Student',
+      department: process.env.SEED_STUDENT_DEPARTMENT || 'CSE',
+      studentRoll: SEED_STUDENT_ROLL,
+      batch: String(studentYear),
     });
+  }
+
+  for (let i = 1; i <= studentCount; i++) {
+    const collegeId = generateCollegeId(studentYear, i);
+    if (studentsToCreate.some((s) => s.collegeId === collegeId)) continue;
+    studentsToCreate.push({
+      collegeId,
+      name: `Student ${pad(i, 4)}`,
+      department: deptPool[(i - 1) % deptPool.length],
+      studentRoll: generateStudentRoll(studentYear, i),
+      batch: String(studentYear),
+    });
+  }
+
+  for (const student of studentsToCreate) {
+    const existing = await prisma.student.findUnique({ where: { collegeId: student.collegeId } });
     if (!existing) {
       await prisma.student.create({ data: student });
-      const last3 = student.studentRoll.slice(-3);
-      console.log('Created student:', student.collegeId, student.name, '– login with last 3 digits:', last3);
+      console.log('Created student:', student.collegeId, student.name, '– roll:', student.studentRoll);
     }
   }
-  console.log('Sample students seed complete.');
+  console.log('Students seed complete.');
 
-  // Sample exams for first student (JIS/5555/6666): gone (past) and upcoming (future), ODD/EVEN, Regular/Backlog/Test
-  const sampleStudent = await prisma.student.findUnique({
-    where: { collegeId: 'JIS/5555/6666' },
+  const sampleStudent = await prisma.student.findFirst({
+    orderBy: { id: 'asc' },
   });
   if (sampleStudent) {
     const baseYear = new Date().getFullYear();

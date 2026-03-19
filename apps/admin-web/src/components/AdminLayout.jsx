@@ -1,21 +1,25 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  FileQuestion,
   DoorOpen,
   Users,
   Grid3X3,
   LogOut,
-  ListOrdered,
+  CalendarDays,
+  Upload,
+  Megaphone,
+  Settings,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/exams', label: 'Exams', icon: FileQuestion },
-  { to: '/exam-list', label: 'Exam list', icon: ListOrdered },
-  { to: '/rooms', label: 'Rooms', icon: DoorOpen },
   { to: '/students', label: 'Students', icon: Users },
-  { to: '/seating', label: 'Seating', icon: Grid3X3 },
+  { to: '/rooms', label: 'Rooms', icon: DoorOpen },
+  { to: '/seating', label: 'Room Allocation', icon: Grid3X3 },
+  { to: '/exam-schedule', label: 'Exam Schedule', icon: CalendarDays },
+  { to: '/upload-schedule', label: 'Upload Schedule', icon: Upload },
+  { to: '/publish-exams', label: 'Publish Exams', icon: Megaphone },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 const AdminLayout = () => {

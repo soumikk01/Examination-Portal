@@ -52,7 +52,7 @@ const Exams = () => {
         examCategory: examCategories[0].value,
       }));
     }
-  }, [examTypes, examModes, examCategories]);
+  }, [examTypes, examModes, examCategories, form.examType]);
 
   useEffect(() => {
     if (!form.program) {
