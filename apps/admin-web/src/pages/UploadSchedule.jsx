@@ -81,6 +81,133 @@ const ScheduleTypeBadge = ({ meta }) => {
   );
 };
 
+const ParsedPreview = ({ parsed }) => (
+  <div style={{ marginTop: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+    {groupBySemesterBlock(parsed.preview || []).map((blk) => (
+      <div
+        key={blk.key}
+        style={{
+          border: '1px solid var(--admin-border)',
+          borderRadius: 14,
+          overflow: 'hidden',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.75rem 0.9rem',
+            background: 'rgba(15,23,42,0.04)',
+            borderBottom: '1px solid var(--admin-border)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+            alignItems: 'baseline',
+          }}
+        >
+          <div style={{ fontWeight: 850 }}>
+            {blk.level} - Sem <b>{blk.semester}</b>{' '}
+            <span style={{ color: 'var(--admin-text-muted)', fontWeight: 700 }}>
+              (Batch {blk.batch})
+            </span>
+          </div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--admin-text-muted)' }}>
+            <b>{blk.items.length}</b> rows • depts: <b>{blk.deps.join(', ') || '—'}</b>
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: '0.9rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+            gap: '0.9rem',
+          }}
+        >
+          {groupByDept(blk.items).map((dept) => (
+            <div
+              key={dept.code}
+              style={{
+                border: '1px solid var(--admin-border)',
+                borderRadius: 14,
+                overflow: 'hidden',
+                background: 'white',
+              }}
+            >
+              <div
+                style={{
+                  padding: '0.7rem 0.85rem',
+                  background: 'rgba(37,99,235,0.05)',
+                  borderBottom: '1px solid var(--admin-border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
+                  flexWrap: 'wrap',
+                  alignItems: 'baseline',
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 900 }}>{dept.code}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+                    {dept.name || 'Department'}
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+                  <b>{dept.rows.length}</b> rows
+                </div>
+              </div>
+
+              <div style={{ padding: '0.85rem', display: 'grid', gap: '0.75rem' }}>
+                {groupByDate(dept.rows).slice(0, 3).map((d) => (
+                  <div key={d.iso}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'baseline' }}>
+                      <div style={{ fontWeight: 800 }}>{d.iso === 'UNKNOWN' ? 'Date' : d.iso}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>
+                        {d.items[0]?.examDay || ''}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '0.45rem', display: 'grid', gap: '0.5rem' }}>
+                      {d.items.slice(0, 6).map((r, idx) => (
+                        <div
+                          key={`${r.paperCode || 'x'}-${r.subject}-${idx}`}
+                          style={{
+                            border: '1px solid var(--admin-border)',
+                            borderRadius: 12,
+                            padding: '0.6rem 0.7rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <div style={{ fontWeight: 800 }}>{r.subject}</div>
+                            <div style={{ color: 'var(--admin-text-muted)', fontWeight: 700 }}>{r.examTime || '—'}</div>
+                          </div>
+                          <div style={{ marginTop: '0.2rem', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
+                            Paper code: <b>{r.paperCode || '—'}</b>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {(dept.rows.length > 18 || groupByDate(dept.rows).length > 3) && (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+                    Preview truncated for this department.
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+
+    {(parsed.preview || []).length < (parsed.count || 0) && (
+      <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+        Showing preview only ({(parsed.preview || []).length} of {parsed.count}). Save to store full data in DB.
+      </div>
+    )}
+  </div>
+);
+
 const DropzoneCard = ({ title, mode, onParsed, onSaved }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -246,130 +373,7 @@ const DropzoneCard = ({ title, mode, onParsed, onSaved }) => {
           </div>
 
           {/* PDF-structure preview: Semester block → Department → Date rows */}
-          <div style={{ marginTop: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-            {groupBySemesterBlock(parsed.preview || []).map((blk) => (
-              <div
-                key={blk.key}
-                style={{
-                  border: '1px solid var(--admin-border)',
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  background: 'white',
-                }}
-              >
-                <div
-                  style={{
-                    padding: '0.75rem 0.9rem',
-                    background: 'rgba(15,23,42,0.04)',
-                    borderBottom: '1px solid var(--admin-border)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: '0.75rem',
-                    flexWrap: 'wrap',
-                    alignItems: 'baseline',
-                  }}
-                >
-                  <div style={{ fontWeight: 850 }}>
-                    {blk.level} - Sem <b>{blk.semester}</b>{' '}
-                    <span style={{ color: 'var(--admin-text-muted)', fontWeight: 700 }}>
-                      (Batch {blk.batch})
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--admin-text-muted)' }}>
-                    <b>{blk.items.length}</b> rows • depts: <b>{blk.deps.join(', ') || '—'}</b>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    padding: '0.9rem',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-                    gap: '0.9rem',
-                  }}
-                >
-                  {groupByDept(blk.items).map((dept) => (
-                    <div
-                      key={dept.code}
-                      style={{
-                        border: '1px solid var(--admin-border)',
-                        borderRadius: 14,
-                        overflow: 'hidden',
-                        background: 'white',
-                      }}
-                    >
-                      <div
-                        style={{
-                          padding: '0.7rem 0.85rem',
-                          background: 'rgba(37,99,235,0.05)',
-                          borderBottom: '1px solid var(--admin-border)',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          gap: '0.75rem',
-                          flexWrap: 'wrap',
-                          alignItems: 'baseline',
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: 900 }}>{dept.code}</div>
-                          <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                            {dept.name || 'Department'}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                          <b>{dept.rows.length}</b> rows
-                        </div>
-                      </div>
-
-                      <div style={{ padding: '0.85rem', display: 'grid', gap: '0.75rem' }}>
-                        {groupByDate(dept.rows).slice(0, 3).map((d) => (
-                          <div key={d.iso}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'baseline' }}>
-                              <div style={{ fontWeight: 800 }}>{d.iso === 'UNKNOWN' ? 'Date' : d.iso}</div>
-                              <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>
-                                {d.items[0]?.examDay || ''}
-                              </div>
-                            </div>
-                            <div style={{ marginTop: '0.45rem', display: 'grid', gap: '0.5rem' }}>
-                              {d.items.slice(0, 6).map((r, idx) => (
-                                <div
-                                  key={`${r.paperCode || 'x'}-${r.subject}-${idx}`}
-                                  style={{
-                                    border: '1px solid var(--admin-border)',
-                                    borderRadius: 12,
-                                    padding: '0.6rem 0.7rem',
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                    <div style={{ fontWeight: 800 }}>{r.subject}</div>
-                                    <div style={{ color: 'var(--admin-text-muted)', fontWeight: 700 }}>{r.examTime || '—'}</div>
-                                  </div>
-                                  <div style={{ marginTop: '0.2rem', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
-                                    Paper code: <b>{r.paperCode || '—'}</b>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        {(dept.rows.length > 18 || groupByDate(dept.rows).length > 3) && (
-                          <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                            Preview truncated for this department.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            {(parsed.preview || []).length < (parsed.count || 0) && (
-              <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                Showing preview only ({(parsed.preview || []).length} of {parsed.count}). Save to store full data in DB.
-              </div>
-            )}
-          </div>
+          <ParsedPreview parsed={parsed} />
 
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.9rem', flexWrap: 'wrap' }}>
             <button type="button" className="admin-btn" onClick={del} disabled={deleting}>

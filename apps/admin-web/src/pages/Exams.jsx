@@ -2,6 +2,100 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
 
+const SubjectRow = ({ row, isPrimarySelected, onChange, onRemove }) => (
+  <tr>
+    <td>
+      <input
+        type="text"
+        placeholder="e.g. CSE101-ODD"
+        value={row.examId}
+        onChange={(e) => onChange('examId', e.target.value)}
+        disabled={!isPrimarySelected}
+        style={{
+          width: '100%',
+          padding: '0.35rem 0.6rem',
+          border: '1px solid var(--admin-border)',
+          borderRadius: 6,
+          fontSize: '0.9rem',
+        }}
+      />
+    </td>
+    <td>
+      <input
+        type="text"
+        placeholder="Subject name"
+        value={row.subject}
+        onChange={(e) => onChange('subject', e.target.value)}
+        disabled={!isPrimarySelected}
+        style={{
+          width: '100%',
+          padding: '0.35rem 0.6rem',
+          border: '1px solid var(--admin-border)',
+          borderRadius: 6,
+          fontSize: '0.9rem',
+        }}
+      />
+    </td>
+    <td>
+      <input
+        type="date"
+        value={row.date}
+        onChange={(e) => onChange('date', e.target.value)}
+        disabled={!isPrimarySelected}
+        style={{
+          width: '100%',
+          padding: '0.35rem 0.6rem',
+          border: '1px solid var(--admin-border)',
+          borderRadius: 6,
+          fontSize: '0.9rem',
+        }}
+      />
+    </td>
+    <td>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="admin-btn"
+        disabled={!isPrimarySelected}
+        style={{
+          padding: '0.25rem 0.6rem',
+          fontSize: '0.8rem',
+          background: 'transparent',
+          color: 'var(--admin-danger, #dc2626)',
+          border: '1px solid rgba(220,38,38,0.2)',
+        }}
+      >
+        Remove
+      </button>
+    </td>
+  </tr>
+);
+
+const StudentRow = ({ student, studentId, isPrimarySelected, onRemove }) => (
+  <tr>
+    <td>
+      {student ? `${student.collegeId} \u2013 ${student.name}` : `ID: ${studentId}`}
+    </td>
+    <td>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="admin-btn"
+        disabled={!isPrimarySelected}
+        style={{
+          padding: '0.25rem 0.6rem',
+          fontSize: '0.8rem',
+          background: 'transparent',
+          color: 'var(--admin-danger, #dc2626)',
+          border: '1px solid rgba(220,38,38,0.2)',
+        }}
+      >
+        Remove
+      </button>
+    </td>
+  </tr>
+);
+
 const Exams = () => {
   const [students, setStudents] = useState([]);
   const [programs, setPrograms] = useState([]);
@@ -361,78 +455,13 @@ const Exams = () => {
                   </thead>
                   <tbody>
                     {subjects.map((row) => (
-                      <tr key={row.id}>
-                        <td>
-                          <input
-                            type="text"
-                            placeholder="e.g. CSE101-ODD"
-                            value={row.examId}
-                            onChange={(e) =>
-                              handleSubjectChange(row.id, 'examId', e.target.value)
-                            }
-                            disabled={!isPrimarySelected}
-                            style={{
-                              width: '100%',
-                              padding: '0.35rem 0.6rem',
-                              border: '1px solid var(--admin-border)',
-                              borderRadius: 6,
-                              fontSize: '0.9rem',
-                            }}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            placeholder="Subject name"
-                            value={row.subject}
-                            onChange={(e) =>
-                              handleSubjectChange(row.id, 'subject', e.target.value)
-                            }
-                            disabled={!isPrimarySelected}
-                            style={{
-                              width: '100%',
-                              padding: '0.35rem 0.6rem',
-                              border: '1px solid var(--admin-border)',
-                              borderRadius: 6,
-                              fontSize: '0.9rem',
-                            }}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="date"
-                            value={row.date}
-                            onChange={(e) =>
-                              handleSubjectChange(row.id, 'date', e.target.value)
-                            }
-                            disabled={!isPrimarySelected}
-                            style={{
-                              width: '100%',
-                              padding: '0.35rem 0.6rem',
-                              border: '1px solid var(--admin-border)',
-                              borderRadius: 6,
-                              fontSize: '0.9rem',
-                            }}
-                          />
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSubjectRow(row.id)}
-                            className="admin-btn"
-                            disabled={!isPrimarySelected}
-                            style={{
-                              padding: '0.25rem 0.6rem',
-                              fontSize: '0.8rem',
-                              background: 'transparent',
-                              color: 'var(--admin-danger, #dc2626)',
-                              border: '1px solid rgba(220,38,38,0.2)',
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
+                      <SubjectRow
+                        key={row.id}
+                        row={row}
+                        isPrimarySelected={isPrimarySelected}
+                        onChange={(field, value) => handleSubjectChange(row.id, field, value)}
+                        onRemove={() => handleRemoveSubjectRow(row.id)}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -501,28 +530,13 @@ const Exams = () => {
                       {assignedStudents.map((id) => {
                         const s = students.find((st) => st.id === id);
                         return (
-                          <tr key={id}>
-                            <td>
-                              {s ? `${s.collegeId} – ${s.name}` : `ID: ${id}`}
-                            </td>
-                            <td>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveStudent(id)}
-                                className="admin-btn"
-                                disabled={!isPrimarySelected}
-                                style={{
-                                  padding: '0.25rem 0.6rem',
-                                  fontSize: '0.8rem',
-                                  background: 'transparent',
-                                  color: 'var(--admin-danger, #dc2626)',
-                                  border: '1px solid rgba(220,38,38,0.2)',
-                                }}
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
+                          <StudentRow
+                            key={id}
+                            student={s}
+                            studentId={id}
+                            isPrimarySelected={isPrimarySelected}
+                            onRemove={() => handleRemoveStudent(id)}
+                          />
                         );
                       })}
                     </tbody>

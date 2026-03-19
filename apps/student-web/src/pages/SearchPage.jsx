@@ -32,7 +32,7 @@ const SearchPage = () => {
         setError('');
         try {
             await api.login(studentId.trim(), rollNumber.trim());
-            navigate('/exams');
+            navigate(`/student/${studentId.trim()}`);
         } catch (err) {
             setError(err.message || 'Login failed! Please check your credentials.');
             triggerShake();
