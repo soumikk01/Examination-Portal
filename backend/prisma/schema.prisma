@@ -191,3 +191,12 @@ model AppOption {
   @@index([category])
   @@map("AppOptions")
 }
+
+// Global system settings
+model SystemSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("SystemSettings")
+}

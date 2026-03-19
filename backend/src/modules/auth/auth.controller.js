@@ -44,3 +44,27 @@ export async function adminLogin(req, res, next) {
     next(err);
   }
 }
+
+export async function updateAdminPassword(req, res, next) {
+  try {
+    const adminId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const result = await authService.updateAdminPassword(adminId, currentPassword, newPassword);
+
+    if (result.error === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    if (result.error === 'INVALID_CREDENTIALS') {
+      return res.status(401).json({ error: 'Incorrect current password' });
+    }
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+}

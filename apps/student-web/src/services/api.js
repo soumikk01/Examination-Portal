@@ -58,6 +58,7 @@ apiClient.interceptors.response.use(
 
 export const api = {
     getHealth: () => apiClient.get('/health'),
+    getSettings: () => apiClient.get('/settings'),
 
     login: async (identifier, verification) => {
         const data = await apiClient.post('/auth/login', { 
