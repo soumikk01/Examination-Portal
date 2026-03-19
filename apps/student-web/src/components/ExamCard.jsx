@@ -11,8 +11,8 @@ const ExamCard = ({ exam, isNext = false }) => {
 
     return (
         <div
+            className="flex flex-col sm:flex-row transition-all duration-300 relative overflow-hidden"
             style={{
-                display: 'flex',
                 gap: '20px',
                 padding: '20px',
                 borderRadius: '16px',
@@ -28,10 +28,7 @@ const ExamCard = ({ exam, isNext = false }) => {
                     : !isPassed
                         ? '0 4px 12px rgba(59, 130, 246, 0.15)'
                         : '0 2px 4px rgba(0, 0, 0, 0.05)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 cursor: 'default',
-                position: 'relative',
-                overflow: 'hidden',
             }}
             onMouseEnter={(e) => {
                 if (!isPassed) {
@@ -67,11 +64,8 @@ const ExamCard = ({ exam, isNext = false }) => {
             {/* Date Block */}
             {!isPassed && (
                 <div
+                    className="flex flex-col items-center justify-center w-full sm:w-auto"
                     style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
                         background: isNext
                             ? 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)'
                             : 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
@@ -119,15 +113,8 @@ const ExamCard = ({ exam, isNext = false }) => {
             )}
 
             {/* Exam Details */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        gap: '12px',
-                    }}
-                >
+            <div className="flex-1 flex flex-col w-full" style={{ gap: '12px' }}>
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-3 w-full">
                     <div style={{ flex: 1 }}>
                         <h3
                             style={{

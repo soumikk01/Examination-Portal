@@ -7,7 +7,7 @@ export const studentSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   department: z.string().optional().nullable(),
   degree: z.string().optional().nullable(),
-  studentRoll: z.string().min(1, 'Student Roll is required'),
+  studentRoll: z.string().regex(/^\d{12}$/, 'Roll number must be 12 digits'),
   studentReg: z.string().optional().nullable(),
   examinationSem: z.string().optional().nullable(),
   batch: z.string().optional().nullable(),
@@ -58,7 +58,9 @@ export const examFormSchema = z.object({
 
 export const verificationSchema = z.object({
   collegeId: z.string().min(1),
-  verification: z.string().length(3, 'Verification code must be 3 digits'),
+  verification: z
+    .string()
+    .regex(/^\d{12}$/, 'Roll number must be 12 digits'),
 });
 
 export const adminLoginSchema = z.object({

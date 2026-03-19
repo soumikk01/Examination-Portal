@@ -6,6 +6,54 @@ import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
 import { parseExamDateTime } from '../utils/dateUtils';
 
 
+const ProfileSkeleton = () => (
+    <PageLayout>
+        <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
+            <div className="flex justify-end mb-8">
+                <Skeleton width="4rem" height="2rem" className="bg-blue-100" />
+            </div>
+
+            {/* Skeleton Profile Card */}
+            <Card className="mb-8" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <Skeleton height="2rem" width="33%" className="mb-6 bg-blue-100" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                            <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
+                            <Skeleton width="8rem" height="1rem" className="bg-gray-200" />
+                        </div>
+                    ))}
+                </div>
+            </Card>
+
+            {/* Skeleton Exam Schedule */}
+            <Card style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
+                <Skeleton height="2rem" width="25%" className="mb-6 bg-blue-100" />
+                <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                            <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
+                                <Skeleton width="33%" height="1.5rem" className="bg-indigo-100" />
+                                <Skeleton
+                                    width="4rem"
+                                    height="1.5rem"
+                                    rounded="999px"
+                                    className="bg-green-100"
+                                />
+                            </div>
+                            <div className="flex justify-between gap-4 flex-wrap">
+                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
+                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
+                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </Card>
+        </div>
+    </PageLayout>
+);
+
 const ProfilePage = () => {
     const { collegeId: paramId, '*': splat } = useParams();
     // Support nested paths if any, but usually collegeId is the main identifier
@@ -16,8 +64,8 @@ const ProfilePage = () => {
     const [error, setError] = useState(null);
     const [examFilter, setExamFilter] = useState('ALL');
 
-    // Filter options: by category (ODD, EVEN) or by type (Regular, Backlog, Test)
-    const examFilterOptions = ['ALL', 'ODD', 'EVEN', 'Regular', 'Backlog', 'Test'];
+    // Filter options: removed ODD, EVEN, Test as per user request
+    const examFilterOptions = ['ALL', 'Regular', 'Backlog'];
 
     const { upcomingExams, goneExams } = React.useMemo(() => {
         if (!student?.exams) return { upcomingExams: [], goneExams: [] };
@@ -77,53 +125,7 @@ const ProfilePage = () => {
     }, [loading, error, student, navigate]);
 
     if (loading) {
-        return (
-            <PageLayout>
-                <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
-                    <div className="flex justify-end mb-8">
-                        <Skeleton width="4rem" height="2rem" className="bg-blue-100" />
-                    </div>
-
-                    {/* Skeleton Profile Card */}
-                    <Card className="mb-8" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-                        <Skeleton height="2rem" width="33%" className="mb-6 bg-blue-100" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="flex gap-2 items-center">
-                                    <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                                    <Skeleton width="8rem" height="1rem" className="bg-gray-200" />
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-
-                    {/* Skeleton Exam Schedule */}
-                    <Card style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
-                        <Skeleton height="2rem" width="25%" className="mb-6 bg-blue-100" />
-                        <div className="space-y-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-                                    <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                                        <Skeleton width="33%" height="1.5rem" className="bg-indigo-100" />
-                                        <Skeleton
-                                            width="4rem"
-                                            height="1.5rem"
-                                            rounded="999px"
-                                            className="bg-green-100"
-                                        />
-                                    </div>
-                                    <div className="flex justify-between gap-4 flex-wrap">
-                                        <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                                        <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                                        <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                </div>
-            </PageLayout>
-        );
+        return <ProfileSkeleton />;
     }
 
     if (!student) {
@@ -133,51 +135,109 @@ const ProfilePage = () => {
     return (
         <PageLayout>
             <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4 mb-8">
                     {/* Filter: All, ODD, EVEN, Regular, Backlog, Test */}
-                    <div className="flex gap-2 flex-wrap">
-                        {examFilterOptions.map((opt) => (
-                            <button
-                                key={opt}
-                                onClick={() => setExamFilter(opt)}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                                    e.currentTarget.style.boxShadow =
-                                        examFilter === opt ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none';
-                                }}
-                                onMouseDown={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                                onMouseUp={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
-                                }}
-                                style={{
-                                    padding: '6px 14px',
-                                    borderRadius: '20px',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    backgroundColor: examFilter === opt ? '#4f46e5' : '#e0e7ff',
-                                    color: examFilter === opt ? 'white' : '#4f46e5',
-                                    boxShadow: examFilter === opt ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none',
-                                }}
-                            >
-                                {opt}
-                            </button>
-                        ))}
+                    <div className="flex gap-2 flex-wrap items-center">
+                        {examFilterOptions.map((opt) => {
+                            const isSelected = examFilter === opt;
+                            let baseColor = '#e0e7ff';
+                            let textColor = '#4f46e5';
+                            let activeShadow = 'rgba(79, 70, 229, 0.35)';
+                            let activeBg = '#4f46e5';
+
+                            if (opt === 'Regular') {
+                                baseColor = '#d1fae5';
+                                textColor = '#059669';
+                                activeBg = '#059669';
+                                activeShadow = 'rgba(16, 185, 129, 0.35)';
+                            } else if (opt === 'Backlog') {
+                                baseColor = '#ffedd5';
+                                textColor = '#ea580c';
+                                activeBg = '#ea580c';
+                                activeShadow = 'rgba(249, 115, 22, 0.35)';
+                            }
+
+                            return (
+                                <button
+                                    key={opt}
+                                    onClick={() => setExamFilter(opt)}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                                        e.currentTarget.style.boxShadow = `0 6px 16px ${activeShadow}`;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                        e.currentTarget.style.boxShadow =
+                                            isSelected ? `0 4px 12px ${activeShadow}` : 'none';
+                                    }}
+                                    onMouseDown={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                    onMouseUp={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                                        e.currentTarget.style.boxShadow = `0 6px 16px ${activeShadow}`;
+                                    }}
+                                    style={{
+                                        padding: '6px 14px',
+                                        borderRadius: '20px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        backgroundColor: isSelected ? activeBg : baseColor,
+                                        color: isSelected ? 'white' : textColor,
+                                        boxShadow: isSelected ? `0 4px 12px ${activeShadow}` : 'none',
+                                    }}
+                                >
+                                    {opt}
+                                </button>
+                            );
+                        })}
+                        
+                        <div className="w-px h-6 bg-indigo-200 mx-1"></div>
+
+                        <button
+                            onClick={() => navigate('/room')}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                            onMouseDown={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                            onMouseUp={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
+                            }}
+                            style={{
+                                padding: '6px 14px',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                backgroundColor: '#e0e7ff',
+                                color: '#4f46e5',
+                                boxShadow: 'none',
+                            }}
+                        >
+                            Room Search
+                        </button>
                     </div>
-                    {/* Back Button - Right Side */}
-                    <Button variant="danger" onClick={() => navigate('/')} icon={ArrowLeft}>
-                        Back
-                    </Button>
+                    {/* Buttons - Right Side */}
+                    <div className="flex gap-3">
+                        <Button variant="danger" onClick={() => navigate('/')} icon={ArrowLeft}>
+                            Back
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Student Profile Card */}

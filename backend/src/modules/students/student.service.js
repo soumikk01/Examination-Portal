@@ -11,9 +11,9 @@ const profileSelect = {
   studentReg: true,
   examinationSem: true,
   batch: true,
+  branch: true,
   lastLogin: true,
   program: true,
-  branch: true,
   semester: true,
   exams: { select: { id: true, examId: true, subject: true, date: true, time: true, room: true, examType: true, examMode: true, examCategory: true, status: true } },
 };

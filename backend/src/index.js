@@ -16,9 +16,11 @@ import { studentSchema, examFormSchema } from './utils/schemas.js';
 import * as authController from './modules/auth/auth.controller.js';
 import * as studentController from './modules/students/student.controller.js';
 import * as examController from './modules/exams/exam.controller.js';
+import * as examScheduleController from './modules/examSchedule/examSchedule.controller.js';
 import * as roomController from './modules/rooms/room.controller.js';
 import * as seatingController from './modules/seating/seating.controller.js';
 import * as optionsController from './modules/options/options.controller.js';
+import multer from 'multer';
 
 const app = express();
 const { PORT, CORS_ORIGIN } = config;
@@ -103,6 +105,18 @@ app.use(
 app.use(express.json());
 
 const v1Router = express.Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 15 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, cb) => {
+    const isPdf =
+      file.mimetype === 'application/pdf' ||
+      String(file.originalname || '').toLowerCase().endsWith('.pdf');
+    cb(isPdf ? null : new Error('Only PDF files are allowed'), isPdf);
+  },
+});
 
 v1Router.get('/health', async (req, res) => {
   const health = {
@@ -143,15 +157,29 @@ v1Router.get('/options/semesters', authorizeAdmin, optionsController.getSemester
 v1Router.get('/options/exam-options', authorizeAdmin, optionsController.getExamOptions);
 
 v1Router.get('/students', authorizeAdmin, studentController.list);
-v1Router.get('/student/*', verifyToken, authorizeStudent, studentController.getProfile);
 v1Router.post('/student', authorizeAdmin, validate(studentSchema), studentController.register);
 
 // Exams - admin + student
 v1Router.get('/exams', authorizeAdmin, examController.list);
 v1Router.post('/exams', authorizeAdmin, validate(examFormSchema), examController.createManyFromForm);
 v1Router.patch('/exams/:id/status', authorizeAdmin, examController.updateStatus);
-// Student exams: only require a valid student token (no URL-based collegeId check)
-v1Router.get('/student/exams', verifyToken, examController.listForStudent);
+// Legacy student exams (manual exam rows): keep for backward compatibility
+v1Router.get('/student/my-exams', verifyToken, examController.listForStudent);
+
+// Exam schedule (PDF upload -> draft -> publish -> student-facing)
+v1Router.post('/exam/upload-pdf', authorizeAdmin, upload.single('file'), examScheduleController.uploadPdf);
+v1Router.post('/exam/parse-pdf', authorizeAdmin, upload.single('file'), examScheduleController.parsePdf);
+v1Router.post('/exam/save-draft', authorizeAdmin, examScheduleController.saveDraft);
+v1Router.delete('/exam/batch/:uploadId', authorizeAdmin, examScheduleController.deleteBatch);
+v1Router.get('/exam/list', authorizeAdmin, examScheduleController.list);
+v1Router.post('/exam/publish', authorizeAdmin, examScheduleController.publish);
+// Student schedule: required by frontend spec
+v1Router.get('/student/exams', examScheduleController.listForStudent);
+// Public/student-safe filters for dropdowns
+v1Router.get('/student/exams/filters', examScheduleController.listPublishedFilters);
+
+// Student profile routes (keep wildcard last so it doesn't shadow other /student/* routes)
+v1Router.get('/student/*', verifyToken, authorizeStudent, studentController.getProfile);
 
 v1Router.get('/rooms', roomController.list);
 v1Router.get('/rooms/:id', roomController.getById);

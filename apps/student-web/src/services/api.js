@@ -75,7 +75,11 @@ export const api = {
     getStudentProfile: (collegeId) =>
         apiClient.get(`/student/${encodeURIComponent(collegeId)}`),
 
-    getStudentExams: () => apiClient.get('/student/exams'),
+    getExamScheduleFilters: ({ mode, level } = {}) =>
+        apiClient.get('/student/exams/filters', { params: { mode, level } }),
+
+    getStudentExams: ({ departmentCode, semester, mode, scheduleType, level } = {}) =>
+        apiClient.get('/student/exams', { params: { departmentCode, semester, mode, scheduleType, level } }),
 
     logout: () => {
         localStorage.removeItem('examination_portal_token');

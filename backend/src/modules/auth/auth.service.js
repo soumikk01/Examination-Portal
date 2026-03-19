@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../../database/database.js';
 import { cache } from '../../utils/redis.js';
 import { config } from '../../config/config.js';
+import { computeCurrentSemester } from '../../utils/semester.js';
 
 const { JWT_SECRET } = config;
 
@@ -11,6 +12,17 @@ export async function login(collegeId, verification) {
   const student = await prisma.student.findFirst({
     where: {
       OR: [{ collegeId }, { studentRoll: collegeId }],
+    },
+    select: {
+      id: true,
+      collegeId: true,
+      name: true,
+      department: true,
+      branch: true,
+      program: true,
+      semester: true,
+      batch: true,
+      studentRoll: true,
     },
   });
 
@@ -20,8 +32,17 @@ export async function login(collegeId, verification) {
   if (!roll || typeof roll !== 'string') {
     return { error: 'VERIFICATION_FAILED', status: 403 };
   }
-  const last3Digits = roll.slice(-3);
-  if (last3Digits !== verification) {
+
+  const normalizeDigits = (value) => String(value || '').replace(/\D/g, '');
+  const rollDigits = normalizeDigits(roll);
+  const verificationDigits = normalizeDigits(verification);
+
+  if (verificationDigits.length !== 12 || rollDigits.length < 12) {
+    return { error: 'VERIFICATION_FAILED', status: 403 };
+  }
+
+  const last12Digits = rollDigits.slice(-12);
+  if (last12Digits !== verificationDigits) {
     return { error: 'VERIFICATION_FAILED', status: 403 };
   }
 
@@ -30,6 +51,7 @@ export async function login(collegeId, verification) {
   const updatedStudent = await prisma.student.update({
     where: { id: student.id },
     data: { sessionId, lastLogin: new Date() },
+    select: { lastLogin: true },
   });
 
   await cache.del(`student:${student.collegeId}`);
@@ -46,6 +68,12 @@ export async function login(collegeId, verification) {
       name: student.name,
       collegeId: student.collegeId,
       department: student.department,
+      branch: student.branch || student.department || null,
+      level: null,
+      admissionYear: student.batch ? Number(student.batch) : null,
+      currentSemester:
+        computeCurrentSemester({ admissionYear: student.batch ? Number(student.batch) : null }) ||
+        (student.semester ? String(student.semester) : null),
       lastLogin: updatedStudent.lastLogin,
     },
   };

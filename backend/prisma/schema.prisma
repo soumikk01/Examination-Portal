@@ -91,6 +91,56 @@ enum ExamStatus {
   ARCHIVED
 }
 
+enum ExamScheduleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum ExamScheduleMode {
+  REGULAR
+  BACKLOG
+}
+
+enum ExamScheduleType {
+  TEST_I
+  TEST_II
+  END_SEM_THEORY
+  UNKNOWN
+}
+
+model ExamSchedule {
+  id         Int               @id @default(autoincrement())
+  uploadId   String
+  scheduleType ExamScheduleType @default(UNKNOWN)
+  mode       ExamScheduleMode  @default(REGULAR)
+
+  // Parsed meta
+  level      String?           // UG / PG
+  semester   String?           // "1", "2", "3" ...
+  batch      String?           // "2024-2028"
+  regulation String?           // "R25"
+  academicYear String?         // "AY 2025-26"
+
+  // Department / branch
+  department String?           // e.g. "Bachelor of Technology in Biomedical Engineering"
+  departmentCode String?       // e.g. "BME"
+  branch     String?           // legacy compatibility with older rows
+
+  // Row fields
+  paperCode  String?
+  subject    String
+  examDate   DateTime
+  examDay    String?
+  examTime   String?
+  status     ExamScheduleStatus @default(DRAFT)
+  sourceFile String?
+  createdAt  DateTime          @default(now())
+
+  @@index([status, departmentCode, semester, examDate, mode, scheduleType])
+  @@index([uploadId])
+  @@map("ExamSchedules")
+}
+
 model Staff {
   id           Int      @id @default(autoincrement())
   email        String   @unique @map("email")

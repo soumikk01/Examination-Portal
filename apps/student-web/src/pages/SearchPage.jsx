@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import logo from '../assets/logo.png';
@@ -6,14 +6,13 @@ import { api } from '../services/api';
 import { Button, Card, Skeleton, PageLayout, DecorativeCircle } from '../components';
 
 const SearchPage = () => {
-    const [searchId, setSearchId] = useState('');
-    const [verification, setVerification] = useState('');
     const navigate = useNavigate();
+    const [studentId, setStudentId] = useState('');
+    const [rollNumber, setRollNumber] = useState('');
     const [loading, setLoading] = useState(true);
     const [searching, setSearching] = useState(false);
     const [error, setError] = useState('');
     const [shake, setShake] = useState(false);
-    const verificationInputRef = useRef(null);
 
     // Simulate loading effect
     useEffect(() => {
@@ -23,20 +22,17 @@ const SearchPage = () => {
         return () => clearTimeout(timer);
     }, []);
 
-    const handleSearch = async () => {
-        if (!searchId || !verification) {
-            setError('Please enter both Student ID and verification');
+    const handleLogin = async () => {
+        if (!studentId.trim() || !rollNumber.trim()) {
+            setError('Please enter both Student ID and Roll number');
             triggerShake();
             return;
         }
-
         setSearching(true);
         setError('');
-
         try {
-            const data = await api.login(searchId, verification);
-            // After successful login, redirect to profile using the canonical collegeId
-            navigate(`/student/${data.student.collegeId}`);
+            await api.login(studentId.trim(), rollNumber.trim());
+            navigate(`/student/${studentId.trim()}`);
         } catch (err) {
             setError(err.message || 'Login failed! Please check your credentials.');
             triggerShake();
@@ -149,7 +145,6 @@ const SearchPage = () => {
                         Student Login
                     </h2>
 
-                    {/* Student ID Input */}
                     <label
                         style={{
                             fontSize: '0.75rem',
@@ -177,46 +172,38 @@ const SearchPage = () => {
                             outline: 'none',
                             backgroundColor: error ? '#fef2f2' : 'white',
                         }}
-                        value={searchId}
+                        value={studentId}
                         onChange={(e) => {
                             let val = e.target.value.toUpperCase();
-                            const prevVal = searchId;
+                            const prevVal = studentId;
 
-                            // Allow free deletion - if user is deleting, just accept it
+                            // Allow free deletion
                             if (val.length < prevVal.length) {
-                                setSearchId(val);
+                                setStudentId(val);
                                 setError('');
                                 setShake(false);
                                 return;
                             }
 
-                            // Only apply smart formatting when adding characters
-                            // Step 1: Ensure it starts with JIS
+                            // Smart formatting: enforce JIS/XXXX/XXXX
                             if (!val.startsWith('JIS')) {
                                 if (val.length <= 3) {
                                     val = 'JIS'.substring(0, val.length);
                                 } else {
-                                    return; // Reject if doesn't start with JIS
+                                    return;
                                 }
                             }
 
-                            // Step 2: Auto-add first slash after JIS
                             if (val.length === 3 && !val.includes('/')) {
                                 val = 'JIS/';
                             }
 
-                            // Step 3: After 'JIS/', only allow 4 digits
                             if (val.length > 4 && val.startsWith('JIS/')) {
                                 const afterFirstSlash = val.substring(4);
-
-                                // Extract only digits
                                 const digits = afterFirstSlash.replace(/[^0-9]/g, '');
-
-                                // Limit to 4 digits
                                 const first4Digits = digits.substring(0, 4);
 
                                 if (first4Digits.length === 4) {
-                                    // Auto-add second slash after 4 digits
                                     if (val.length === 8 && !val.includes('/', 4)) {
                                         val = `JIS/${first4Digits}/`;
                                     } else if (val.length > 8) {
@@ -224,11 +211,6 @@ const SearchPage = () => {
                                         const secondDigits = afterSecondSlash.replace(/[^0-9]/g, '');
                                         const last4Digits = secondDigits.substring(0, 4);
                                         val = `JIS/${first4Digits}/${last4Digits}`;
-
-                                        // Auto-focus to verification input when complete
-                                        if (last4Digits.length === 4 && verificationInputRef.current) {
-                                            setTimeout(() => verificationInputRef.current.focus(), 0);
-                                        }
                                     } else {
                                         val = `JIS/${first4Digits}`;
                                     }
@@ -237,19 +219,13 @@ const SearchPage = () => {
                                 }
                             }
 
-                            setSearchId(val);
+                            setStudentId(val);
                             setError('');
                             setShake(false);
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                if (searchId.trim() && verification.trim()) handleSearch();
-                            }
                         }}
                         aria-label="Student ID Input"
                     />
 
-                    {/* Verification Input */}
                     <label
                         style={{
                             fontSize: '0.75rem',
@@ -261,12 +237,11 @@ const SearchPage = () => {
                             marginBottom: '8px',
                         }}
                     >
-                        LAST 3 DIGITS OF ROLL NUMBER
+                        STUDENT ROLL NUMBER (12 DIGITS)
                     </label>
                     <input
-                        ref={verificationInputRef}
                         type="text"
-                        placeholder="e.g., 111"
+                        placeholder="e.g., 123456789012"
                         style={{
                             width: '100%',
                             border: error ? '2px solid #ef4444' : '1px solid #e5e7eb',
@@ -278,20 +253,14 @@ const SearchPage = () => {
                             outline: 'none',
                             backgroundColor: error ? '#fef2f2' : 'white',
                         }}
-                        value={verification}
+                        value={rollNumber}
                         onChange={(e) => {
-                            // Only allow numbers and max 3 digits
-                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
-                            setVerification(val);
+                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 12);
+                            setRollNumber(val);
                             setError('');
                             setShake(false);
                         }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                if (searchId.trim() && verification.trim()) handleSearch();
-                            }
-                        }}
-                        aria-label="Verification Input"
+                        aria-label="Roll number"
                     />
 
                     {error && (
@@ -309,18 +278,13 @@ const SearchPage = () => {
 
                     <Button
                         onClick={() => {
-                            if (!searchId.trim() || !verification.trim()) {
-                                setError('Please enter both Student ID and verification');
-                                triggerShake();
-                                return;
-                            }
-                            handleSearch();
+                            handleLogin();
                         }}
                         loading={searching}
                         fullWidth
                         icon={Search}
                     >
-                        Search
+                        Login
                     </Button>
 
                     <div style={{ marginTop: '16px', textAlign: 'center' }}>
