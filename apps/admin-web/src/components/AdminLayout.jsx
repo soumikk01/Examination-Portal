@@ -10,6 +10,7 @@ import {
   Megaphone,
   Settings,
 } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,7 +38,10 @@ const AdminLayout = () => {
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-brand">Exam Portal Admin</div>
+        <div className="admin-sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '1rem 1.5rem' }}>
+          <img src={logo} alt="JIS Logo" style={{ maxHeight: '35px', width: 'auto' }} />
+          <span style={{ fontSize: '1rem', lineHeight: 1.2, whiteSpace: 'pre-wrap' }}>JIS College of Engineering</span>
+        </div>
         <nav className="admin-sidebar-nav">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
