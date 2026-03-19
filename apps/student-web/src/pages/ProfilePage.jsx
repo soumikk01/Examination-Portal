@@ -60,6 +60,7 @@ const ProfilePage = () => {
     const collegeId = paramId + (splat ? '/' + splat : '');
     const navigate = useNavigate();
     const [student, setStudent] = useState(null);
+    const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [examFilter, setExamFilter] = useState('ALL');
@@ -99,8 +100,19 @@ const ProfilePage = () => {
             try {
                 setLoading(true);
                 // Fetch data
-                const data = await api.getStudentProfile(collegeId);
-                setStudent(data);
+                const [studentData, settingsData] = await Promise.all([
+                    api.getStudentProfile(collegeId),
+                    api.getSettings().catch(() => null)
+                ]);
+                
+                if (settingsData?.maintenanceMode) {
+                    alert('Portal is currently under maintenance. Please try again later.');
+                    api.logout();
+                    return;
+                }
+                
+                setStudent(studentData);
+                setSettings(settingsData);
             } catch (err) {
                 setError(err.message || 'Error fetching student data');
                 
@@ -329,26 +341,23 @@ const ProfilePage = () => {
                 </Card>
 
                 {/* Pinned Note Section */}
-                <div
-                    className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300"
-                    style={{ transform: 'rotate(-1deg)' }}
-                >
-                    <div className="bg-[#fffdf0] border border-[#e6e2c8] p-6 rounded-sm shadow-[2px_4px_8px_rgba(0,0,0,0.1)] relative">
-                        <div className="text-center">
-                            <h4 className="flex items-center justify-center gap-2 font-bold text-gray-800 text-lg mb-2 underline decoration-wavy decoration-[#e6e2c8]">
-                                <span>📌</span> Important Notice
-                            </h4>
-                            <p className="text-gray-700 font-medium leading-relaxed">
-                                Please report to your assigned room{' '}
-                                <span className="text-red-600 font-bold">at least 15 minutes</span> before the
-                                scheduled examination time. Students must wear the{' '}
-                                <span className="font-bold">college uniform</span> and bring their{' '}
-                                <span className="text-[#2d368e] font-bold">college ID card</span> along with all
-                                required documents.
-                            </p>
+                {settings?.noticeBoardMessage && settings.noticeBoardMessage.trim() !== '' && (
+                    <div
+                        className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300"
+                        style={{ transform: 'rotate(-1deg)' }}
+                    >
+                        <div className="bg-[#fffdf0] border border-[#e6e2c8] p-6 rounded-sm shadow-[2px_4px_8px_rgba(0,0,0,0.1)] relative">
+                            <div className="text-center">
+                                <h4 className="flex items-center justify-center gap-2 font-bold text-gray-800 text-lg mb-2 underline decoration-wavy decoration-[#e6e2c8]">
+                                    <span>📌</span> Important Notice
+                                </h4>
+                                <p className="text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">
+                                    {settings.noticeBoardMessage}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </PageLayout>
     );
