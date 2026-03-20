@@ -323,7 +323,7 @@ const DropzoneCard = ({ title, mode, onParsed, onSaved }) => {
         <div>
           <div style={{ fontWeight: 800 }}>{title}</div>
           <div style={{ fontSize: '0.9rem', color: 'var(--admin-text-muted)' }}>
-            Mode: <b>{mode}</b>
+            Mode: <b style={{ color: mode === 'REGULAR' ? '#16a34a' : mode === 'BACKLOG' ? '#ea580c' : 'inherit' }}>{mode}</b>
           </div>
         </div>
         {parsed?.meta && <ScheduleTypeBadge meta={parsed.meta} />}
