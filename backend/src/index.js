@@ -182,10 +182,15 @@ v1Router.get('/student/exams/filters', examScheduleController.listPublishedFilte
 v1Router.get('/student/*', verifyToken, authorizeStudent, studentController.getProfile);
 
 v1Router.get('/rooms', roomController.list);
+v1Router.post('/rooms/generate-allotment', authorizeAdmin, roomController.generateAllotment);
+v1Router.get('/rooms/exam-groups', authorizeAdmin, roomController.listExamGroups);
+v1Router.get('/rooms/allotment/:examGroup', authorizeAdmin, roomController.getAllotment);
 v1Router.get('/rooms/:id', roomController.getById);
 
 v1Router.get('/seating', seatingController.list);
+v1Router.post('/seating/generate', authorizeAdmin, seatingController.generate);
 v1Router.post('/seating', seatingController.assign);
+v1Router.get('/seating/:examGroup', authorizeAdmin, seatingController.getSeating);
 
 app.use('/api/v1', v1Router);
 

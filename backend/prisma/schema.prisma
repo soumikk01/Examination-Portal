@@ -191,3 +191,42 @@ model AppOption {
   @@index([category])
   @@map("AppOptions")
 }
+
+model ExamRoom {
+  id       Int    @id @default(autoincrement())
+  roomNo   String @unique
+  capacity Int    @default(40)
+  venue    String @default("Main Building")
+
+  @@map("ExamRooms")
+}
+
+model RoomAllotment {
+  id          Int      @id @default(autoincrement())
+  examGroup   String
+  roomNo      String
+  deptCounts  Json
+  total       Int
+  createdAt   DateTime @default(now())
+
+  @@unique([examGroup, roomNo])
+  @@index([examGroup])
+  @@map("RoomAllotments")
+}
+
+model SeatAllocation {
+  id          Int     @id @default(autoincrement())
+  examGroup   String
+  roomNo      String
+  columnNo    Int
+  seatNo      Int
+  studentId   Int?
+  dept        String
+  studentName String?
+  rollNo      String?
+  isExtra     Boolean @default(false)
+
+  @@unique([examGroup, roomNo, columnNo, seatNo])
+  @@index([examGroup, roomNo])
+  @@map("SeatAllocations")
+}
