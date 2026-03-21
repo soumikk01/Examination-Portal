@@ -51,6 +51,7 @@ export async function list(filters = {}) {
       collegeId: true,
       name: true,
       department: true,
+      studentRoll: true,
       program: true,
       branch: true,
       semester: true,
