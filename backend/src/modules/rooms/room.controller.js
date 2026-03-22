@@ -51,3 +51,40 @@ export async function listExamGroups(req, res, next) {
     next(error);
   }
 }
+
+export async function getStudentCounts(req, res, next) {
+  try {
+    const { semester } = req.query;
+    const counts = await roomService.getStudentCountsForSemester({ semester });
+    res.json(counts);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateCapacity(req, res, next) {
+  try {
+    const { roomNo } = req.params;
+    const { capacity } = req.body;
+    if (!capacity || isNaN(Number(capacity))) {
+      return res.status(400).json({ error: 'capacity must be a number' });
+    }
+    const updated = await roomService.updateRoomCapacity(roomNo, capacity);
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function saveAllotment(req, res, next) {
+  try {
+    const { semester, rooms } = req.body;
+    if (!semester || !rooms || !Array.isArray(rooms)) {
+      return res.status(400).json({ error: 'semester and rooms[] are required' });
+    }
+    const result = await roomService.saveRoomAllotments({ semester, rooms });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

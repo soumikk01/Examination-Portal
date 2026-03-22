@@ -1,428 +1,414 @@
-import { useState, useEffect, useRef } from 'react';
-import api from '../services/api';
-import { getUserFriendlyApiError } from '../utils/apiError';
+import { useState, useRef } from 'react';
 import logo from '../assets/logo.png';
 
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+const API = '/api/v1';
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('examination_portal_admin_token');
+  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+};
+
 const VENUE_ROOMS = {
-  'CMS Building': [
-    'C-301', 'C-302', 'C-303', 'C-304', 'C-305', 'C-306',
-    'C-307', 'C-308', 'C-309', 'C-310', 'C-311',
-    'C-405', 'C-407', 'C-408', 'C-409',
+  'C Block – CMS Building': [
+    'C-301','C-302','C-303','C-304','C-305','C-306',
+    'C-307','C-308','C-309','C-310','C-311',
+    'C-405','C-407','C-408','C-409',
   ],
   'Main Building': [
-    'MB-412', 'MB-413', 'MB-414', 'MB-415', 'MB-416', 'MB-417',
+    'MB-412','MB-413','MB-414','MB-415','MB-416','MB-417',
   ],
 };
 
-// E = EXTRA label, D = Door label, null = normal seat
-const DUMMY_ROWS = [
-  ["E",   null, null, null, "D"],
-  [null,  null, null, null, null],
-  [null,  null, null, null, null],
-  [null,  null, null, null, null],
-  [null,  null, null, null, null],
-  [null,  null, null, null, null],
-  [null,  null, null, null, null],
-  [null,  null, null, null, null],
-  [null,  null, null, null, null],
-];
-
-const COLLEGE_NAME = 'JIS College of Engineering';
-const CONTROLLER_NAME = 'PARTHA RAY';
+const COLLEGE_NAME   = 'JIS College of Engineering';
+const CONTROLLER_NAME  = 'PARTHA RAY';
 const CONTROLLER_TITLE = 'Controller of Examinations, JISCE';
 
-const Seating = () => {
-  const [selectedVenue, setSelectedVenue] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState('');
-  const [seatingData, setSeatingData] = useState(null);
-  const [allotmentData, setAllotmentData] = useState(null);
-  const [generating, setGenerating] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [selectedRoom, setSelectedRoom] = useState('');
+// ─── STYLES ────────────────────────────────────────────────────────────────
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  .sa2-wrap { font-family: 'Inter', sans-serif; }
+
+  /* Controls */
+  .sa2-controls {
+    display: flex; gap: .75rem; align-items: flex-end;
+    flex-wrap: wrap; background: #f8fafc;
+    padding: 1rem 1.25rem; border-radius: 10px;
+    border: 1px solid #e2e8f0; margin-bottom: 1.25rem;
+  }
+  .sa2-group { display: flex; flex-direction: column; gap: .3rem; }
+  .sa2-group label { font-size: .7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+  .sa2-input {
+    padding: .45rem .7rem; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: .875rem; color: #1e293b; background: white; min-width: 130px;
+    outline: none; transition: border .15s;
+  }
+  .sa2-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+  .sa2-input:disabled { background: #f1f5f9; cursor: not-allowed; }
+
+  .sa2-btn {
+    padding: .45rem 1.1rem; border: none; border-radius: 6px;
+    font-size: .85rem; font-weight: 600; cursor: pointer;
+    transition: all .15s; display: inline-flex; align-items: center; gap: .4rem;
+  }
+  .sa2-btn-blue { background: #3b82f6; color: white; }
+  .sa2-btn-blue:hover:not(:disabled) { background: #2563eb; }
+  .sa2-btn-green { background: #16a34a; color: white; }
+  .sa2-btn-green:hover:not(:disabled) { background: #15803d; }
+  .sa2-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .sa2-status { font-size: .8rem; padding: .3rem .7rem; border-radius: 99px; font-weight: 500; }
+  .sa2-ok  { background: #dcfce7; color: #166534; }
+  .sa2-err { background: #fee2e2; color: #991b1b; }
+  .sa2-loading { background: #dbeafe; color: #1e40af; }
+
+  /* A4 Landscape container */
+  .sa2-a4-outer {
+    overflow-x: auto; margin-top: 1rem;
+    background: #e5e7eb; padding: 1.5rem;
+    border-radius: 8px;
+  }
+  .sa2-a4 {
+    width: 297mm; min-height: 210mm;
+    background: white; padding: 10mm 12mm;
+    box-shadow: 0 4px 24px rgba(0,0,0,.18);
+    position: relative; box-sizing: border-box;
+    margin: 0 auto;
+  }
+  .sa2-a4.hide-shadow { box-shadow: none !important; }
+
+  /* Letterhead */
+  .sa2-lh { display: flex; align-items: center; gap: 1rem; margin-bottom: 6px; }
+  .sa2-lh img { height: 52px; width: 52px; object-fit: contain; }
+  .sa2-lh-text h1 { font-size: 13px; font-weight: 700; margin: 0 0 2px; }
+  .sa2-lh-text p  { font-size: 10px; margin: 0; color: #444; }
+
+  /* Info bar */
+  .sa2-info {
+    display: flex; border: 1.5px solid #222; font-size: 10px;
+    font-weight: 700; margin-bottom: 0;
+  }
+  .sa2-ic {
+    flex: 1; padding: 3px 6px; border-right: 1.5px solid #222;
+    white-space: nowrap; font-size: 10px;
+  }
+  .sa2-ic:last-child { border-right: none; }
+  .sa2-ic-sem { background: #1f2937; color: #fff; text-align: center; }
+
+  /* Seating table */
+  .sa2-table {
+    width: 100%; border-collapse: collapse;
+    table-layout: fixed; font-size: 9px;
+    font-family: 'Calibri', Arial, sans-serif;
+  }
+  .sa2-table th, .sa2-table td {
+    border: 1px solid #555; padding: 0;
+    vertical-align: top; height: 22mm;
+  }
+  .sa2-table th { height: auto; padding: 3px 4px; font-size: 9.5px; font-weight: 700; text-align: center; }
+
+  /* Column header types */
+  .sa2-th-extra { background: #f5f5f5; }
+  .sa2-th-door  { background: #f5f5f5; }
+  .sa2-th-dept  { background: #fff; }
+
+  /* Cell contents */
+  .sa2-cell-extra { background: #f9f9f9; }
+  .sa2-cell-door  { background: #f9f9f9; }
+  .sa2-cell-seat  {
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    height: 100%; padding: 2px 3px;
+    font-size: 8.5px; line-height: 1.25;
+    word-break: break-word; text-align: center;
+  }
+  .sa2-cell-seat strong { font-size: 9px; font-weight: 700; }
+  .sa2-cell-seat.is-extra {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #555; font-style: italic;
+    background: #fafafa;
+  }
+  .sa2-cell-empty { height: 100%; }
+
+  /* EXTRA / Door label cells */
+  .sa2-label-cell {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    height: 100%;
+  }
+  .sa2-label-extra { color: #1a1a1a; }
+  .sa2-label-door  { color: #1a1a1a; }
+
+  /* Footer */
+  .sa2-footer { margin-top: 8px; text-align: right; }
+  .sa2-sig { display: inline-block; text-align: center; }
+  .sa2-sig-line { width: 120px; border-top: 1px solid #333; margin: 0 auto 2px; }
+  .sa2-sig strong { font-size: 9px; display: block; }
+  .sa2-sig span   { font-size: 8px; color: #555; }
+
+  .sa2-info-msg { font-size: .82rem; color: #64748b; margin-bottom: .75rem; }
+
+  @media print {
+    .sa2-a4-outer, .sa2-controls, .sa2-no-print { display: none !important; }
+    .sa2-a4 { box-shadow: none !important; }
+  }
+`;
+
+// ─── COMPONENT ────────────────────────────────────────────────────────────
+export default function Seating() {
+  const [venue, setVenue]       = useState('');
+  const [room, setRoom]         = useState('');
   const [examType, setExamType] = useState('Class Test - I');
-  const [semesterType, setSemesterType] = useState('ODD');
-  const [examYear, setExamYear] = useState(new Date().getFullYear().toString());
+  const [semType, setSemType]   = useState('ODD');
+  const [year, setYear]         = useState(String(new Date().getFullYear()));
+
+  const [seating, setSeating]   = useState(null); // fetched data
+  const [status, setStatus]     = useState('idle'); // idle|loading|ok|err
+  const [errMsg, setErrMsg]     = useState('');
+
   const printRef = useRef(null);
 
-  // Pick up examGroup from URL query param (set by Rooms page)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const eg = params.get('examGroup');
-    if (eg) setSelectedGroup(eg);
-  }, []);
-
-
-
-  // Load allotment info when group changes (for room info/dept counts shown in header)
-  useEffect(() => {
-    if (!selectedGroup) { setAllotmentData(null); setSeatingData(null); return; }
-    api.get(`/rooms/allotment/${encodeURIComponent(selectedGroup)}`)
-      .then(d => setAllotmentData(d))
-      .catch(() => setAllotmentData(null));
-  }, [selectedGroup]);
-
+  // ── Fetch seating for selected room ───────────────────────────────────
   const handleGenerate = async () => {
-    if (!selectedGroup) { setError('Select an exam group first.'); return; }
-    setError('');
-    setGenerating(true);
+    if (!room) { setErrMsg('Please select a room.'); return; }
+    setStatus('loading'); setErrMsg(''); setSeating(null);
     try {
-      await api.post('/seating/generate', { examGroup: selectedGroup });
-      await loadSeating();
-    } catch (err) {
-      setError(getUserFriendlyApiError(err, 'Failed to generate seating'));
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const loadSeating = async () => {
-    setLoading(true);
-    try {
-      const data = await api.get(`/seating/${encodeURIComponent(selectedGroup)}`);
-      setSeatingData(data);
-      if (data?.rooms?.length > 0) setSelectedRoom(data.rooms[0].roomNo);
-    } catch (err) {
-      if (err?.response?.status !== 404) {
-        setError(getUserFriendlyApiError(err, 'Failed to load seating'));
+      const res = await fetch(`${API}/seating/room/${encodeURIComponent(room)}`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
       }
-    } finally {
-      setLoading(false);
+      const data = await res.json();
+      setSeating(data);
+      setStatus('ok');
+    } catch (e) {
+      setErrMsg(e.message);
+      setStatus('err');
     }
   };
 
-  const handleExportPDF = async () => {
+  // ── PDF export ─────────────────────────────────────────────────────────
+  const handleDownloadPDF = async () => {
     const el = printRef.current;
     if (!el) return;
-
     try {
-      el.classList.add('hide-shadow-for-print'); // remove shadow
+      el.classList.add('hide-shadow');
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf'),
       ]);
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      el.classList.remove('hide-shadow');
 
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-      });
-      el.classList.remove('hide-shadow-for-print');
-
-      const imgData = canvas.toDataURL('image/png');
-      
-      // Use Portrait A4 to stack two A4 Landscapes perfectly!
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const imgH = (canvas.height * pdfWidth) / canvas.width;
-
-      // Print exactly 2 copies on the same page top and bottom, so invigilators get 2 copies
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgH);
-      pdf.addImage(imgData, 'PNG', 0, imgH, pdfWidth, imgH);
-
-      pdf.save(`seating-${selectedRoom || selectedGroup || 'preview'}.pdf`);
-    } catch (err) {
-      if (el) el.classList.remove('hide-shadow-for-print');
-      setError('PDF export failed: ' + err.message);
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const W = pdf.internal.pageSize.getWidth();
+      const H = (canvas.height * W) / canvas.width;
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, W, H);
+      pdf.save(`seating-${room || 'preview'}.pdf`);
+    } catch (e) {
+      if (printRef.current) printRef.current.classList.remove('hide-shadow');
+      setErrMsg('PDF export failed: ' + e.message);
     }
   };
 
-  const handleExportAllRooms = async () => {
-    if (!seatingData?.rooms) return;
+  // ── Build table data ──────────────────────────────────────────────────
+  // Layout: [EXTRA] [dept-cols...] [Door]
+  // Each dept column fills top-to-bottom with student cells
+  // When dept runs out → EXTRA in remaining rows
+  // EXTRA first column and Door last column span all rows
+  const ROWS = seating ? seating.seatsPerColumn : 8;
+  const columns = seating ? seating.columns : [];
 
-    try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
-
-      // Use Portrait A4 to stack two A4 Landscapes perfectly!
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      let roomIndex = 0;
-
-      for (const room of seatingData.rooms) {
-        setSelectedRoom(room.roomNo);
-        // Wait longer if we are doing thousands of rooms, but 400ms is fine for small batches.
-        await new Promise(r => setTimeout(r, 400)); // slight increase for clean re-render
-
-        const el = document.getElementById('seating-print-area');
-        if (!el) continue;
-
-        el.classList.add('hide-shadow-for-print');
-        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-        el.classList.remove('hide-shadow-for-print');
-
-        const imgData = canvas.toDataURL('image/png');
-        const imgH = (canvas.height * pdfWidth) / canvas.width;
-
-        // Add a new page every 2 rooms (since we put 2 rooms per page in portrait)
-        if (roomIndex > 0 && roomIndex % 2 === 0) pdf.addPage();
-        
-        // Even indices go on top (yOffset = 0), odd indices go on bottom (yOffset = imgH)
-        const yOffset = (roomIndex % 2 === 0) ? 0 : imgH;
-        pdf.addImage(imgData, 'PNG', 0, yOffset, pdfWidth, imgH);
-        
-        roomIndex++;
-      }
-
-      pdf.save(`seating-all-rooms-${selectedGroup}.pdf`);
-    } catch (err) {
-      const el = document.getElementById('seating-print-area');
-      if (el) el.classList.remove('hide-shadow-for-print');
-      setError('PDF export failed: ' + err.message);
+  // For the info header: unique dept → total students
+  const deptTotals = {};
+  if (seating) {
+    for (const [dept, cnt] of Object.entries(seating.deptCounts || {})) {
+      deptTotals[dept] = Number(cnt);
     }
-  };
-
-  // Parse examGroup for display info
-  const parseExamGroup = (eg) => {
-    if (!eg) return {};
-    const parts = eg.split('-');
-    return {
-      semester: parts[0]?.replace('SEM', ''),
-      program: parts[1],
-      examMode: parts.slice(2).join('-'),
-    };
-  };
-
-  const groupInfo = parseExamGroup(selectedGroup);
-
-  // Get the room data currently selected
-  const currentRoom = seatingData?.rooms?.find(r => r.roomNo === selectedRoom);
-  const currentAllotment = allotmentData?.allocations?.find(a => a.roomNo === selectedRoom);
-
-  // Build column header dept counts for the current room
-  const buildHeaderCounts = (room) => {
-    if (!room) return [];
-    return room.columns.map(col => {
-      const nonExtra = col.seats.filter(s => !s.isExtra).length;
-      return { dept: col.dept, count: nonExtra };
-    });
-  };
-
-  // Collapse adjacent same-dept header labels for display
-  const collapseHeaders = (cols) => {
-    const headers = [];
-    for (const col of cols) {
-      const prev = headers[headers.length - 1];
-      if (prev && prev.dept === col.dept) {
-        prev.span++;
-      } else {
-        headers.push({ dept: col.dept, span: 1, count: col.count });
-      }
-    }
-    return headers;
-  };
-
-  const headerCols = currentRoom ? buildHeaderCounts(currentRoom) : [];
-  const collapsedHeaders = collapseHeaders(headerCols);
-
-  // Build table rows from columns
-  const numRows = currentRoom ? Math.max(...currentRoom.columns.map(c => c.seats.length)) : 0;
-  const tableRows = [];
-  for (let ri = 0; ri < numRows; ri++) {
-    const row = [];
-    row.push({ type: 'extra' });
-    if (currentRoom) {
-      currentRoom.columns.forEach(col => {
-        row.push({ type: 'seat', data: col.seats[ri] });
-      });
-    }
-    row.push({ type: 'door' });
-    tableRows.push(row);
   }
+
+  // Collapse adjacent same-dept header columns
+  const collapsedHeaders = [];
+  for (const col of columns) {
+    const prev = collapsedHeaders[collapsedHeaders.length - 1];
+    if (prev && prev.dept === col.dept) { prev.span++; }
+    else collapsedHeaders.push({ dept: col.dept, span: 1 });
+  }
+
+  // Current venue label
+  const venueLabel = venue || '--';
 
   return (
     <>
-      <h1 style={{ marginBottom: '1rem', fontSize: '1.35rem' }}>📋 Seating Arrangement</h1>
+      <style>{styles}</style>
+      <div className="sa2-wrap">
+        <h1 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0 0 1rem' }}>📋 Seating Arrangement</h1>
 
-      {/* Controls */}
-      <div className="admin-card">
-        <h2>Generate &amp; View Seating</h2>
-        <div className="seating-controls" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
-          
-          <div className="room-filter-group">
-            <label className="room-filter-label">Venue</label>
-            <select
-              value={selectedVenue}
-              onChange={e => { setSelectedVenue(e.target.value); setSelectedRoom(''); }}
-              className="room-filter-select"
-            >
+        {/* Controls */}
+        <div className="sa2-controls">
+          <div className="sa2-group">
+            <label>Venue</label>
+            <select className="sa2-input" value={venue} onChange={e => { setVenue(e.target.value); setRoom(''); setSeating(null); setStatus('idle'); }}>
               <option value="">-- Select Venue --</option>
-              <option value="Main Building">Main Building</option>
-              <option value="CMS Building">CMS Building</option>
+              {Object.keys(VENUE_ROOMS).map(v => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
 
-          <div className="room-filter-group">
-            <label className="room-filter-label">Room</label>
-            <select
-              value={selectedRoom}
-              onChange={e => setSelectedRoom(e.target.value)}
-              className="room-filter-select"
-              disabled={!selectedVenue}
-            >
+          <div className="sa2-group">
+            <label>Room</label>
+            <select className="sa2-input" value={room} onChange={e => { setRoom(e.target.value); setSeating(null); setStatus('idle'); }} disabled={!venue}>
               <option value="">-- Select Room --</option>
-              {(selectedVenue ? VENUE_ROOMS[selectedVenue] : [])?.map(roomNo => (
-                <option key={roomNo} value={roomNo}>{roomNo}</option>
-              ))}
+              {(VENUE_ROOMS[venue] || []).map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
 
-
-          <div className="room-filter-group">
-            <label className="room-filter-label">Exam Type</label>
-            <select
-              value={examType}
-              onChange={e => setExamType(e.target.value)}
-              className="room-filter-select"
-            >
-              <option value="Class Test - I">Class Test - I</option>
-              <option value="Class Test - II">Class Test - II</option>
-              <option value="Mid Semester">Mid Semester</option>
-              <option value="End Semester">End Semester</option>
+          <div className="sa2-group">
+            <label>Exam Type</label>
+            <select className="sa2-input" value={examType} onChange={e => setExamType(e.target.value)}>
+              <option>Class Test - I</option>
+              <option>Class Test - II</option>
+              <option>Mid Semester</option>
+              <option>End Semester</option>
             </select>
           </div>
 
-          <div className="room-filter-group">
-            <label className="room-filter-label">Semester (Odd/Even)</label>
-            <select
-              value={semesterType}
-              onChange={e => setSemesterType(e.target.value)}
-              className="room-filter-select"
-            >
+          <div className="sa2-group">
+            <label>Semester (Odd/Even)</label>
+            <select className="sa2-input" value={semType} onChange={e => setSemType(e.target.value)}>
               <option value="ODD">ODD</option>
               <option value="EVEN">EVEN</option>
             </select>
           </div>
 
-          <div className="room-filter-group">
-            <label className="room-filter-label">Year</label>
-            <input
-              type="text"
-              value={examYear}
-              onChange={e => setExamYear(e.target.value)}
-              className="room-filter-select"
-              style={{ width: '80px' }}
-            />
+          <div className="sa2-group">
+            <label>Year</label>
+            <input type="text" className="sa2-input" value={year} onChange={e => setYear(e.target.value)} style={{ width: 80 }} />
           </div>
 
-          <button
-            className="admin-btn admin-btn-primary"
-            onClick={handleGenerate}
-            disabled={generating || !selectedGroup}
-            style={{ marginBottom: '4px' }}
-          >
-            {generating ? '⏳ Generating…' : '⚡ Generate'}
+          <button className="sa2-btn sa2-btn-blue" onClick={handleGenerate} disabled={!room || status === 'loading'}>
+            {status === 'loading' ? '⏳ Loading…' : '⚡ Generate'}
           </button>
 
-          {!seatingData && selectedGroup && (
-            <button className="admin-btn admin-btn-primary" onClick={loadSeating} disabled={loading} style={{ marginBottom: '4px' }}>
-              {loading ? '⏳ Loading…' : '📂 Load Existing'}
+          {seating && (
+            <button className="sa2-btn sa2-btn-green" onClick={handleDownloadPDF}>
+              📄 Download PDF
             </button>
           )}
 
+          {status === 'ok'  && <span className="sa2-status sa2-ok">✓ Loaded</span>}
+          {status === 'err' && <span className="sa2-status sa2-err">Error</span>}
         </div>
 
-        {error && <p className="admin-status-err" style={{ marginTop: '0.75rem' }}>{error}</p>}
-      </div>
+        {errMsg && <p style={{ color: '#b91c1c', fontSize: '.85rem', marginBottom: '.75rem' }}>⚠ {errMsg}</p>}
 
-      {/* Seating Sheet */}
-      {currentRoom && (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-            <button className="admin-btn admin-btn-primary" onClick={handleExportPDF}>
-              📄 Download Room PDF
-            </button>
-            {seatingData?.rooms?.length > 1 && (
-              <button className="admin-btn admin-btn-primary" onClick={handleExportAllRooms}>
-                📦 Download All Rooms PDF
-              </button>
-            )}
-          </div>
-          <div className="sa-a4-container" style={{ marginTop: '0.5rem' }}>
-            <div className="sa-a4-page" id="seating-print-area" ref={printRef}>
-              <div className="sa-wrap">
-            
+        {!seating && status === 'idle' && (
+          <p className="sa2-info-msg">Select Venue → Room → click <strong>⚡ Generate</strong> to build the seating chart.</p>
+        )}
+
+        {/* A4 PDF Preview */}
+        <div className="sa2-a4-outer">
+          <div className="sa2-a4" ref={printRef}>
+
             {/* Letterhead */}
-            <div className="sa-lh">
-              <img src={logo} alt="JIS Logo" className="sa-logo-img" />
-              <div className="sa-lh-text">
-                <h1>Seating Arrangement for {examType} – {groupInfo.program ? groupInfo.program + ' – ' : ''}{semesterType} {examYear}</h1>
+            <div className="sa2-lh">
+              <img src={logo} alt="JIS Logo" />
+              <div className="sa2-lh-text">
+                <h1>Seating Arrangement for {examType} &nbsp;–&nbsp; {semType} {year}</h1>
                 <p><strong>{COLLEGE_NAME}</strong></p>
-                <p>(Venue: {selectedVenue || '--'})</p>
+                <p>(Venue: {venueLabel})</p>
               </div>
             </div>
-      
+
             {/* Info bar */}
-            <div className="sa-info">
-              <div className="sa-ic">Room No – {currentRoom.roomNo}</div>
-              {collapsedHeaders.map((h, i) => (
-                <div key={i} className="sa-ic">{h.dept} = {h.count}</div>
-              ))}
-              <div className="sa-ic sa-ic--semester">SEMESTER – {groupInfo.semester || 'N/A'}</div>
+            <div className="sa2-info">
+              <div className="sa2-ic">Room No – {room || (seating?.roomNo) || 'C-XXX'}</div>
+              {seating
+                ? collapsedHeaders.map((h, i) => (
+                    <div key={i} className="sa2-ic">
+                      {h.dept} – {deptTotals[h.dept] ?? ''}
+                    </div>
+                  ))
+                : <div className="sa2-ic">CE – 05</div>
+              }
+              <div className="sa2-ic sa2-ic-sem">SEMESTER – {seating?.semester || '–'}</div>
             </div>
-      
+
             {/* Seating table */}
-            <table className="sa-table">
+            <table className="sa2-table">
               <thead>
                 <tr>
-                  <th>EXTRA</th>
-                  {currentRoom.columns.map((col, idx) => (
-                    <th key={idx}>{col.dept}</th>
-                  ))}
-                  <th>Door</th>
+                  {/* EXTRA column header */}
+                  <th className="sa2-th-extra" style={{ width: 68 }}>EXTRA</th>
+                  {/* Dept columns */}
+                  {seating ? (
+                    columns.map((col, i) => (
+                      <th key={i} className="sa2-th-dept">{col.dept}</th>
+                    ))
+                  ) : (
+                    <th className="sa2-th-dept" colSpan={3} />
+                  )}
+                  {/* Door column */}
+                  <th className="sa2-th-door" style={{ width: 68 }}>Door</th>
                 </tr>
               </thead>
               <tbody>
-                {tableRows.map((row, ri) => (
+                {Array.from({ length: ROWS }, (_, ri) => (
                   <tr key={ri}>
-                    {row.map((cell, ci) => (
-                      <td key={ci}>
-                        {cell.type === 'extra' && (
-                          ri === 0 ? <div className="sa-label sa-label--extra">EXTRA</div> : <div className="sa-seat" />
-                        )}
-                        {cell.type === 'door' && (
-                          ri === 0 ? <div className="sa-label sa-label--door">Door</div> : <div className="sa-seat" />
-                        )}
-                        {cell.type === 'seat' && (
-                          cell.data ? (
-                            cell.data.isExtra ? (
-                              <div className="sa-seat">
-                                <span className="sa-label sa-label--extra" style={{ minHeight: 'auto', fontSize: '11px' }}>EXTRA</span>
-                              </div>
-                            ) : (
-                              <div className="sa-seat sa-seat--filled">
-                                <span className="seat-dept" style={{ fontWeight: 'bold', fontSize: '11px', textAlign: 'center' }}>
-                                  {cell.data.dept}
-                                </span>
-                                <span className="seat-name" style={{ fontSize: '12px', textAlign: 'center', margin: '2px 0' }}>
-                                  {cell.data.studentName || '—'}
-                                </span>
-                                <span className="seat-roll" style={{ fontSize: '11px', textAlign: 'center', color: '#555' }}>
-                                  {cell.data.rollNo || '—'}
-                                </span>
-                              </div>
-                            )
-                          ) : (
-                            <div className="sa-seat">
-                              <div className="sa-line" />
-                              <div className="sa-line sa-line--short" />
-                              <div className="sa-line" />
+                    {/* EXTRA column — only label in row 0, blank otherwise */}
+                    <td className="sa2-cell-extra">
+                      {ri === 0
+                        ? <div className="sa2-label-cell sa2-label-extra">EXTRA</div>
+                        : <div className="sa2-cell-empty" />}
+                    </td>
+
+                    {/* Data columns */}
+                    {seating ? (
+                      columns.map((col, ci) => {
+                        const seat = col.seats[ri];
+                        if (!seat) return <td key={ci} />;
+                        if (seat.isExtra) {
+                          return (
+                            <td key={ci}>
+                              <div className="sa2-cell-seat is-extra">EXTRA</div>
+                            </td>
+                          );
+                        }
+                        return (
+                          <td key={ci}>
+                            <div className="sa2-cell-seat">
+                              <strong>{seat.dept}</strong>
+                              <span>{seat.studentName}</span>
+                              <span style={{ color: '#555' }}>{seat.rollNo}</span>
                             </div>
-                          )
-                        )}
-                      </td>
-                    ))}
+                          </td>
+                        );
+                      })
+                    ) : (
+                      // Dummy empty columns when no data
+                      [0,1,2].map(i => (
+                        <td key={i}>
+                          <div className="sa2-cell-empty" />
+                        </td>
+                      ))
+                    )}
+
+                    {/* Door column — only label in row 0, blank otherwise */}
+                    <td className="sa2-cell-door">
+                      {ri === 0
+                        ? <div className="sa2-label-cell sa2-label-door">Door</div>
+                        : <div className="sa2-cell-empty" />}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-      
+
             {/* Footer */}
-            <div className="sa-footer">
-              <div className="sa-sig">
-                <div className="sa-sig-line" />
+            <div className="sa2-footer">
+              <div className="sa2-sig">
+                <div className="sa2-sig-line" />
                 <strong>{CONTROLLER_NAME}</strong>
                 <span>{CONTROLLER_TITLE}</span>
               </div>
@@ -430,95 +416,6 @@ const Seating = () => {
           </div>
         </div>
       </div>
-      </>
-      )}
-
-      {/* Empty state */}
-      {selectedGroup && !seatingData && !generating && !loading && (
-        <div className="admin-card">
-          <p style={{ color: 'var(--admin-text-muted)' }}>
-            No seating data yet for <strong>{selectedGroup}</strong>. Click{' '}
-            <strong>Generate Seating</strong> to create the seating arrangement.
-          </p>
-        </div>
-      )}
-
-      {/* Static Dummy Preview when no data is loaded */}
-      {!currentRoom && (
-        <>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-          <button className="admin-btn admin-btn-primary" onClick={handleExportPDF}>
-            📄 Download Preview PDF
-          </button>
-        </div>
-        <div className="sa-a4-container" style={{ opacity: 0.8, filter: 'grayscale(0.1)', marginTop: '0.5rem' }}>
-          <div className="sa-a4-page" id="seating-print-area" ref={printRef}>
-            <div className="sa-wrap" style={{ pointerEvents: 'none' }}>
-            
-            {/* Letterhead */}
-            <div className="sa-lh">
-              <img src={logo} alt="JIS Logo" className="sa-logo-img" />
-              <div className="sa-lh-text">
-                <h1>Seating Arrangement for {examType} – {groupInfo?.program ? groupInfo.program + ' – ' : ''}{semesterType} {examYear}</h1>
-                <p><strong>{COLLEGE_NAME}</strong></p>
-                <p>(Venue: {selectedVenue || '--'})</p>
-              </div>
-            </div>
-      
-            {/* Info bar */}
-            <div className="sa-info">
-              <div className="sa-ic">Room No – {selectedRoom || 'C-206'}</div>
-              <div className="sa-ic">CE = 05</div>
-              <div className="sa-ic">CSE (AIML) = 24</div>
-              <div className="sa-ic">BME = 08</div>
-              <div className="sa-ic sa-ic--semester">SEMESTER – {groupInfo?.semester || '3'}</div>
-            </div>
-      
-            {/* Seating table */}
-            <table className="sa-table">
-              <thead>
-                <tr><th /><th /><th /><th /><th /></tr>
-              </thead>
-              <tbody>
-                {DUMMY_ROWS.map((row, ri) => (
-                  <tr key={ri}>
-                    {row.map((cell, ci) => (
-                      <td key={ci}>
-                        {cell === "E" && (
-                          <div className="sa-label sa-label--extra">EXTRA</div>
-                        )}
-                        {cell === "D" && (
-                          <div className="sa-label sa-label--door">Door</div>
-                        )}
-                        {cell === null && (
-                          <div className="sa-seat">
-                            <div className="sa-line" />
-                            <div className="sa-line sa-line--short" />
-                            <div className="sa-line" />
-                          </div>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-      
-            {/* Footer */}
-            <div className="sa-footer">
-              <div className="sa-sig">
-                <div className="sa-sig-line" />
-                <strong>{CONTROLLER_NAME}</strong>
-                <span>{CONTROLLER_TITLE}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      </>
-      )}
     </>
   );
-};
-
-export default Seating;
+}

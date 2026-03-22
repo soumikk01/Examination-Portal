@@ -43,3 +43,16 @@ export async function getSeating(req, res, next) {
     next(error);
   }
 }
+
+export async function getRoomSeating(req, res, next) {
+  try {
+    const { roomNo } = req.params;
+    const result = await seatingService.getSeatingForRoom({ roomNo: decodeURIComponent(roomNo) });
+    if (!result) {
+      return res.status(404).json({ error: 'No allotment found for this room. Complete room allotment first.' });
+    }
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

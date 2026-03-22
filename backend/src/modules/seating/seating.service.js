@@ -243,3 +243,104 @@ export async function list() {
 export async function assign(_data) {
   return { message: 'Use POST /seating/generate instead' };
 }
+
+// ──────────────────────────────────────────────
+// Fetch seating for a SPECIFIC ROOM directly
+// Looks at saved RoomAllotment, resolves students,
+// returns column-wise seat grid ready for the PDF view.
+// ──────────────────────────────────────────────
+export async function getSeatingForRoom({ roomNo }) {
+  // Find the room allotment row for this roomNo (any examGroup)
+  const allotmentRows = await prisma.roomAllotment.findMany({
+    where: { roomNo },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!allotmentRows.length) return null;
+
+  // Use the most recent allotment for this room
+  const allotment = allotmentRows[0];
+  const { deptCounts, examGroup } = allotment;
+
+  // Parse examGroup → semester, program, examMode
+  const parts = examGroup.split('-');
+  const semPart = parts[0];
+  const semester = semPart.replace('SEM', '');
+  const program  = parts[1];
+  const examMode = parts.slice(2).join('-');
+
+  // Fetch students for each dept in this room
+  const deptList = Object.entries(deptCounts)
+    .filter(([, c]) => Number(c) > 0)
+    .sort((a, b) => a[0].localeCompare(b[0]));
+
+  const where = {
+    ...(program && program !== 'ALL' ? { program } : {}),
+    ...(semester ? { semester: String(semester) } : {}),
+  };
+
+  let allStudents;
+  if (examMode && examMode !== 'ALL') {
+    allStudents = await prisma.student.findMany({
+      where: { ...where, exams: { some: { examMode } } },
+      select: { id: true, name: true, studentRoll: true, branch: true, department: true },
+      orderBy: [{ branch: 'asc' }, { name: 'asc' }],
+    });
+  } else {
+    allStudents = await prisma.student.findMany({
+      where,
+      select: { id: true, name: true, studentRoll: true, branch: true, department: true },
+      orderBy: [{ branch: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  // Group students by branch
+  const studentsByDept = {};
+  for (const s of allStudents) {
+    const dept = (s.branch || s.department || 'UNKNOWN').toUpperCase();
+    if (!studentsByDept[dept]) studentsByDept[dept] = [];
+    studentsByDept[dept].push(s);
+  }
+
+  // Build columns: for each dept take only the count assigned to this room
+  const ROWS = 8; // seats per column
+  const columns = [];
+
+  for (const [dept, count] of deptList) {
+    const roomCount = Number(count);
+    const students  = (studentsByDept[dept] || []).slice(0, roomCount);
+    const numCols   = Math.ceil(roomCount / ROWS);
+
+    let studentIdx = 0;
+    for (let c = 0; c < numCols; c++) {
+      const seats = [];
+      for (let r = 0; r < ROWS; r++) {
+        if (studentIdx < students.length) {
+          const s = students[studentIdx++];
+          seats.push({
+            isExtra: false,
+            label: `${dept}_${(s.name || '').toUpperCase()}_${s.studentRoll || ''}`,
+            studentName: s.name,
+            rollNo: s.studentRoll,
+            dept,
+          });
+        } else {
+          seats.push({ isExtra: true, label: 'EXTRA', dept });
+        }
+      }
+      columns.push({ dept, seats });
+    }
+  }
+
+  return {
+    roomNo,
+    examGroup,
+    semester,
+    program,
+    examMode,
+    deptCounts,
+    columns,
+    seatsPerColumn: ROWS,
+  };
+}
+

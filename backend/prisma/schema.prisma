@@ -9,24 +9,24 @@ datasource db {
 }
 
 model Student {
-  id             Int      @id @default(autoincrement())
-  collegeId      String   @unique @map("collegeId")
+  id             Int       @id @default(autoincrement())
+  collegeId      String    @unique @map("collegeId")
   name           String
   degree         String?
   department     String?
-  studentRoll    String?  @unique @map("studentRoll")
-  studentReg     String?  @map("studentReg")
-  examinationSem String?  @map("examinationSem")
+  studentRoll    String?   @unique @map("studentRoll")
+  studentReg     String?   @map("studentReg")
+  examinationSem String?   @map("examinationSem")
   batch          String?
   sessionId      String?
   lastLogin      DateTime?
 
   // New fields used for exam visibility and filtering
-  program        Program?
-  branch         String?
-  semester       String?
+  program  Program?
+  branch   String?
+  semester String?
 
-  exams          Exam[]
+  exams Exam[]
 
   @@map("Students")
 }
@@ -48,11 +48,11 @@ model Exam {
   visibleFrom  DateTime?
   visibleTo    DateTime?
 
-  studentId    Int?
-  student      Student?     @relation(fields: [studentId], references: [id])
+  studentId Int?
+  student   Student? @relation(fields: [studentId], references: [id])
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status, program, branch, semester, date])
   @@index([studentId, date])
@@ -82,6 +82,7 @@ enum Program {
   MCA
   BCA
   BBA
+  MBA
 }
 
 enum ExamStatus {
@@ -109,22 +110,22 @@ enum ExamScheduleType {
 }
 
 model ExamSchedule {
-  id         Int               @id @default(autoincrement())
-  uploadId   String
+  id           Int              @id @default(autoincrement())
+  uploadId     String
   scheduleType ExamScheduleType @default(UNKNOWN)
-  mode       ExamScheduleMode  @default(REGULAR)
+  mode         ExamScheduleMode @default(REGULAR)
 
   // Parsed meta
-  level      String?           // UG / PG
-  semester   String?           // "1", "2", "3" ...
-  batch      String?           // "2024-2028"
-  regulation String?           // "R25"
-  academicYear String?         // "AY 2025-26"
+  level        String? // UG / PG
+  semester     String? // "1", "2", "3" ...
+  batch        String? // "2024-2028"
+  regulation   String? // "R25"
+  academicYear String? // "AY 2025-26"
 
   // Department / branch
-  department String?           // e.g. "Bachelor of Technology in Biomedical Engineering"
-  departmentCode String?       // e.g. "BME"
-  branch     String?           // legacy compatibility with older rows
+  department     String? // e.g. "Bachelor of Technology in Biomedical Engineering"
+  departmentCode String? // e.g. "BME"
+  branch         String? // legacy compatibility with older rows
 
   // Row fields
   paperCode  String?
@@ -134,7 +135,7 @@ model ExamSchedule {
   examTime   String?
   status     ExamScheduleStatus @default(DRAFT)
   sourceFile String?
-  createdAt  DateTime          @default(now())
+  createdAt  DateTime           @default(now())
 
   @@index([status, departmentCode, semester, examDate, mode, scheduleType])
   @@index([uploadId])
@@ -144,8 +145,8 @@ model ExamSchedule {
 model Staff {
   id           Int      @id @default(autoincrement())
   email        String   @unique @map("email")
-  passwordHash String  @map("passwordHash")
-  name         String? @map("name")
+  passwordHash String   @map("passwordHash")
+  name         String?  @map("name")
   createdAt    DateTime @default(now()) @map("createdAt")
   updatedAt    DateTime @updatedAt @map("updatedAt")
 
@@ -154,11 +155,12 @@ model Staff {
 
 // Dropdown options – all data from DB, no hardcoded lists in codebase
 model ProgramOption {
-  id        Int     @id @default(autoincrement())
-  code      String  @unique // e.g. BTECH – must match Program enum / student.exam usage
-  name      String  // e.g. B.Tech
+  id        Int              @id @default(autoincrement())
+  code      String           @unique // e.g. BTECH – must match Program enum / student.exam usage
+  name      String // e.g. B.Tech
   branches  BranchOption[]
   semesters SemesterOption[]
+
   @@map("ProgramOptions")
 }
 
@@ -166,7 +168,8 @@ model BranchOption {
   id          Int           @id @default(autoincrement())
   programCode String
   name        String
-  program    ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
+  program     ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
+
   @@unique([programCode, name])
   @@map("BranchOptions")
 }
@@ -174,19 +177,21 @@ model BranchOption {
 model SemesterOption {
   id          Int           @id @default(autoincrement())
   programCode String
-  number      String        // "1", "2", …
-  program    ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
+  number      String // "1", "2", …
+  program     ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
+
   @@unique([programCode, number])
   @@map("SemesterOptions")
 }
 
 // Exam dropdown options – stored in Supabase only (value must match Prisma enums)
 model AppOption {
-  id       Int    @id @default(autoincrement())
-  category String // examType | examMode | examCategory
-  value    String // TEST_I, REGULAR, ODD
-  label    String // Test I, Regular, ODD
-  sortOrder Int   @default(0) @map("sortOrder")
+  id        Int    @id @default(autoincrement())
+  category  String // examType | examMode | examCategory
+  value     String // TEST_I, REGULAR, ODD
+  label     String // Test I, Regular, ODD
+  sortOrder Int    @default(0) @map("sortOrder")
+
   @@unique([category, value])
   @@index([category])
   @@map("AppOptions")
@@ -202,12 +207,12 @@ model ExamRoom {
 }
 
 model RoomAllotment {
-  id          Int      @id @default(autoincrement())
-  examGroup   String
-  roomNo      String
-  deptCounts  Json
-  total       Int
-  createdAt   DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  examGroup  String
+  roomNo     String
+  deptCounts Json
+  total      Int
+  createdAt  DateTime @default(now())
 
   @@unique([examGroup, roomNo])
   @@index([examGroup])

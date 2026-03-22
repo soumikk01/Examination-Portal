@@ -229,6 +229,94 @@ export async function listExamGroups() {
 }
 
 // ──────────────────────────────────────────────
+// Student counts split by exam type for the allotment sheet
+// Returns: { UG_REGULAR: {BRANCH: count}, UG_BACKLOG: {...}, PG_REGULAR: {...}, PG_BACKLOG: {...} }
+// ──────────────────────────────────────────────
+const UG_PROGRAMS = ['BTECH', 'BCA', 'BBA', 'DIPLOMA'];
+const PG_PROGRAMS = ['MTECH', 'MCA', 'MBA'];
+
+export async function getStudentCountsForSemester({ semester }) {
+  // Fetch students for the given semester with their exam modes
+  const students = await prisma.student.findMany({
+    where: {
+      ...(semester ? { semester: String(semester) } : {}),
+    },
+    select: {
+      id: true,
+      branch: true,
+      program: true,
+      exams: { select: { examMode: true } },
+    },
+  });
+
+  const result = {
+    UG_REGULAR: {},
+    UG_BACKLOG: {},
+    PG_REGULAR: {},
+    PG_BACKLOG: {},
+  };
+
+  for (const student of students) {
+    const prog = student.program ? String(student.program).toUpperCase() : '';
+    const branch = (student.branch || 'UNKNOWN').toUpperCase();
+    const isUG = UG_PROGRAMS.includes(prog);
+    const isPG = PG_PROGRAMS.includes(prog);
+    if (!isUG && !isPG) continue;
+
+    // A student is BACKLOG if any of their exams is BACKLOG
+    const hasBacklog = student.exams.some(e => e.examMode === 'BACKLOG');
+    const mode = hasBacklog ? 'BACKLOG' : 'REGULAR';
+    const key = `${isUG ? 'UG' : 'PG'}_${mode}`;
+
+    result[key][branch] = (result[key][branch] || 0) + 1;
+  }
+
+  return result;
+}
+
+// ──────────────────────────────────────────────
+// Update (upsert) a room's capacity
+// ──────────────────────────────────────────────
+export async function updateRoomCapacity(roomNo, capacity) {
+  return prisma.examRoom.upsert({
+    where: { roomNo },
+    create: { roomNo, capacity: Number(capacity), venue: 'Main Building' },
+    update: { capacity: Number(capacity) },
+  });
+}
+
+// ──────────────────────────────────────────────
+// Save room-wise dept allotment from the new
+// automated sheet (Rooms.jsx spreadsheet).
+// Called when admin clicks "Save" on the allotment page.
+// ──────────────────────────────────────────────
+export async function saveRoomAllotments({ semester, rooms }) {
+  // Build a generic examGroup key from the semester
+  const examGroup = `SEM${semester}-ALL-ALL`;
+
+  // Delete old allocations for this examGroup so we start fresh
+  await prisma.roomAllotment.deleteMany({ where: { examGroup } });
+
+  // Re-insert
+  for (const room of rooms) {
+    if (!room.roomNo || !room.deptCounts || !Object.keys(room.deptCounts).length) continue;
+    const total = Object.values(room.deptCounts).reduce((s, v) => s + Number(v), 0);
+    if (total === 0) continue;
+    await prisma.roomAllotment.create({
+      data: {
+        examGroup,
+        roomNo: room.roomNo,
+        deptCounts: room.deptCounts,
+        total,
+      },
+    });
+  }
+
+  return { examGroup, roomCount: rooms.length };
+}
+
+// ──────────────────────────────────────────────
 // Expose SEATS_PER_COLUMN for seating service
 // ──────────────────────────────────────────────
 export { SEATS_PER_COLUMN };
+
