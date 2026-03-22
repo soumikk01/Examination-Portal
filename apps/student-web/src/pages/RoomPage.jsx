@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/room.scss";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
 
 const ROWS = 8;
 const COLS = 5;
@@ -175,11 +175,34 @@ function Desk() {
       onMouseLeave={() => setHovered(false)}
     >
       <div style={styles.deskInner} />
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        width: '100%',
+        zIndex: 1,
+        position: 'relative'
+      }}>
+        <div style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          backgroundColor: hovered ? 'rgba(184, 169, 138, 0.2)' : 'rgba(184, 169, 138, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid rgba(184, 169, 138, 0.25)',
+          transition: 'all 0.15s ease'
+        }}>
+          <User size={18} color="#8a7a5a" strokeWidth={2} />
+        </div>
+      </div>
     </div>
   );
 }
 
-function TeacherTable() {
+function TeacherTable({ roomName }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -188,13 +211,29 @@ function TeacherTable() {
       onMouseLeave={() => setHovered(false)}
     >
       <div style={styles.teacherTableInner} />
-      <span style={styles.teacherText}>Teacher</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', zIndex: 1 }}>
+        <div style={{
+          width: '28px',
+          height: '28px',
+          borderRadius: '50%',
+          backgroundColor: 'rgba(90, 74, 42, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid rgba(90, 74, 42, 0.2)'
+        }}>
+          <User size={16} color="#5a4a2a" strokeWidth={2.5} />
+        </div>
+        <span style={styles.teacherText}>{roomName ? `ROOM - ${roomName}` : "ROOM -"}</span>
+      </div>
     </div>
   );
 }
 
 export default function SeatingChart3D() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { roomName } = location.state || {};
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
@@ -238,7 +277,7 @@ export default function SeatingChart3D() {
         <div style={styles.scene}>
           <div style={styles.teacherArea}>
             <span style={styles.teacherLabel}>Front of Room</span>
-            <TeacherTable />
+            <TeacherTable roomName={roomName} />
           </div>
 
           <div style={styles.divider} />

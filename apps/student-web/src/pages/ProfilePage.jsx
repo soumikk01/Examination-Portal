@@ -211,7 +211,7 @@ const ProfilePage = () => {
                         <div className="w-px h-6 bg-indigo-200 mx-1"></div>
 
                         <button
-                            onClick={() => navigate('/room')}
+                            onClick={() => navigate('/room', { state: { roomName: upcomingExams[0]?.room } })}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
                                 e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
