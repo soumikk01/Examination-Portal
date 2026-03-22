@@ -109,8 +109,8 @@ export function allocateRooms(deptGroups, rooms) {
 export async function generateRoomAllotment({ semester, program, branch, examMode }) {
   // Build filter
   const where = {
-    ...(program ? { program } : {}),
-    ...(branch ? { branch } : {}),
+    ...(program && program !== 'ALL' ? { program } : {}),
+    ...(branch && branch !== 'ALL' ? { branch } : {}),
     ...(semester ? { semester: String(semester) } : {}),
   };
 
@@ -159,20 +159,18 @@ export async function generateRoomAllotment({ semester, program, branch, examMod
 
   const examGroup = buildExamGroup({ semester, program, examMode: examMode || 'ALL' });
 
-  // Upsert into DB
-  for (const alloc of allocations) {
-    await prisma.roomAllotment.upsert({
-      where: { examGroup_roomNo: { examGroup, roomNo: alloc.roomNo } },
-      create: {
+  // Clear previous allocations to prevent ghost rooms
+  await prisma.roomAllotment.deleteMany({ where: { examGroup } });
+
+  // Insert into DB
+  if (allocations.length > 0) {
+    await prisma.roomAllotment.createMany({
+      data: allocations.map(alloc => ({
         examGroup,
         roomNo: alloc.roomNo,
         deptCounts: alloc.deptCounts,
         total: alloc.total,
-      },
-      update: {
-        deptCounts: alloc.deptCounts,
-        total: alloc.total,
-      },
+      }))
     });
   }
 
@@ -236,18 +234,34 @@ const UG_PROGRAMS = ['BTECH', 'BCA', 'BBA', 'DIPLOMA'];
 const PG_PROGRAMS = ['MTECH', 'MCA', 'MBA'];
 
 export async function getStudentCountsForSemester({ semester }) {
-  // Fetch students for the given semester with their exam modes
-  const students = await prisma.student.findMany({
-    where: {
-      ...(semester ? { semester: String(semester) } : {}),
-    },
-    select: {
-      id: true,
-      branch: true,
-      program: true,
-      exams: { select: { examMode: true } },
-    },
-  });
+  let students = [];
+  try {
+    // Fetch students for the given semester with their exam modes
+    students = await prisma.student.findMany({
+      where: {
+        ...(semester ? { semester: String(semester) } : {}),
+      },
+      select: {
+        id: true,
+        branch: true,
+        program: true,
+        exams: { select: { examMode: true } },
+      },
+    });
+  } catch (err) {
+    console.error("Warning: Failed to fetch students with exams relation", err);
+    // Fallback: fetch without exams (treat all as REGULAR)
+    students = await prisma.student.findMany({
+      where: {
+        ...(semester ? { semester: String(semester) } : {}),
+      },
+      select: {
+        id: true,
+        branch: true,
+        program: true,
+      },
+    });
+  }
 
   const result = {
     UG_REGULAR: {},
@@ -263,8 +277,8 @@ export async function getStudentCountsForSemester({ semester }) {
     const isPG = PG_PROGRAMS.includes(prog);
     if (!isUG && !isPG) continue;
 
-    // A student is BACKLOG if any of their exams is BACKLOG
-    const hasBacklog = student.exams.some(e => e.examMode === 'BACKLOG');
+    // A student is BACKLOG if any of their exams is BACKLOG (or default REGULAR if fallback used)
+    const hasBacklog = student.exams && student.exams.some(e => e.examMode === 'BACKLOG');
     const mode = hasBacklog ? 'BACKLOG' : 'REGULAR';
     const key = `${isUG ? 'UG' : 'PG'}_${mode}`;
 

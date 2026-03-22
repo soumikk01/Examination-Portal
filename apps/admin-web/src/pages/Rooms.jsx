@@ -310,12 +310,14 @@ export default function RoomAllotment() {
     });
   }, [selRoom, capInput, studentCounts]);
 
-  // ── Save: PATCH capacity for each room that has one ───────────────────────
+  // ── Save: PATCH capacity + POST allotment data ────────────────────────
   const handleSave = useCallback(async () => {
     const toSave = rows.filter(r => r.capacity);
     if (!toSave.length) return;
+    if (!semester) { setSaveStatus("error"); return; }
     setSaveStatus("saving");
     try {
+      // 1. Save capacity for each room
       await Promise.all(toSave.map(r =>
         fetch(`${API}/rooms/${encodeURIComponent(r.roomNo)}/capacity`, {
           method: "PATCH",
@@ -323,6 +325,25 @@ export default function RoomAllotment() {
           body: JSON.stringify({ capacity: r.capacity }),
         })
       ));
+
+      // 2. Build allotment payload: for each room, combine all dept counts across all 4 sections
+      const allotmentRooms = toSave.map(r => {
+        const combined = {};
+        SECTIONS.forEach(sec => {
+          const depts = r[sec.key] || {};
+          Object.entries(depts).forEach(([dept, count]) => {
+            if (count > 0) combined[dept] = (combined[dept] || 0) + count;
+          });
+        });
+        return { roomNo: r.roomNo, deptCounts: combined };
+      });
+
+      await fetch(`${API}/rooms/allotments`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ semester, rooms: allotmentRooms }),
+      });
+
       setSaveStatus("ok");
       setTimeout(() => setSaveStatus("idle"), 3000);
     } catch (e) {
@@ -330,7 +351,7 @@ export default function RoomAllotment() {
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 4000);
     }
-  }, [rows]);
+  }, [rows, semester]);
 
   // ── Retry: clear all allocations ─────────────────────────────────────────
   const handleRetry = () => {
@@ -427,7 +448,7 @@ export default function RoomAllotment() {
             onClick={handleGenerate}
             disabled={!semester || fetchStatus === "loading"}
           >
-            {fetchStatus === "loading" ? "Loading…" : "⚡ Generate"}
+            {fetchStatus === "loading" ? "Loading…" : "Generate"}
           </button>
 
           <div style={{ width: 1, background: "#e2e8f0", alignSelf: "stretch", margin: "0 0.25rem" }} />
@@ -482,12 +503,12 @@ export default function RoomAllotment() {
             onClick={handleSave}
             disabled={saveStatus === "saving" || !rows.some(r => r.capacity)}
           >
-            💾 Save
+            Save
           </button>
 
           {/* Retry */}
           <button className="ra-btn ra-btn-orange" onClick={handleRetry}>
-            🔄 Retry
+            Retry
           </button>
         </div>
 

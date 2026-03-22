@@ -2,6 +2,7 @@ import prisma from '../../database/database.js';
 import { getRoomAllotment } from '../rooms/room.service.js';
 
 const SEATS_PER_COLUMN = 8;
+const ROWS = 8;
 
 // ──────────────────────────────────────────────
 // Core logic: generateSeatMatrix
@@ -89,7 +90,7 @@ export async function generateSeating({ examGroup }) {
 
   // Fetch ALL students for this group (same query as room allotment)
   const where = {
-    ...(program ? { program } : {}),
+    ...(program && program !== 'ALL' ? { program } : {}),
     ...(semester ? { semester: String(semester) } : {}),
   };
 
@@ -249,98 +250,118 @@ export async function assign(_data) {
 // Looks at saved RoomAllotment, resolves students,
 // returns column-wise seat grid ready for the PDF view.
 // ──────────────────────────────────────────────
-export async function getSeatingForRoom({ roomNo }) {
-  // Find the room allotment row for this roomNo (any examGroup)
-  const allotmentRows = await prisma.roomAllotment.findMany({
-    where: { roomNo },
-    orderBy: { createdAt: 'desc' },
-  });
+// ──────────────────────────────────────────────
+export async function getSeatingForRoom({ roomNo, semester }) {
+  const roomData = await prisma.examRoom.findUnique({ where: { roomNo } });
+  const physicalCapacity = roomData ? roomData.capacity : 40;
+  const targetColCount = Math.ceil(physicalCapacity / ROWS);
 
+  // 1. Get the most recent allotment for this room
+  // If semester is provided, filter by "SEM{semester}-" prefix
+  const query = {
+    where: { 
+      roomNo,
+      ...(semester ? { examGroup: { startsWith: `SEM${semester}-` } } : {})
+    },
+    orderBy: { createdAt: 'desc' },
+  };
+
+  const allotmentRows = await prisma.roomAllotment.findMany(query);
   if (!allotmentRows.length) return null;
 
-  // Use the most recent allotment for this room
   const allotment = allotmentRows[0];
   const { deptCounts, examGroup } = allotment;
+
 
   // Parse examGroup → semester, program, examMode
   const parts = examGroup.split('-');
   const semPart = parts[0];
-  const semester = semPart.replace('SEM', '');
+  const semNum   = semPart.replace('SEM', '');
   const program  = parts[1];
   const examMode = parts.slice(2).join('-');
 
-  // Fetch students for each dept in this room
-  const deptList = Object.entries(deptCounts)
-    .filter(([, c]) => Number(c) > 0)
-    .sort((a, b) => a[0].localeCompare(b[0]));
+  // Check if seat allocations already exist for this exam group
+  let rows = await prisma.seatAllocation.findMany({
+    where: { examGroup, roomNo },
+    orderBy: [{ columnNo: 'asc' }, { seatNo: 'asc' }]
+  });
 
-  const where = {
-    ...(program && program !== 'ALL' ? { program } : {}),
-    ...(semester ? { semester: String(semester) } : {}),
-  };
-
-  let allStudents;
-  if (examMode && examMode !== 'ALL') {
-    allStudents = await prisma.student.findMany({
-      where: { ...where, exams: { some: { examMode } } },
-      select: { id: true, name: true, studentRoll: true, branch: true, department: true },
-      orderBy: [{ branch: 'asc' }, { name: 'asc' }],
-    });
-  } else {
-    allStudents = await prisma.student.findMany({
-      where,
-      select: { id: true, name: true, studentRoll: true, branch: true, department: true },
-      orderBy: [{ branch: 'asc' }, { name: 'asc' }],
-    });
-  }
-
-  // Group students by branch
-  const studentsByDept = {};
-  for (const s of allStudents) {
-    const dept = (s.branch || s.department || 'UNKNOWN').toUpperCase();
-    if (!studentsByDept[dept]) studentsByDept[dept] = [];
-    studentsByDept[dept].push(s);
-  }
-
-  // Build columns: for each dept take only the count assigned to this room
-  const ROWS = 8; // seats per column
-  const columns = [];
-
-  for (const [dept, count] of deptList) {
-    const roomCount = Number(count);
-    const students  = (studentsByDept[dept] || []).slice(0, roomCount);
-    const numCols   = Math.ceil(roomCount / ROWS);
-
-    let studentIdx = 0;
-    for (let c = 0; c < numCols; c++) {
-      const seats = [];
-      for (let r = 0; r < ROWS; r++) {
-        if (studentIdx < students.length) {
-          const s = students[studentIdx++];
-          seats.push({
-            isExtra: false,
-            label: `${dept}_${(s.name || '').toUpperCase()}_${s.studentRoll || ''}`,
-            studentName: s.name,
-            rollNo: s.studentRoll,
-            dept,
-          });
-        } else {
-          seats.push({ isExtra: true, label: 'EXTRA', dept });
-        }
-      }
-      columns.push({ dept, seats });
+  // If no rows were found, it means seating hasn't been generated yet for this allotment.
+  // Auto-generate seating for the entire exam group and save it.
+  if (rows.length === 0) {
+    try {
+      await generateSeating({ examGroup });
+      // Fetch the newly generated rows
+      rows = await prisma.seatAllocation.findMany({
+        where: { examGroup, roomNo },
+        orderBy: [{ columnNo: 'asc' }, { seatNo: 'asc' }]
+      });
+    } catch (err) {
+      console.error('Failed to auto-generate seating', err);
     }
+  }
+
+  const columnsMap = {};
+  let extraCount = 0;
+
+  for (const row of rows) {
+    if (!columnsMap[row.columnNo]) {
+      columnsMap[row.columnNo] = { dept: row.dept, seats: [] };
+    }
+    
+    let label = '';
+    if (row.isExtra) {
+      extraCount++;
+      label = `EXTRA`;
+    } else {
+      label = `${row.dept}_${(row.studentName || '').toUpperCase()}_${row.rollNo || ''}`;
+    }
+
+    columnsMap[row.columnNo].seats.push({
+      isExtra: row.isExtra,
+      label,
+      studentName: row.studentName,
+      rollNo: row.rollNo,
+      dept: row.dept,
+    });
+  }
+
+  const columns = Object.entries(columnsMap)
+    .sort((a, b) => Number(a[0]) - Number(b[0]))
+    .map(([_, col]) => col);
+
+  // Pad to physical room columns
+  while (columns.length < targetColCount) {
+    const emptySeats = Array.from({ length: ROWS }, () => ({
+      isExtra: false,
+      label: '',  // Empty seat
+      studentName: null,
+      rollNo: null,
+      dept: null
+    }));
+    columns.push({ dept: null, seats: emptySeats });
   }
 
   return {
     roomNo,
     examGroup,
-    semester,
+    isPublished: allotment.isPublished || false,
+    semester: semNum,
     program,
     examMode,
     deptCounts,
     columns,
     seatsPerColumn: ROWS,
   };
+}
+
+// ──────────────────────────────────────────────
+// Publish (toggle) seating for an exam group / room
+// ──────────────────────────────────────────────
+export async function publishSeating({ examGroup, roomNo, publish = true }) {
+  return prisma.roomAllotment.update({
+    where: { examGroup_roomNo: { examGroup, roomNo } },
+    data: { isPublished: publish },
+  });
 }
 

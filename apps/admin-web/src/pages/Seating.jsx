@@ -40,7 +40,7 @@ const styles = `
   .sa2-group label { font-size: .7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
   .sa2-input {
     padding: .45rem .7rem; border: 1px solid #cbd5e1; border-radius: 6px;
-    font-size: .875rem; color: #1e293b; background: white; min-width: 130px;
+    font-size: .875rem; color: #1e293b; background: white; min-width: 100px;
     outline: none; transition: border .15s;
   }
   .sa2-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
@@ -77,9 +77,9 @@ const styles = `
   }
   .sa2-a4.hide-shadow { box-shadow: none !important; }
 
-  /* Letterhead */
-  .sa2-lh { display: flex; align-items: center; gap: 1rem; margin-bottom: 6px; }
+  .sa2-lh { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-bottom: 6px; }
   .sa2-lh img { height: 52px; width: 52px; object-fit: contain; }
+  .sa2-lh-text { text-align: center; }
   .sa2-lh-text h1 { font-size: 13px; font-weight: 700; margin: 0 0 2px; }
   .sa2-lh-text p  { font-size: 10px; margin: 0; color: #444; }
 
@@ -105,7 +105,7 @@ const styles = `
     border: 1px solid #555; padding: 0;
     vertical-align: top; height: 22mm;
   }
-  .sa2-table th { height: auto; padding: 3px 4px; font-size: 9.5px; font-weight: 700; text-align: center; }
+  .sa2-table th { vertical-align: middle; padding: 3px 4px; font-size: 11px; font-weight: 700; text-align: center; }
 
   /* Column header types */
   .sa2-th-extra { background: #f5f5f5; }
@@ -115,14 +115,15 @@ const styles = `
   /* Cell contents */
   .sa2-cell-extra { background: #f9f9f9; }
   .sa2-cell-door  { background: #f9f9f9; }
-  .sa2-cell-seat  {
+  .sa2-cell-seat {
     display: flex; flex-direction: column;
     justify-content: center; align-items: center;
     height: 100%; padding: 2px 3px;
     font-size: 8.5px; line-height: 1.25;
     word-break: break-word; text-align: center;
   }
-  .sa2-cell-seat strong { font-size: 9px; font-weight: 700; }
+  .sa2-cell-seat strong { font-size: 9px; font-weight: 700; display: block; }
+  .sa2-cell-seat span { display: block; }
   .sa2-cell-seat.is-extra {
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 700; color: #555; font-style: italic;
@@ -138,6 +139,7 @@ const styles = `
   }
   .sa2-label-extra { color: #1a1a1a; }
   .sa2-label-door  { color: #1a1a1a; }
+  .sa2-label-aisle { color: #1a1a1a; font-style: italic; opacity: 0.7; }
 
   /* Footer */
   .sa2-footer { margin-top: 8px; text-align: right; }
@@ -158,8 +160,8 @@ const styles = `
 export default function Seating() {
   const [venue, setVenue]       = useState('');
   const [room, setRoom]         = useState('');
+  const [semester, setSemester] = useState('2');
   const [examType, setExamType] = useState('Class Test - I');
-  const [semType, setSemType]   = useState('ODD');
   const [year, setYear]         = useState(String(new Date().getFullYear()));
 
   const [seating, setSeating]   = useState(null); // fetched data
@@ -173,7 +175,7 @@ export default function Seating() {
     if (!room) { setErrMsg('Please select a room.'); return; }
     setStatus('loading'); setErrMsg(''); setSeating(null);
     try {
-      const res = await fetch(`${API}/seating/room/${encodeURIComponent(room)}`, {
+      const res = await fetch(`${API}/seating/room/${encodeURIComponent(room)}?semester=${semester}`, {
         headers: getAuthHeaders(),
       });
       if (!res.ok) {
@@ -186,6 +188,26 @@ export default function Seating() {
     } catch (e) {
       setErrMsg(e.message);
       setStatus('err');
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!seating) return;
+    try {
+      const isCurrentlyPublished = seating.isPublished;
+      const res = await fetch(`${API}/seating/publish`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ 
+          examGroup: seating.examGroup,
+          roomNo: seating.roomNo,
+          publish: !isCurrentlyPublished
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update publication status');
+      setSeating({ ...seating, isPublished: !isCurrentlyPublished });
+    } catch (e) {
+      setErrMsg(e.message);
     }
   };
 
@@ -214,14 +236,9 @@ export default function Seating() {
   };
 
   // ── Build table data ──────────────────────────────────────────────────
-  // Layout: [EXTRA] [dept-cols...] [Door]
-  // Each dept column fills top-to-bottom with student cells
-  // When dept runs out → EXTRA in remaining rows
-  // EXTRA first column and Door last column span all rows
   const ROWS = seating ? seating.seatsPerColumn : 8;
   const columns = seating ? seating.columns : [];
 
-  // For the info header: unique dept → total students
   const deptTotals = {};
   if (seating) {
     for (const [dept, cnt] of Object.entries(seating.deptCounts || {})) {
@@ -229,15 +246,15 @@ export default function Seating() {
     }
   }
 
-  // Collapse adjacent same-dept header columns
   const collapsedHeaders = [];
-  for (const col of columns) {
-    const prev = collapsedHeaders[collapsedHeaders.length - 1];
-    if (prev && prev.dept === col.dept) { prev.span++; }
-    else collapsedHeaders.push({ dept: col.dept, span: 1 });
+  if (columns.length) {
+    for (const col of columns) {
+      const prev = collapsedHeaders[collapsedHeaders.length - 1];
+      if (prev && prev.dept === col.dept) { prev.span++; }
+      else collapsedHeaders.push({ dept: col.dept, span: 1 });
+    }
   }
 
-  // Current venue label
   const venueLabel = venue || '--';
 
   return (
@@ -265,6 +282,13 @@ export default function Seating() {
           </div>
 
           <div className="sa2-group">
+            <label>Semester (1-8)</label>
+            <select className="sa2-input" value={semester} onChange={e => { setSemester(e.target.value); setSeating(null); setStatus('idle'); }}>
+              {Array.from({ length: 8 }, (_, i) => String(i + 1)).map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div className="sa2-group">
             <label>Exam Type</label>
             <select className="sa2-input" value={examType} onChange={e => setExamType(e.target.value)}>
               <option>Class Test - I</option>
@@ -275,37 +299,31 @@ export default function Seating() {
           </div>
 
           <div className="sa2-group">
-            <label>Semester (Odd/Even)</label>
-            <select className="sa2-input" value={semType} onChange={e => setSemType(e.target.value)}>
-              <option value="ODD">ODD</option>
-              <option value="EVEN">EVEN</option>
-            </select>
-          </div>
-
-          <div className="sa2-group">
             <label>Year</label>
             <input type="text" className="sa2-input" value={year} onChange={e => setYear(e.target.value)} style={{ width: 80 }} />
           </div>
 
           <button className="sa2-btn sa2-btn-blue" onClick={handleGenerate} disabled={!room || status === 'loading'}>
-            {status === 'loading' ? '⏳ Loading…' : '⚡ Generate'}
+            {status === 'loading' ? 'Loading…' : 'Generate'}
           </button>
 
-          {seating && (
-            <button className="sa2-btn sa2-btn-green" onClick={handleDownloadPDF}>
-              📄 Download PDF
-            </button>
-          )}
+          <button 
+            className={`sa2-btn ${seating?.isPublished ? 'sa2-btn-blue' : 'sa2-btn-green'}`} 
+            onClick={handlePublish} 
+            disabled={!seating}
+          >
+            {seating?.isPublished ? 'Unpublish' : 'Publish'}
+          </button>
+
+          <button className="sa2-btn sa2-btn-green" onClick={handleDownloadPDF} disabled={!seating}>
+            Download PDF
+          </button>
 
           {status === 'ok'  && <span className="sa2-status sa2-ok">✓ Loaded</span>}
           {status === 'err' && <span className="sa2-status sa2-err">Error</span>}
         </div>
 
         {errMsg && <p style={{ color: '#b91c1c', fontSize: '.85rem', marginBottom: '.75rem' }}>⚠ {errMsg}</p>}
-
-        {!seating && status === 'idle' && (
-          <p className="sa2-info-msg">Select Venue → Room → click <strong>⚡ Generate</strong> to build the seating chart.</p>
-        )}
 
         {/* A4 PDF Preview */}
         <div className="sa2-a4-outer">
@@ -315,7 +333,7 @@ export default function Seating() {
             <div className="sa2-lh">
               <img src={logo} alt="JIS Logo" />
               <div className="sa2-lh-text">
-                <h1>Seating Arrangement for {examType} &nbsp;–&nbsp; {semType} {year}</h1>
+                <h1>Seating Arrangement for {examType} &nbsp;–&nbsp; {parseInt(semester)%2===0?'EVEN':'ODD'} {year}</h1>
                 <p><strong>{COLLEGE_NAME}</strong></p>
                 <p>(Venue: {venueLabel})</p>
               </div>
@@ -323,83 +341,73 @@ export default function Seating() {
 
             {/* Info bar */}
             <div className="sa2-info">
-              <div className="sa2-ic">Room No – {room || (seating?.roomNo) || 'C-XXX'}</div>
+              <div className="sa2-ic">Room No – {room || (seating?.roomNo) || '--'}</div>
               {seating
                 ? collapsedHeaders.map((h, i) => (
                     <div key={i} className="sa2-ic">
                       {h.dept} – {deptTotals[h.dept] ?? ''}
                     </div>
                   ))
-                : <div className="sa2-ic">CE – 05</div>
+                : <div className="sa2-ic">DEPT – COUNT</div>
               }
-              <div className="sa2-ic sa2-ic-sem">SEMESTER – {seating?.semester || '–'}</div>
+              <div className="sa2-ic sa2-ic-sem">SEMESTER – {semester}</div>
             </div>
 
             {/* Seating table */}
             <table className="sa2-table">
               <thead>
                 <tr>
-                  {/* EXTRA column header */}
-                  <th className="sa2-th-extra" style={{ width: 68 }}>EXTRA</th>
-                  {/* Dept columns */}
                   {seating ? (
-                    columns.map((col, i) => (
-                      <th key={i} className="sa2-th-dept">{col.dept}</th>
-                    ))
+                    <>
+                      <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>EXTRA</th>
+                      {seating.columns.length > 2 && (
+                        <th className="sa2-th-dept" colSpan={seating.columns.length - 2}></th>
+                      )}
+                      {seating.columns.length > 1 && (
+                        <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>Door</th>
+                      )}
+                      {seating.columns.length === 1 && (
+                        <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>Door</th>
+                      )}
+                    </>
                   ) : (
-                    <th className="sa2-th-dept" colSpan={3} />
+                    <>
+                      <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>EXTRA</th>
+                      <th className="sa2-th-dept" colSpan={3}></th>
+                      <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>Door</th>
+                    </>
                   )}
-                  {/* Door column */}
-                  <th className="sa2-th-door" style={{ width: 68 }}>Door</th>
                 </tr>
               </thead>
               <tbody>
                 {Array.from({ length: ROWS }, (_, ri) => (
                   <tr key={ri}>
-                    {/* EXTRA column — only label in row 0, blank otherwise */}
-                    <td className="sa2-cell-extra">
-                      {ri === 0
-                        ? <div className="sa2-label-cell sa2-label-extra">EXTRA</div>
-                        : <div className="sa2-cell-empty" />}
-                    </td>
-
-                    {/* Data columns */}
                     {seating ? (
-                      columns.map((col, ci) => {
+                      seating.columns.map((col, ci) => {
                         const seat = col.seats[ri];
-                        if (!seat) return <td key={ci} />;
-                        if (seat.isExtra) {
+                        if (!seat || !seat.label) {
+                           return <td key={`empty-${ci}`}><div className="sa2-cell-empty" /></td>;
+                        } else if (seat.isExtra) {
+                           return <td key={`extra-seat-${ci}`}><div className="sa2-cell-seat is-extra">{seat.label === 'EXTRA' ? 'EXTRA' : seat.label}</div></td>;
+                        } else {
                           return (
                             <td key={ci}>
-                              <div className="sa2-cell-seat is-extra">EXTRA</div>
+                              <div className="sa2-cell-seat">
+                                {seat.label}
+                              </div>
                             </td>
                           );
                         }
-                        return (
-                          <td key={ci}>
-                            <div className="sa2-cell-seat">
-                              <strong>{seat.dept}</strong>
-                              <span>{seat.studentName}</span>
-                              <span style={{ color: '#555' }}>{seat.rollNo}</span>
-                            </div>
-                          </td>
-                        );
                       })
                     ) : (
-                      // Dummy empty columns when no data
-                      [0,1,2].map(i => (
-                        <td key={i}>
-                          <div className="sa2-cell-empty" />
-                        </td>
-                      ))
+                      <>
+                        <td key="0"><div className="sa2-cell-empty" /></td>
+                        {Array.from({length:3}).map((_,ci) => (
+                          <td key={ci + 1}><div className="sa2-cell-empty" /></td>
+                        ))}
+                        <td key="4"><div className="sa2-cell-empty" /></td>
+                      </>
                     )}
-
-                    {/* Door column — only label in row 0, blank otherwise */}
-                    <td className="sa2-cell-door">
-                      {ri === 0
-                        ? <div className="sa2-label-cell sa2-label-door">Door</div>
-                        : <div className="sa2-cell-empty" />}
-                    </td>
                   </tr>
                 ))}
               </tbody>

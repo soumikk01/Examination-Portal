@@ -207,12 +207,14 @@ model ExamRoom {
 }
 
 model RoomAllotment {
-  id         Int      @id @default(autoincrement())
-  examGroup  String
-  roomNo     String
-  deptCounts Json
-  total      Int
-  createdAt  DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  examGroup   String
+  roomNo      String
+  deptCounts  Json
+  total       Int
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  allocations SeatAllocation[]
 
   @@unique([examGroup, roomNo])
   @@index([examGroup])
@@ -220,7 +222,7 @@ model RoomAllotment {
 }
 
 model SeatAllocation {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   examGroup   String
   roomNo      String
   columnNo    Int
@@ -229,7 +231,8 @@ model SeatAllocation {
   dept        String
   studentName String?
   rollNo      String?
-  isExtra     Boolean @default(false)
+  isExtra     Boolean  @default(false)
+  allotment   RoomAllotment @relation(fields: [examGroup, roomNo], references: [examGroup, roomNo], onDelete: Cascade)
 
   @@unique([examGroup, roomNo, columnNo, seatNo])
   @@index([examGroup, roomNo])
