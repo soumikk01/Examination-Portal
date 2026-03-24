@@ -25,6 +25,10 @@ export async function getStudentSeating(req, res, next) {
       semester: allocation.allotment.examGroup.split('-')[0].replace('SEM','')
     });
 
+    if (!result) {
+      return res.status(404).json({ error: 'No seating arrangement found for this room.' });
+    }
+
     res.json({ ...result, mySeat: { columnNo: allocation.columnNo, seatNo: allocation.seatNo } });
   } catch (error) {
     next(error);

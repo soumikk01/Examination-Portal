@@ -122,75 +122,79 @@ export async function generateSeating({ examGroup }) {
     Object.keys(studentsByDept).map(d => [d, 0])
   );
 
-  // Delete existing seat allocations for this examGroup
-  await prisma.seatAllocation.deleteMany({ where: { examGroup } });
-
   const result = [];
 
-  for (const roomAlloc of allotment.allocations) {
-    const { roomNo, deptCounts } = roomAlloc;
-    const matrix = generateSeatMatrix(roomNo, deptCounts);
+  // Use transaction to ensure atomicity
+  await prisma.$transaction(async (tx) => {
+    // Delete existing seat allocations for this examGroup
+    await tx.seatAllocation.deleteMany({ where: { examGroup } });
 
-    const seatRows = [];
-    let globalSeatNo = 1;
+    for (const roomAlloc of allotment.allocations) {
+      const { roomNo, deptCounts } = roomAlloc;
+      const matrix = generateSeatMatrix(roomNo, deptCounts);
 
-    for (let colIdx = 0; colIdx < matrix.columns.length; colIdx++) {
-      const col = matrix.columns[colIdx];
-      const deptStudents = studentsByDept[col.dept] || [];
+      const seatRows = [];
+      let globalSeatNo = 1;
 
-      for (let rowIdx = 0; rowIdx < SEATS_PER_COLUMN; rowIdx++) {
-        const slot = col.seats[rowIdx];
-        let studentId = null;
-        let studentName = null;
-        let rollNo = null;
-        let isExtra = slot.isExtra;
+      for (let colIdx = 0; colIdx < matrix.columns.length; colIdx++) {
+        const col = matrix.columns[colIdx];
+        const deptStudents = studentsByDept[col.dept] || [];
 
-        if (!isExtra) {
-          const cursor = deptCursors[col.dept] || 0;
-          const student = deptStudents[cursor];
-          if (student) {
-            studentId = student.id;
-            studentName = student.name;
-            rollNo = student.studentRoll;
-            deptCursors[col.dept] = cursor + 1;
-          } else {
-            isExtra = true;
+        for (let rowIdx = 0; rowIdx < SEATS_PER_COLUMN; rowIdx++) {
+          const slot = col.seats[rowIdx];
+          let studentId = null;
+          let studentName = null;
+          let rollNo = null;
+          let isExtra = slot.isExtra;
+
+          if (!isExtra) {
+            const cursor = deptCursors[col.dept] || 0;
+            const student = deptStudents[cursor];
+            if (student) {
+              studentId = student.id;
+              studentName = student.name;
+              rollNo = student.studentRoll;
+              deptCursors[col.dept] = cursor + 1;
+            } else {
+              isExtra = true;
+              deptCursors[col.dept] = cursor + 1;
+            }
           }
+
+          seatRows.push({
+            examGroup,
+            roomNo,
+            columnNo: colIdx + 1,
+            seatNo: globalSeatNo++,
+            studentId,
+            dept: col.dept,
+            studentName,
+            rollNo,
+            isExtra,
+          });
         }
-
-        seatRows.push({
-          examGroup,
-          roomNo,
-          columnNo: colIdx + 1,
-          seatNo: globalSeatNo++,
-          studentId,
-          dept: col.dept,
-          studentName,
-          rollNo,
-          isExtra,
-        });
       }
+
+      await tx.seatAllocation.createMany({ data: seatRows });
+
+      result.push({
+        roomNo,
+        columns: matrix.columns.map((col, colIdx) => ({
+          dept: col.dept,
+          columnNo: colIdx + 1,
+          seats: seatRows
+            .filter(s => s.columnNo === colIdx + 1)
+            .map(s => ({
+              seatNo: s.seatNo,
+              dept: s.dept,
+              studentName: s.studentName,
+              rollNo: s.rollNo,
+              isExtra: s.isExtra,
+            })),
+        })),
+      });
     }
-
-    await prisma.seatAllocation.createMany({ data: seatRows });
-
-    result.push({
-      roomNo,
-      columns: matrix.columns.map((col, colIdx) => ({
-        dept: col.dept,
-        columnNo: colIdx + 1,
-        seats: seatRows
-          .filter(s => s.columnNo === colIdx + 1)
-          .map(s => ({
-            seatNo: s.seatNo,
-            dept: s.dept,
-            studentName: s.studentName,
-            rollNo: s.rollNo,
-            isExtra: s.isExtra,
-          })),
-      })),
-    });
-  }
+  });
 
   return { examGroup, rooms: result };
 }

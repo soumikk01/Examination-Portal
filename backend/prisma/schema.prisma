@@ -28,6 +28,9 @@ model Student {
 
   exams Exam[]
 
+  @@index([program])
+  @@index([branch])
+  @@index([semester])
   @@map("Students")
 }
 
@@ -63,6 +66,7 @@ enum ExamType {
   TEST_I
   TEST_II
   END_SEM
+  END_SEM_THEORY
 }
 
 enum ExamMode {
@@ -218,6 +222,7 @@ model RoomAllotment {
 
   @@unique([examGroup, roomNo])
   @@index([examGroup])
+  @@index([roomNo])
   @@map("RoomAllotments")
 }
 
@@ -236,5 +241,7 @@ model SeatAllocation {
 
   @@unique([examGroup, roomNo, columnNo, seatNo])
   @@index([examGroup, roomNo])
+  @@index([studentId])
+  @@index([examGroup])
   @@map("SeatAllocations")
 }

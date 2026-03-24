@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/room.scss";
 import { ArrowLeft } from "lucide-react";
+import { api } from "../services/api.js";
 
 const ROWS = 8;
 const COLS = 5;
@@ -203,18 +204,10 @@ export default function SeatingChart3D() {
   useEffect(() => {
     const fetchSeating = async () => {
       try {
-        const token = localStorage.getItem('examination_portal_student_token');
-        const res = await fetch('/api/v1/student/seating', {
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || 'Seating not published yet.');
-        }
-        const data = await res.json();
+        const data = await api.getStudentSeating();
         setSeating(data);
       } catch (e) {
-        setError(e.message);
+        setError(e.message || 'Seating not published yet.');
       } finally {
         setLoading(false);
       }
