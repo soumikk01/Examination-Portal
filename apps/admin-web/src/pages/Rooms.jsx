@@ -224,7 +224,6 @@ function distributeStudents(studentCounts, rooms) {
   for (const s of SECTIONS) {
     let queue = queues[s.key].map(q => ({ ...q })); // deep copy
     let queueIdx = 0;
-    let branchInnerOffset = 0;
 
     for (let ri = 0; ri < newRooms.length; ri++) {
       const room = newRooms[ri];
@@ -283,6 +282,7 @@ export default function RoomAllotment() {
       // Re-distribute students with existing room capacities
       setRows(prev => distributeStudents(data, prev));
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error(e);
       setFetchStatus("error");
     }
@@ -347,6 +347,7 @@ export default function RoomAllotment() {
       setSaveStatus("ok");
       setTimeout(() => setSaveStatus("idle"), 3000);
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error(e);
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 4000);
@@ -377,18 +378,7 @@ export default function RoomAllotment() {
         s + Object.values(studentCounts[sec.key] || {}).reduce((a, b) => a + b, 0), 0)
     : 0;
 
-  // Title
-  const semLabel = semester
-    ? `${semester === "1" ? "1ST" : semester === "2" ? "2ND" : semester === "3" ? "3RD" : `${semester}TH`} SEMESTER`
-    : "—";
-  const yearLabel = !semester ? "—" : parseInt(semester) <= 2 ? "1ST YEAR" : parseInt(semester) <= 4 ? "2ND YEAR" : parseInt(semester) <= 6 ? "3RD YEAR" : "4TH YEAR";
-
   // ─── Render helpers ──────────────────────────────────────────────────────
-  function sectionColCount(secKey) {
-    const s = SECTIONS.find(x => x.key === secKey);
-    return s ? s.branches.length + 1 : 1; // +1 for Total
-  }
-
   function getStudentRowVal(secKey, branch) {
     return studentCounts ? (studentCounts[secKey]?.[branch] || 0) : null;
   }
@@ -397,11 +387,6 @@ export default function RoomAllotment() {
     if (!studentCounts) return null;
     const sec = SECTIONS.find(x => x.key === secKey);
     return sec.branches.reduce((s, b) => s + (studentCounts[secKey]?.[b] || 0), 0);
-  }
-
-  function getSectionTotal(secKey) {
-    // Sum of capacity across all rooms (Available = total capacity that exists)
-    return rows.reduce((s, r) => s + (r.capacity || 0), 0);
   }
 
   function getRoomVal(row, secKey, branch) {

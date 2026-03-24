@@ -4,8 +4,6 @@ import "../styles/room.scss";
 import { ArrowLeft, User } from "lucide-react";
 
 const ROWS = 8;
-const COLS = 5;
-const HEADER_LABELS = ["EXTRA", "", "", "", "Door"];
 
 const styles = {
   page: {
@@ -165,42 +163,6 @@ const styles = {
     color: "#374151"
   }
 };
-
-function Desk() {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      style={styles.desk(hovered)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div style={styles.deskInner} />
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        width: '100%',
-        zIndex: 1,
-        position: 'relative'
-      }}>
-        <div style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '50%',
-          backgroundColor: hovered ? 'rgba(184, 169, 138, 0.2)' : 'rgba(184, 169, 138, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '1px solid rgba(184, 169, 138, 0.25)',
-          transition: 'all 0.15s ease'
-        }}>
-          <User size={18} color="#8a7a5a" strokeWidth={2} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function TeacherTable({ roomName }) {
   const [hovered, setHovered] = useState(false);
