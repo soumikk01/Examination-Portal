@@ -257,3 +257,618 @@ a {
     margin-bottom: 1.5rem;
   }
 }
+
+// ─────────────────────────────────────────────────────
+// Room Allotment Page
+// ─────────────────────────────────────────────────────
+
+.room-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.room-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.room-filter-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.room-filter-select {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  min-width: 160px;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.room-mode-pills {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.room-mode-pill {
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  border: 1px solid var(--admin-border);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+  background: #f8fafc;
+
+  &.active {
+    background: var(--admin-primary);
+    color: #fff;
+    border-color: var(--admin-primary);
+  }
+}
+
+.room-generate-btn {
+  height: 38px;
+  align-self: flex-end;
+}
+
+.room-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+// Excel-style allotment table
+.room-allotment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+
+  th, td {
+    border: 1px solid #b0b8c1;
+    padding: 0.45rem 0.75rem;
+    text-align: center;
+    min-width: 60px;
+  }
+
+  th {
+    background: #d6e4ff;
+    font-weight: 700;
+    color: #1e3a5f;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+  }
+
+  th:first-child, td:first-child {
+    text-align: left;
+    font-weight: 600;
+    background: #eef3fb;
+    min-width: 100px;
+  }
+
+  .room-no-cell {
+    font-weight: 700;
+    color: #1e3a5f;
+  }
+
+  .dept-count-cell {
+    color: #374151;
+
+    &:empty {
+      background: #f8fafc;
+    }
+  }
+
+  .total-cell {
+    font-weight: 700;
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .totals-row {
+    td {
+      background: #1e293b;
+      color: #fff;
+      font-weight: 700;
+      border-color: #1e293b;
+    }
+  }
+
+  tr:hover td:not(.totals-row td) {
+    background: #eff6ff;
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Seating Arrangement Page
+// ─────────────────────────────────────────────────────
+
+.seating-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+// Print area wrapper
+.seating-sheet {
+  background: #fff;
+  padding: 1rem 1.25rem;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+// College header
+.seating-college-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 2px solid #000;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.seating-college-logo {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.seating-college-info {
+  flex: 1;
+  text-align: center;
+}
+
+.seating-exam-title {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.seating-college-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.seating-venue {
+  font-size: 0.85rem;
+}
+
+// Room meta bar
+.seating-room-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.4rem 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #000;
+  font-size: 0.9rem;
+}
+
+.seating-room-no {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.seating-dept-count {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.seating-semester-badge {
+  margin-left: auto;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+// Grid
+.seating-grid-wrapper {
+  display: flex;
+  gap: 0; // no gap – borders shared
+  overflow-x: auto;
+}
+
+.seating-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 90px;
+  max-width: 150px;
+}
+
+.seating-extra-col, .seating-door-col {
+  flex: 0 0 70px;
+  min-width: 70px;
+  max-width: 70px;
+}
+
+// Column headers
+.seat-header {
+  border: 1px solid #000;
+  padding: 0.3rem 0.25rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  background: #dbeafe;
+  text-transform: uppercase;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.extra-header {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.door-header {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+// Seat boxes
+.seat-box {
+  border: 1px solid #000;
+  border-top: none;
+  padding: 0.2rem 0.25rem;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.05rem;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  background: #fff;
+}
+
+.seat-dept {
+  font-weight: 700;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: #1e40af;
+}
+
+.seat-name {
+  font-weight: 500;
+  font-size: 0.68rem;
+  word-break: break-word;
+  color: #111;
+}
+
+.seat-roll {
+  font-size: 0.63rem;
+  color: #374151;
+  letter-spacing: 0.02em;
+}
+
+.seat-extra {
+  background: #fef9f0;
+}
+
+.seat-extra-label {
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: #b45309;
+  text-transform: uppercase;
+}
+
+.extra-box, .door-box {
+  background: #f8fafc;
+}
+
+// Signature
+.seating-signature {
+  margin-top: 1.5rem;
+  text-align: right;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  border-top: 1px solid #ccc;
+  padding-top: 0.75rem;
+}
+
+.seating-sig-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.seating-sig-title {
+  font-weight: 600;
+  font-style: italic;
+}
+
+.seating-sig-college {
+  color: #374151;
+  font-size: 0.78rem;
+}
+
+// Print styles
+@media print {
+  .admin-sidebar, .admin-header, .seating-controls, .admin-btn {
+    display: none !important;
+  }
+
+  .seating-sheet {
+    padding: 0;
+  }
+
+  .admin-content {
+    padding: 0;
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Seating Arrangement Letterhead UI
+// ─────────────────────────────────────────────────────
+
+$navy:   #1a3c6e;
+$dark:   #0f1a2e;
+$border: #222;
+$muted:  #555;
+$dash:   #ccc;
+$bg-header: #e8e0d4;
+
+.sa-wrap {
+  background: transparent;
+  width: 100%;
+  height: fit-content;
+  margin: 0;
+  font-family: Georgia, serif;
+  color: $dark;
+  
+  // Outer .sa-a4-page creates the paper boundaries
+  // so we remove the heavy inner border and shadow here.
+}
+
+// ── Letterhead ─────────────────────────────────
+.sa-lh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 12px 20px 10px;
+  border-bottom: 2px solid $border;
+}
+
+.sa-logo {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: $navy;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  text-align: center;
+  line-height: 1.2;
+
+  small {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+}
+
+.sa-logo-img {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+  flex-shrink: 0;
+  position: absolute;
+  left: 60px;
+}
+
+.sa-lh-text {
+  text-align: center;
+
+  h1 {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: $dark;
+    line-height: 1.5;
+    margin-bottom: 2px;
+  }
+
+  p {
+    font-size: 12px;
+    color: $muted;
+    margin-top: 2px;
+    margin-bottom: 0px;
+  }
+}
+
+// ── Info bar ───────────────────────────────────
+.sa-info {
+  display: flex;
+  border-bottom: 2px solid $border;
+}
+
+.sa-ic {
+  flex: 1;
+  padding: 6px 8px;
+  border-right: 1px solid $border;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: $dark;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &--semester {
+    background: $navy;
+    color: #fff;
+    font-size: 13.5px;
+    letter-spacing: 0.5px;
+  }
+}
+
+// ── Table ──────────────────────────────────────
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    border: 1.5px solid $border;
+    padding: 10px 8px;
+    background: $bg-header;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  td {
+    border: 1.5px solid $border;
+    vertical-align: middle;
+    padding: 0;
+  }
+}
+
+// ── Normal seat cell ───────────────────────────
+.sa-seat {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  min-height: 60px;
+}
+
+.sa-line {
+  height: 10px;
+  border-bottom: 1px dashed $dash;
+
+  &--short {
+    width: 60%;
+  }
+}
+
+// ── EXTRA / Door label cells ───────────────────
+.sa-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-family: Georgia, serif;
+
+  &--extra {
+    color: #777;
+  }
+
+  &--door {
+    color: $dark;
+  }
+}
+
+// ── Footer ─────────────────────────────────────
+.sa-footer {
+  border-top: 2px solid $border;
+  padding: 12px 24px 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sa-sig {
+  text-align: center;
+  font-size: 11px;
+  color: $muted;
+  font-family: Georgia, serif;
+  line-height: 1.8;
+
+  strong {
+    display: block;
+    font-size: 11.5px;
+    color: $dark;
+  }
+
+  span {
+    display: block;
+  }
+}
+
+.sa-sig-line {
+  width: 160px;
+  height: 36px;
+  border-bottom: 1.5px solid $border;
+  margin-bottom: 4px;
+}
+
+// ── A4 Page Wrapper ────────────────────────────
+.sa-a4-container {
+  overflow-x: auto;
+  padding: 2rem 1rem;
+  background: #e2e8f0; // Outer desk background
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.sa-a4-page {
+  background: #fff;
+  width: 297mm;      // A4 Landscape Width
+  min-height: 210mm; // A4 Landscape Height
+  margin: 0 auto;
+  padding: 15mm;     // Realistic page margin
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  
+  // Center inner content
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  
+  .sa-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin: 0; // The padding of A4 page provides margins
+  }
+
+  @media print {
+    width: 100%;
+    min-height: auto;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+  }
+}
+
+// Utility for exporting beautiful PDFs
+.hide-shadow-for-print {
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}

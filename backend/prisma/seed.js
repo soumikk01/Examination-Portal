@@ -5,12 +5,13 @@ const prisma = new PrismaClient();
 
 // All dropdown options stored in DB – no hardcoded lists in codebase
 const PROGRAM_OPTIONS = [
-  { code: 'BTECH', name: 'B.Tech', branches: ['CSE', 'CSE (CST)', 'CSE (AI ML)', 'IT', 'ECE', 'EE', 'ME', 'CE', 'BME', 'AE'], semesters: ['1', '2', '3', '4', '5', '6', '7', '8'] },
-  { code: 'MTECH', name: 'M.Tech', branches: [], semesters: ['1', '2', '3', '4'] },
+  { code: 'BTECH', name: 'B.Tech', branches: ['AE', 'BME', 'CE', 'CSE', 'CSE (AI ML)', 'CSE (CST)', 'EE', 'ECE', 'IT', 'ME'], semesters: ['1', '2', '3', '4', '5', '6', '7', '8'] },
+  { code: 'MTECH', name: 'M.Tech', branches: ['MCSE', 'EDPS', 'MME'], semesters: ['1', '2', '3', '4'] },
   { code: 'DIPLOMA', name: 'Diploma', branches: ['EE', 'ME'], semesters: ['1', '2', '3', '4', '5', '6'] },
   { code: 'MCA', name: 'MCA', branches: ['MCA'], semesters: ['1', '2', '3', '4'] },
   { code: 'BCA', name: 'BCA', branches: ['BCA'], semesters: ['1', '2', '3', '4', '5', '6'] },
-  { code: 'BBA', name: 'BBA', branches: ['BBA'], semesters: ['1', '2', '3', '4', '5', '6'] },
+  { code: 'BBA', name: 'BBA', branches: ['BBA', 'BBA (DM)', 'BBA (HM)'], semesters: ['1', '2', '3', '4', '5', '6'] },
+  { code: 'MBA', name: 'MBA', branches: ['MBA'], semesters: ['1', '2', '3', '4'] },
 ];
 
 // Keep seed credentials out of source code (set via .env for predictable logins)
@@ -95,48 +96,69 @@ async function main() {
     console.log('Default admin already exists:', DEFAULT_ADMIN_EMAIL);
   }
 
-  const studentYear = Number(process.env.SEED_STUDENT_ADMISSION_YEAR || new Date().getFullYear());
-  const studentCount = Number(process.env.SEED_STUDENT_COUNT || 10);
-  const deptPool = ['CSE', 'IT', 'ECE', 'ME', 'EE', 'CE'];
+  const BATCHES = [2018, 2021, 2023, 2024, 2025];
+  const STUDENTS_PER_BRANCH_PER_BATCH = 2;
+  
+  function calculateSemester(batchYear) {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth(); // 0-11
+    const yearsDiff = currentYear - batchYear;
+    let semester = yearsDiff * 2;
+    if (currentMonth >= 7) semester += 1; // Fall
+    else semester += 0; // Spring
+    return Math.max(1, semester);
+  }
 
   const studentsToCreate = [];
+  let studentCounter = 1;
 
-  if (SEED_STUDENT_COLLEGE_ID || SEED_STUDENT_ROLL) {
-    if (!SEED_STUDENT_COLLEGE_ID || !SEED_STUDENT_ROLL) {
-      throw new Error('Set both SEED_STUDENT_COLLEGE_ID and SEED_STUDENT_ROLL (12 digits) or neither.');
+  for (const batch of BATCHES) {
+    const semesterCalc = calculateSemester(batch);
+    for (const prog of PROGRAM_OPTIONS) {
+      const maxSem = prog.semesters.length;
+      let finalSem = semesterCalc;
+      if (finalSem > maxSem) finalSem = maxSem; // Cap to max
+      
+      const branchesToSeed = prog.branches.length ? prog.branches : [prog.code];
+      for (const branch of branchesToSeed) {
+        for (let i = 1; i <= STUDENTS_PER_BRANCH_PER_BATCH; i++) {
+          const collegeId = generateCollegeId(batch, studentCounter);
+          studentsToCreate.push({
+            collegeId,
+            name: `Student ${batch} ${prog.code} ${pad(i, 3)}`,
+            department: branch,
+            program: prog.code,
+            branch: branch,
+            semester: String(finalSem),
+            studentRoll: generateStudentRoll(batch, studentCounter),
+            batch: String(batch),
+          });
+          studentCounter++;
+        }
+      }
     }
-    if (!/^\d{12}$/.test(SEED_STUDENT_ROLL)) {
-      throw new Error('SEED_STUDENT_ROLL must be exactly 12 digits.');
-    }
+  }
+
+  if (SEED_STUDENT_COLLEGE_ID && SEED_STUDENT_ROLL) {
     studentsToCreate.push({
       collegeId: SEED_STUDENT_COLLEGE_ID,
       name: 'Seed Student',
       department: process.env.SEED_STUDENT_DEPARTMENT || 'CSE',
       studentRoll: SEED_STUDENT_ROLL,
-      batch: String(studentYear),
+      batch: String(new Date().getFullYear()),
     });
   }
 
-  for (let i = 1; i <= studentCount; i++) {
-    const collegeId = generateCollegeId(studentYear, i);
-    if (studentsToCreate.some((s) => s.collegeId === collegeId)) continue;
-    studentsToCreate.push({
-      collegeId,
-      name: `Student ${pad(i, 4)}`,
-      department: deptPool[(i - 1) % deptPool.length],
-      studentRoll: generateStudentRoll(studentYear, i),
-      batch: String(studentYear),
+  try {
+    const result = await prisma.student.createMany({
+      data: studentsToCreate,
+      skipDuplicates: true,
     });
+    console.log(`Successfully created ${result.count} new students.`);
+  } catch (err) {
+    console.error('Error inserting students:', err);
   }
-
-  for (const student of studentsToCreate) {
-    const existing = await prisma.student.findUnique({ where: { collegeId: student.collegeId } });
-    if (!existing) {
-      await prisma.student.create({ data: student });
-      console.log('Created student:', student.collegeId, student.name, '– roll:', student.studentRoll);
-    }
-  }
-  console.log('Students seed complete.');
+  console.log(`Students seed complete. Seeded ${studentsToCreate.length} students across 5 batches.`);
 
   const sampleStudent = await prisma.student.findFirst({
     orderBy: { id: 'asc' },
@@ -152,7 +174,7 @@ async function main() {
       { examId: 'CSE203-EVEN-R', subject: 'Operating Systems', date: new Date(`${baseYear}-04-20`), time: '10:00 AM', room: 'R-303', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'EVEN', program: 'BTECH', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
     ];
     for (const exam of exams) {
-      const exists = await prisma.exam.findUnique({ where: { examId: exam.examId } });
+      const exists = await prisma.exam.findFirst({ where: { examId: exam.examId } });
       if (!exists) {
         await prisma.exam.create({ data: exam });
         console.log('Created exam:', exam.examId, exam.subject, exam.examType, exam.examCategory);

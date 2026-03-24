@@ -183,10 +183,21 @@ v1Router.get('/student/exams/filters', examScheduleController.listPublishedFilte
 v1Router.get('/student/*', verifyToken, authorizeStudent, studentController.getProfile);
 
 v1Router.get('/rooms', roomController.list);
+v1Router.post('/rooms/generate-allotment', authorizeAdmin, roomController.generateAllotment);
+v1Router.get('/rooms/exam-groups', authorizeAdmin, roomController.listExamGroups);
+v1Router.get('/rooms/allotment/:examGroup', authorizeAdmin, roomController.getAllotment);
+v1Router.get('/rooms/student-counts', authorizeAdmin, roomController.getStudentCounts);
+v1Router.post('/rooms/allotments', authorizeAdmin, roomController.saveAllotment);
+v1Router.patch('/rooms/:roomNo/capacity', authorizeAdmin, roomController.updateCapacity);
 v1Router.get('/rooms/:id', roomController.getById);
 
 v1Router.get('/seating', seatingController.list);
+v1Router.post('/seating/generate', authorizeAdmin, seatingController.generate);
 v1Router.post('/seating', seatingController.assign);
+v1Router.get('/seating/room/:roomNo', authorizeAdmin, seatingController.getRoomSeating);
+v1Router.post('/seating/publish', authorizeAdmin, seatingController.publish);
+v1Router.get('/seating/:examGroup', authorizeAdmin, seatingController.getSeating);
+v1Router.get('/student/seating', verifyToken, seatingController.getStudentSeating);
 
 // Settings
 import * as settingsController from './modules/settings/settings.controller.js';

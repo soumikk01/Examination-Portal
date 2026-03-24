@@ -20,6 +20,7 @@ const Settings = () => {
     api.get('/settings').then((data) => {
       setFormData(prev => ({ ...prev, ...data }));
     }).catch((err) => {
+      // eslint-disable-next-line no-console
       console.error('Failed to fetch settings:', err);
     });
   }, []);

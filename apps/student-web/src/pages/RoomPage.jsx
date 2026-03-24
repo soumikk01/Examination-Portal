@@ -4,8 +4,6 @@ import "../styles/room.scss";
 import { ArrowLeft, User } from "lucide-react";
 
 const ROWS = 8;
-const COLS = 5;
-const HEADER_LABELS = ["EXTRA", "", "", "", "Door"];
 
 const styles = {
   page: {
@@ -166,42 +164,6 @@ const styles = {
   }
 };
 
-function Desk() {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      style={styles.desk(hovered)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div style={styles.deskInner} />
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        width: '100%',
-        zIndex: 1,
-        position: 'relative'
-      }}>
-        <div style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '50%',
-          backgroundColor: hovered ? 'rgba(184, 169, 138, 0.2)' : 'rgba(184, 169, 138, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '1px solid rgba(184, 169, 138, 0.25)',
-          transition: 'all 0.15s ease'
-        }}>
-          <User size={18} color="#8a7a5a" strokeWidth={2} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function TeacherTable({ roomName }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -235,41 +197,75 @@ export default function SeatingChart3D() {
   const location = useLocation();
   const { roomName } = location.state || {};
   const [scale, setScale] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [seating, setSeating] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      // Total width of the static room layout is exactly 662px.
-      // Scaling it down smoothly on screens smaller than 700px.
-      if (width < 700) {
-        // Leaving 20px padding on the sides
-        setScale((width - 40) / 662);
-      } else {
-        setScale(1);
+    const fetchSeating = async () => {
+      try {
+        const token = localStorage.getItem('examination_portal_student_token');
+        const res = await fetch('/api/v1/student/seating', {
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Seating not published yet.');
+        }
+        const data = await res.json();
+        setSeating(data);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
       }
     };
-    
-    // Initial size check
+    fetchSeating();
+
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 700) setScale((width - 40) / 662);
+      else setScale(1);
+    };
     handleResize();
-    
-    // Add event listener for live resizing
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  if (loading) return <div style={styles.page}><div style={{color:'#1e293b', fontWeight:600}}>Loading your seating arrangement...</div></div>;
+
+  if (error) {
+    return (
+      <div style={styles.page}>
+        <button style={styles.backButton} onClick={() => navigate(-1)}><ArrowLeft size={16} /> Back</button>
+        <div style={{marginTop:'100px', textAlign:'center', maxWidth:'400px'}}>
+           <h2 style={{fontSize:'1.5rem', fontWeight:700, color:'#1e293b', marginBottom:'1rem'}}>📅 Seating Not Available</h2>
+           <p style={{color:'#64748b', lineHeight:1.6}}>{error}</p>
+           <p style={{marginTop:'2rem', fontSize:'0.85rem', color:'#94a3b8'}}>Please check back later or contact the exam department.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const mySeat = seating?.mySeat; // { columnNo, seatNo }
+  const columns = seating?.columns || [];
+
   return (
     <div style={styles.page} className="seating-wrapper">
-      
       <button style={styles.backButton} onClick={() => navigate(-1)}>
         <ArrowLeft size={16} /> Back
       </button>
+
+      <div style={styles.titleWrapper}>
+        <h2 style={styles.title}>Room: {seating?.roomNo || '--'} | Your Seat: {mySeat ? `Col ${mySeat.columnNo}, Seat ${mySeat.seatNo}` : '--'}</h2>
+      </div>
 
       <div
         style={{
           transform: `scale(${scale})`,
           transformOrigin: "top center",
           transition: "transform 0.15s ease-out",
-          width: "662px", // Fix standard width container for uniform scaling
+          width: "662px",
           display: "flex",
           justifyContent: "center",
         }}
@@ -283,19 +279,49 @@ export default function SeatingChart3D() {
           <div style={styles.divider} />
 
           <div style={styles.headerRow}>
-            {HEADER_LABELS.map((label, i) => (
-              <div key={i} style={styles.labelBadge(label === "EXTRA" || label === "Door" ? "dark" : "empty")}>
-                {label}
-              </div>
+            {/* EXTRA, then dynamic columns, then Door */}
+            <div style={styles.labelBadge("dark")}>EXTRA</div>
+            {columns.map((col, i) => (
+               <div key={i} style={styles.labelBadge("empty")} title={col.dept}>
+                  {col.dept.length > 5 ? col.dept.substring(0,4)+'..' : col.dept}
+               </div>
             ))}
+            <div style={styles.labelBadge("dark")}>Door</div>
           </div>
 
           <div style={styles.grid}>
             {Array.from({ length: ROWS }).map((_, r) => (
               <div key={r} style={styles.deskRow}>
-                {Array.from({ length: COLS }).map((_, c) => (
-                  <Desk key={c} />
-                ))}
+                 {/* EXTRA cell */}
+                 <div style={{...styles.desk(false), background:'#e2e8f0', border:'1px dashed #cbd5e1'}} />
+
+                 {columns.map((col, cIdx) => {
+                    const seat = col.seats[r];
+                    const isMySeat = mySeat && mySeat.columnNo === (cIdx + 1) && (seat?.seatNo === mySeat.seatNo);
+                    
+                    return (
+                      <div 
+                        key={cIdx} 
+                        style={{
+                          ...styles.desk(isMySeat), 
+                          background: isMySeat ? '#3b82f6' : (seat?.isExtra ? '#f1f5f9' : '#ffffff'),
+                          border: isMySeat ? '2px solid #1e40af' : '1.5px solid #b8a98a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexDirection: 'column'
+                        }}
+                      >
+                         <div style={styles.deskInner} />
+                         {isMySeat && <span style={{fontSize:'9px', fontWeight:900, color:'#fff'}}>YOU</span>}
+                         {!seat?.isExtra && seat?.seatNo && <span style={{fontSize:'8px', color: isMySeat ? '#fff' : '#64748b'}}>Seat {seat.seatNo}</span>}
+                         {seat?.isExtra && <span style={{fontSize:'8px', color:'#94a3b8'}}>---</span>}
+                      </div>
+                    );
+                 })}
+
+                 {/* DOOR cell */}
+                 <div style={{...styles.desk(false), opacity: 0.3, background:'#94a3b8'}} />
               </div>
             ))}
           </div>
@@ -313,12 +339,9 @@ export default function SeatingChart3D() {
               <span>📌</span> Important Notice
             </h4>
             <p className="text-gray-700 font-medium leading-relaxed">
-              Please report to your assigned room{' '}
-              <span className="text-red-600 font-bold">at least 15 minutes</span> before the
-              scheduled examination time. Students must wear the{' '}
-              <span className="font-bold">college uniform</span> and bring their{' '}
-              <span className="text-[#2d368e] font-bold">college ID card</span> along with all
-              required documents.
+              Your assigned room is <strong>{seating?.roomNo}</strong>. Please report 
+              <span className="text-red-600 font-bold"> at least 15 minutes</span> before the exam.
+              Bring your <span className="text-[#2d368e] font-bold">College ID card</span>.
             </p>
           </div>
         </div>
