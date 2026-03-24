@@ -109,3 +109,19 @@ export async function adminLogin(email, password) {
     },
   };
 }
+
+export async function updateAdminPassword(adminId, currentPassword, newPassword) {
+  const staff = await prisma.staff.findUnique({ where: { id: adminId } });
+  if (!staff) return { error: 'NOT_FOUND', status: 404 };
+
+  const valid = await bcrypt.compare(currentPassword, staff.passwordHash);
+  if (!valid) return { error: 'INVALID_CREDENTIALS', status: 401 };
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await prisma.staff.update({
+    where: { id: adminId },
+    data: { passwordHash: hashedPassword }
+  });
+
+  return { success: true };
+}
