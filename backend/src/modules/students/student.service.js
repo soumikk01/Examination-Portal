@@ -30,6 +30,44 @@ export async function getByCollegeId(collegeId) {
 
   if (!student) return null;
 
+  const deptCode = student.branch || student.department;
+  const sem = student.semester || student.examinationSem;
+
+  if (deptCode && sem) {
+    const schedules = await prisma.examSchedule.findMany({
+      where: {
+        status: 'PUBLISHED',
+        departmentCode: deptCode.toUpperCase(),
+        semester: String(sem),
+      },
+      select: {
+        id: true,
+        uploadId: true,
+        subject: true,
+        examDate: true,
+        examTime: true,
+        mode: true,
+        scheduleType: true,
+        paperCode: true,
+      }
+    });
+
+    const mappedSchedules = schedules.map(s => ({
+      id: `schedule_${s.id}`,
+      examId: s.paperCode || `SCH_${s.id}`,
+      subject: s.subject,
+      date: s.examDate,
+      time: s.examTime,
+      room: 'TBA',
+      examType: s.mode === 'BACKLOG' ? 'Backlog' : 'Regular',
+      examMode: s.mode,
+      examCategory: s.scheduleType.replace('_THEORY', '').replace('_', ' '),
+      status: 'PUBLISHED'
+    }));
+
+    student.exams = [...(student.exams || []), ...mappedSchedules];
+  }
+
   await cache.set(cacheKey, student, 3600);
   return student;
 }

@@ -149,6 +149,7 @@ v1Router.get('/health', async (req, res) => {
 
 v1Router.post('/auth/login', validate(verificationSchema), authController.login);
 v1Router.post('/auth/admin/login', validate(adminLoginSchema), authController.adminLogin);
+v1Router.put('/auth/admin/password', authorizeAdmin, authController.updateAdminPassword);
 
 // Options (programs, branches, semesters) – from DB, no hardcoded data
 v1Router.get('/options/programs', authorizeAdmin, optionsController.getPrograms);
@@ -197,6 +198,11 @@ v1Router.get('/seating/room/:roomNo', authorizeAdmin, seatingController.getRoomS
 v1Router.post('/seating/publish', authorizeAdmin, seatingController.publish);
 v1Router.get('/seating/:examGroup', authorizeAdmin, seatingController.getSeating);
 v1Router.get('/student/seating', verifyToken, seatingController.getStudentSeating);
+
+// Settings
+import * as settingsController from './modules/settings/settings.controller.js';
+v1Router.get('/settings', settingsController.getSettings);
+v1Router.put('/settings', authorizeAdmin, settingsController.updateSettings);
 
 app.use('/api/v1', v1Router);
 

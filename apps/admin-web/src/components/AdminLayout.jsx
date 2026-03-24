@@ -10,6 +10,7 @@ import {
   Megaphone,
   Settings,
 } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,21 +38,41 @@ const AdminLayout = () => {
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-brand">Exam Portal Admin</div>
-        <nav className="admin-sidebar-nav">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                `admin-sidebar-link ${isActive ? 'active' : ''}`
-              }
-            >
-              <Icon size={20} />
-              {label}
-            </NavLink>
-          ))}
+        <div className="admin-sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '1rem 1.5rem' }}>
+          <img src={logo} alt="JIS Logo" style={{ maxHeight: '35px', width: 'auto' }} />
+          <span style={{ fontSize: '1rem', lineHeight: 1.2, whiteSpace: 'pre-wrap' }}>JIS College of Engineering</span>
+        </div>
+        <nav className="admin-sidebar-nav" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ flex: 1 }}>
+            {navItems.slice(0, -1).map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/'}
+                className={({ isActive }) =>
+                  `admin-sidebar-link ${isActive ? 'active' : ''}`
+                }
+              >
+                <Icon size={20} />
+                {label}
+              </NavLink>
+            ))}
+          </div>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
+            {navItems.slice(-1).map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/'}
+                className={({ isActive }) =>
+                  `admin-sidebar-link ${isActive ? 'active' : ''}`
+                }
+              >
+                <Icon size={20} />
+                {label}
+              </NavLink>
+            ))}
+          </div>
         </nav>
       </aside>
       <main className="admin-main">
