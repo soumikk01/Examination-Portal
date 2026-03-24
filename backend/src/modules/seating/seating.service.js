@@ -302,7 +302,6 @@ export async function getSeatingForRoom({ roomNo, semester }) {
   }
 
   const columnsMap = {};
-  let extraCount = 0;
 
   for (const row of rows) {
     if (!columnsMap[row.columnNo]) {
@@ -311,7 +310,6 @@ export async function getSeatingForRoom({ roomNo, semester }) {
     
     let label = '';
     if (row.isExtra) {
-      extraCount++;
       label = `EXTRA`;
     } else {
       label = `${row.dept}_${(row.studentName || '').toUpperCase()}_${row.rollNo || ''}`;

@@ -4,7 +4,6 @@ import * as seatingService from './seating.service.js';
 export async function getStudentSeating(req, res, next) {
   try {
     const studentId = req.user.id;
-    const { semester } = req.user; // from verifyToken middleware
 
     // 1. Find if student has any seat allocation in a published allotment
     const allocation = await prisma.seatAllocation.findFirst({
