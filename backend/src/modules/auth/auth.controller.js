@@ -53,6 +53,10 @@ export async function updateAdminPassword(req, res, next) {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+    
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+    }
 
     const result = await authService.updateAdminPassword(adminId, currentPassword, newPassword);
 

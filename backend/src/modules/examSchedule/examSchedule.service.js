@@ -40,6 +40,11 @@ export async function saveDraftBatch({ meta, rows, mode, sourceFile } = {}) {
     err.status = 400;
     throw err;
   }
+  if (rows.length > 500) {
+    const err = new Error('Too many rows in a single batch (max 500). Please split your upload.');
+    err.status = 400;
+    throw err;
+  }
 
   const uploadId = randomUUID();
   const safeMode = String(mode || 'REGULAR').toUpperCase() === 'BACKLOG' ? 'BACKLOG' : 'REGULAR';
@@ -106,6 +111,19 @@ export async function publish({ uploadId } = {}) {
     where: { uploadId, status: 'DRAFT' },
     data: { status: 'PUBLISHED' },
   });
+
+  // Invalidating all student caches so they see the new schedule immediately
+  try {
+    const { default: redisClient } = await import('../../utils/redis.js');
+    if (redisClient && redisClient.status === 'ready') {
+      const keys = await redisClient.keys('student:*');
+      if (keys.length > 0) {
+        await redisClient.del(...keys);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to clear student cache on publish', err);
+  }
 
   return { uploadId, published: result.count };
 }

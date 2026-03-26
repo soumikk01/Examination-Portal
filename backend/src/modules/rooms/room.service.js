@@ -159,20 +159,21 @@ export async function generateRoomAllotment({ semester, program, branch, examMod
 
   const examGroup = buildExamGroup({ semester, program, examMode: examMode || 'ALL' });
 
-  // Clear previous allocations to prevent ghost rooms
-  await prisma.roomAllotment.deleteMany({ where: { examGroup } });
+  // Use transaction: clear previous + insert new atomically
+  await prisma.$transaction(async (tx) => {
+    await tx.roomAllotment.deleteMany({ where: { examGroup } });
 
-  // Insert into DB
-  if (allocations.length > 0) {
-    await prisma.roomAllotment.createMany({
-      data: allocations.map(alloc => ({
-        examGroup,
-        roomNo: alloc.roomNo,
-        deptCounts: alloc.deptCounts,
-        total: alloc.total,
-      }))
-    });
-  }
+    if (allocations.length > 0) {
+      await tx.roomAllotment.createMany({
+        data: allocations.map(alloc => ({
+          examGroup,
+          roomNo: alloc.roomNo,
+          deptCounts: alloc.deptCounts,
+          total: alloc.total,
+        }))
+      });
+    }
+  });
 
   // Get all unique depts across all rooms for column headers
   const allDepts = [...new Set(allocations.flatMap(a => Object.keys(a.deptCounts)))].sort();
@@ -308,23 +309,25 @@ export async function saveRoomAllotments({ semester, rooms }) {
   // Build a generic examGroup key from the semester
   const examGroup = `SEM${semester}-ALL-ALL`;
 
-  // Delete old allocations for this examGroup so we start fresh
-  await prisma.roomAllotment.deleteMany({ where: { examGroup } });
+  await prisma.$transaction(async (tx) => {
+    // Delete old allocations so we start fresh
+    await tx.roomAllotment.deleteMany({ where: { examGroup } });
 
-  // Re-insert
-  for (const room of rooms) {
-    if (!room.roomNo || !room.deptCounts || !Object.keys(room.deptCounts).length) continue;
-    const total = Object.values(room.deptCounts).reduce((s, v) => s + Number(v), 0);
-    if (total === 0) continue;
-    await prisma.roomAllotment.create({
-      data: {
-        examGroup,
-        roomNo: room.roomNo,
-        deptCounts: room.deptCounts,
-        total,
-      },
-    });
-  }
+    // Re-insert
+    for (const room of rooms) {
+      if (!room.roomNo || !room.deptCounts || !Object.keys(room.deptCounts).length) continue;
+      const total = Object.values(room.deptCounts).reduce((s, v) => s + Number(v), 0);
+      if (total === 0) continue;
+      await tx.roomAllotment.create({
+        data: {
+          examGroup,
+          roomNo: room.roomNo,
+          deptCounts: room.deptCounts,
+          total,
+        },
+      });
+    }
+  });
 
   return { examGroup, roomCount: rooms.length };
 }

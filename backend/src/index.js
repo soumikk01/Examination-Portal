@@ -82,9 +82,15 @@ app.use(
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 100, // standard limit for student/auth
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // skip strict rate limit for admin-authorized requests
+    // (they will rely on backend authentication/authorized middleware)
+    const authHeader = req.headers['authorization'];
+    return authHeader && authHeader.includes('Bearer');
+  }
 });
 app.use(limiter);
 
@@ -175,7 +181,7 @@ v1Router.delete('/exam/batch/:uploadId', authorizeAdmin, examScheduleController.
 v1Router.get('/exam/list', authorizeAdmin, examScheduleController.list);
 v1Router.post('/exam/publish', authorizeAdmin, examScheduleController.publish);
 // Student schedule: required by frontend spec
-v1Router.get('/student/exams', examScheduleController.listForStudent);
+v1Router.get('/student/exams', verifyToken, examScheduleController.listForStudent);
 // Public/student-safe filters for dropdowns
 v1Router.get('/student/exams/filters', examScheduleController.listPublishedFilters);
 

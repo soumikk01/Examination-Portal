@@ -218,6 +218,7 @@ model RoomAllotment {
 
   @@unique([examGroup, roomNo])
   @@index([examGroup])
+  @@index([roomNo])
   @@map("RoomAllotments")
 }
 
