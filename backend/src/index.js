@@ -183,7 +183,7 @@ v1Router.delete('/exam/batch/:uploadId', authorizeAdmin, examScheduleController.
 v1Router.get('/exam/list', authorizeAdmin, examScheduleController.list);
 v1Router.post('/exam/publish', authorizeAdmin, examScheduleController.publish);
 // Student schedule: required by frontend spec
-v1Router.get('/student/exams', examScheduleController.listForStudent);
+v1Router.get('/student/exams', verifyToken, examScheduleController.listForStudent);
 // Public/student-safe filters for dropdowns
 v1Router.get('/student/exams/filters', examScheduleController.listPublishedFilters);
 

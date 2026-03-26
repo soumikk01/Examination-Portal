@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const programEnum = z.enum(['BTECH', 'MTECH', 'DIPLOMA', 'MCA', 'BCA', 'BBA']);
+const programEnum = z.enum(['BTECH', 'MTECH', 'DIPLOMA', 'MCA', 'BCA', 'BBA', 'MBA']);
 
 export const studentSchema = z.object({
   collegeId: z.string().min(1, 'College ID is required'),

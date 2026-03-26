@@ -301,12 +301,6 @@ const ProfilePage = () => {
                             </span>
                         </div>
                         <div className="flex gap-2 items-center">
-                            <span className="text-gray-500 font-medium text-sm">Student Roll :</span>
-                            <span className="text-gray-900 font-semibold">
-                                {student.studentRoll || student.roll || 'N/A'}
-                            </span>
-                        </div>
-                        <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Student Reg :</span>
                             <span className="text-gray-900 font-semibold">
                                 {student.studentReg || student.registration || 'N/A'}

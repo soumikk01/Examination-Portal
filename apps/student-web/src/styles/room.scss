@@ -1,3 +1,5 @@
+@use "sass:color";
+
 // ── Variables ────────────────────────────────────────────────
 $color-bg: #cbd5e1;
 $color-header-dark: #2d368e;
@@ -107,7 +109,7 @@ $border-radius-table: 6px;
       background-color: $color-cell-hover;
     }
     &:nth-child(even) .cell:not(.cell--extra-label) {
-      background-color: darken($color-cell-bg, 1%);
+      background-color: color.adjust($color-cell-bg, $lightness: -1%);
     }
   }
 
@@ -156,7 +158,7 @@ $border-radius-table: 6px;
       }
 
       &:hover {
-        background-color: darken($color-extra-bg, 4%);
+        background-color: color.adjust($color-extra-bg, $lightness: -4%);
       }
     }
   }
