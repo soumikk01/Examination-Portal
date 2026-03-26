@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
@@ -55,15 +55,17 @@ const ProfileSkeleton = () => (
 );
 
 const ProfilePage = () => {
-    const { collegeId: paramId, '*': splat } = useParams();
-    // Support nested paths if any, but usually collegeId is the main identifier
-    const collegeId = paramId + (splat ? '/' + splat : '');
+    const { '*': splat, collegeId: paramId } = useParams();
+    // If accessing via /student/*, splat contains the full ID.
+    // If accessing via /student/:collegeId/*, paramId has the first part.
+    const collegeId = paramId ? paramId + (splat ? '/' + splat : '') : splat;
     const navigate = useNavigate();
+    const location = useLocation();
     const [student, setStudent] = useState(null);
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [examFilter, setExamFilter] = useState('ALL');
+    const [examFilter, setExamFilter] = useState(location.state?.filter || 'ALL');
 
     // Filter options: removed ODD, EVEN, Test as per user request
     const examFilterOptions = ['ALL', 'Regular', 'Backlog'];
@@ -211,7 +213,7 @@ const ProfilePage = () => {
                         <div className="w-px h-6 bg-indigo-200 mx-1"></div>
 
                         <button
-                            onClick={() => navigate('/room', { state: { roomName: upcomingExams[0]?.room } })}
+                            onClick={() => navigate(`/student/${collegeId}/room`, { state: { roomName: upcomingExams[0]?.room, collegeId } })}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
                                 e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
@@ -242,6 +244,42 @@ const ProfilePage = () => {
                             }}
                         >
                             Room Search
+                        </button>
+
+                        <div className="w-px h-6 bg-indigo-200 mx-1"></div>
+
+                        <button
+                            onClick={() => {}}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(217, 119, 6, 0.35)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                            onMouseDown={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                            onMouseUp={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(217, 119, 6, 0.35)';
+                            }}
+                            style={{
+                                padding: '6px 14px',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                backgroundColor: '#fef3c7',
+                                color: '#d97706',
+                                boxShadow: 'none',
+                            }}
+                        >
+                            Notice
                         </button>
                     </div>
                     {/* Buttons - Right Side */}
