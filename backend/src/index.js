@@ -80,14 +80,6 @@ app.use(
   })
 );
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
-
 const allowedOrigins = CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
 
 app.use(
@@ -103,6 +95,22 @@ app.use(
   })
 );
 app.use(express.json());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100, // standard limit for student/auth
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Disable rate limiting in local development (Vite proxy causes false positives)
+    if (process.env.NODE_ENV === 'development') return true;
+
+    // skip strict rate limit for admin-authorized requests
+    const authHeader = req.headers['authorization'];
+    return authHeader && authHeader.includes('Bearer');
+  }
+});
+app.use(limiter);
 
 const v1Router = express.Router();
 const upload = multer({

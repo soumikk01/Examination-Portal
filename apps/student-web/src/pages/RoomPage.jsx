@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/room.scss";
 import { ArrowLeft, User } from "lucide-react";
+import { PageLayout } from '../components';
 
 const ROWS = 8;
 
@@ -15,7 +16,6 @@ const styles = {
     alignItems: "center",
     justifyContent: "flex-start",
     padding: "24px 20px 60px",
-    fontFamily: "'Courier New', monospace",
   },
   titleWrapper: {
     position: "fixed",
@@ -26,13 +26,12 @@ const styles = {
     whiteSpace: "nowrap",
   },
   title: {
-    fontFamily: "Georgia, serif",
     fontSize: "0.85rem",
     fontWeight: 700,
     letterSpacing: ".14em",
-    color: "#2c2c2c",
+    color: "#475569",
     textTransform: "uppercase",
-    borderBottom: "1.5px solid #2c2c2c",
+    borderBottom: "1.5px solid #e2e8f0",
     paddingBottom: "4px",
   },
   scene: {
@@ -54,15 +53,14 @@ const styles = {
     fontWeight: 700,
     letterSpacing: ".1em",
     textTransform: "uppercase",
-    color: "#666",
-    fontFamily: "Georgia, serif",
+    color: "#64748b",
     marginBottom: "2px",
   },
   teacherTable: (hovered) => ({
     width: "220px",
     height: "44px",
-    background: hovered ? "#d4c9b4" : "#e0d6c0",
-    border: "2px solid #8a7a5a",
+    background: hovered ? "#e0e7ff" : "#ffffff",
+    border: "2px solid #c7d2fe",
     borderRadius: "6px",
     cursor: "pointer",
     transition: "background 0.15s ease, box-shadow 0.15s ease",
@@ -78,7 +76,7 @@ const styles = {
   teacherTableInner: {
     position: "absolute",
     inset: "4px",
-    border: "1px solid rgba(138,122,90,0.35)",
+    border: "1px solid transparent",
     borderRadius: "3px",
     pointerEvents: "none",
   },
@@ -87,14 +85,13 @@ const styles = {
     fontWeight: 700,
     letterSpacing: ".1em",
     textTransform: "uppercase",
-    color: "#5a4a2a",
-    fontFamily: "Georgia, serif",
+    color: "#2d368e",
     zIndex: 1,
   },
   divider: {
     width: "560px",
     height: "1px",
-    background: "rgba(44,44,44,0.15)",
+    background: "#e2e8f0",
     margin: "0 0 20px 0",
     borderRadius: "1px",
   },
@@ -112,8 +109,7 @@ const styles = {
     letterSpacing: ".12em",
     textTransform: "uppercase",
     borderRadius: "4px",
-    fontFamily: "Georgia, serif",
-    background: type === "dark" ? "#1a1a1a" : "transparent",
+    background: type === "dark" ? "#2d368e" : "transparent",
     color: type === "dark" ? "#ffffff" : "transparent",
   }),
   grid: {
@@ -128,8 +124,8 @@ const styles = {
   desk: (hovered) => ({
     width: "110px",
     height: "54px",
-    background: hovered ? "#ede6d4" : "#f5f0e8",
-    border: "1.5px solid #b8a98a",
+    background: hovered ? "#f1f5f9" : "#ffffff",
+    border: "1.5px solid #e2e8f0",
     borderRadius: "5px",
     cursor: "pointer",
     transition: "background 0.15s ease, box-shadow 0.15s ease",
@@ -142,7 +138,7 @@ const styles = {
   deskInner: {
     position: "absolute",
     inset: "4px",
-    border: "1px solid rgba(184,169,138,0.4)",
+    border: "1px solid transparent",
     borderRadius: "3px",
     pointerEvents: "none",
   },
@@ -178,13 +174,13 @@ function TeacherTable({ roomName }) {
           width: '28px',
           height: '28px',
           borderRadius: '50%',
-          backgroundColor: 'rgba(90, 74, 42, 0.1)',
+          backgroundColor: '#e0e7ff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '1px solid rgba(90, 74, 42, 0.2)'
+          border: '1px solid #c7d2fe'
         }}>
-          <User size={16} color="#5a4a2a" strokeWidth={2.5} />
+          <User size={16} color="#4f46e5" strokeWidth={2.5} />
         </div>
         <span style={styles.teacherText}>{roomName ? `ROOM - ${roomName}` : "ROOM -"}</span>
       </div>
@@ -195,7 +191,7 @@ function TeacherTable({ roomName }) {
 export default function SeatingChart3D() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { roomName } = location.state || {};
+  const { roomName, collegeId } = location.state || {};
   const [scale, setScale] = useState(1);
   const [loading, setLoading] = useState(true);
   const [seating, setSeating] = useState(null);
@@ -204,7 +200,7 @@ export default function SeatingChart3D() {
   useEffect(() => {
     const fetchSeating = async () => {
       try {
-        const token = localStorage.getItem('examination_portal_student_token');
+        const token = localStorage.getItem('examination_portal_token');
         const res = await fetch('/api/v1/student/seating', {
           headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
         });
@@ -232,18 +228,162 @@ export default function SeatingChart3D() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  if (loading) return <div style={styles.page}><div style={{color:'#1e293b', fontWeight:600}}>Loading your seating arrangement...</div></div>;
+  const renderTopNav = () => (
+      <div style={{ width: '100%', maxWidth: '1152px', marginTop: '16px', marginBottom: '32px' }}>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4">
+              {/* Left Side: Filters and Room Search/Notice */}
+              <div className="flex gap-2 flex-wrap items-center">
+                  {['ALL', 'Regular', 'Backlog'].map((opt) => {
+                      let baseColor = '#e0e7ff';
+                      let textColor = '#4f46e5';
+                      let activeShadow = 'rgba(79, 70, 229, 0.35)';
+
+                      if (opt === 'Regular') {
+                          baseColor = '#d1fae5';
+                          textColor = '#059669';
+                          activeShadow = 'rgba(16, 185, 129, 0.35)';
+                      } else if (opt === 'Backlog') {
+                          baseColor = '#ffedd5';
+                          textColor = '#ea580c';
+                          activeShadow = 'rgba(249, 115, 22, 0.35)';
+                      }
+
+                      return (
+                          <button
+                              key={opt}
+                              onClick={() => navigate(collegeId ? `/student/${collegeId}` : -1, { state: { filter: opt } })}
+                              onMouseEnter={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                                  e.currentTarget.style.boxShadow = `0 6px 16px ${activeShadow}`;
+                              }}
+                              onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                  e.currentTarget.style.boxShadow = 'none';
+                              }}
+                              onMouseDown={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
+                                  e.currentTarget.style.boxShadow = 'none';
+                              }}
+                              onMouseUp={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                                  e.currentTarget.style.boxShadow = `0 6px 16px ${activeShadow}`;
+                              }}
+                              style={{
+                                  padding: '6px 14px',
+                                  borderRadius: '20px',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  backgroundColor: baseColor,
+                                  color: textColor,
+                                  boxShadow: 'none',
+                              }}
+                          >
+                              {opt}
+                          </button>
+                      );
+                  })}
+
+                  <div className="w-px h-6 bg-indigo-200 mx-1"></div>
+
+                  <button
+                      onClick={() => navigate(collegeId ? `/student/${collegeId}/room` : '/room', { state: { roomName: seating?.roomNo, collegeId } })}
+                      onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                          e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      onMouseDown={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
+                          e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      onMouseUp={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
+                      }}
+                      style={{
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          backgroundColor: '#4f46e5',
+                          color: 'white',
+                          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)',
+                      }}
+                  >
+                      Room Search
+                  </button>
+
+                  <div className="w-px h-6 bg-indigo-200 mx-1"></div>
+
+                  <button
+                      onClick={() => {}}
+                      onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(217, 119, 6, 0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                          e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      onMouseDown={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
+                          e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      onMouseUp={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(217, 119, 6, 0.35)';
+                      }}
+                      style={{
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          backgroundColor: '#fef3c7',
+                          color: '#d97706',
+                          boxShadow: 'none',
+                      }}
+                  >
+                      Notice
+                  </button>
+              </div>
+
+              {/* Right Side: Back Button */}
+              <div className="flex gap-3">
+                  <button 
+                      onClick={() => navigate(-1)}
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-gray-700 font-semibold text-sm"
+                  >
+                      <ArrowLeft size={16} /> Back
+                  </button>
+              </div>
+          </div>
+      </div>
+  );
+
+  if (loading) return <PageLayout>{renderTopNav()}<div style={{color:'#1e293b', fontWeight:600, marginTop: '100px'}}>Loading your seating arrangement...</div></PageLayout>;
 
   if (error) {
     return (
-      <div style={styles.page}>
-        <button style={styles.backButton} onClick={() => navigate(-1)}><ArrowLeft size={16} /> Back</button>
+      <PageLayout>
+        {renderTopNav()}
         <div style={{marginTop:'100px', textAlign:'center', maxWidth:'400px'}}>
            <h2 style={{fontSize:'1.5rem', fontWeight:700, color:'#1e293b', marginBottom:'1rem'}}>📅 Seating Not Available</h2>
            <p style={{color:'#64748b', lineHeight:1.6}}>{error}</p>
            <p style={{marginTop:'2rem', fontSize:'0.85rem', color:'#94a3b8'}}>Please check back later or contact the exam department.</p>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -251,10 +391,8 @@ export default function SeatingChart3D() {
   const columns = seating?.columns || [];
 
   return (
-    <div style={styles.page} className="seating-wrapper">
-      <button style={styles.backButton} onClick={() => navigate(-1)}>
-        <ArrowLeft size={16} /> Back
-      </button>
+    <PageLayout>
+      {renderTopNav()}
 
       <div style={styles.titleWrapper}>
         <h2 style={styles.title}>Room: {seating?.roomNo || '--'} | Your Seat: {mySeat ? `Col ${mySeat.columnNo}, Seat ${mySeat.seatNo}` : '--'}</h2>
@@ -346,6 +484,6 @@ export default function SeatingChart3D() {
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
