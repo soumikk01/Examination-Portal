@@ -239,3 +239,11 @@ model SeatAllocation {
   @@index([examGroup, roomNo])
   @@map("SeatAllocations")
 }
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("SystemSettings")
+}
