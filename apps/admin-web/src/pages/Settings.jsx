@@ -13,7 +13,7 @@ const Settings = () => {
     newPassword: '',
     confirmPassword: '',
     sessionTimeout: 30,
-    noticeBoardMessage: 'Mid-term examinations will commence from 15th April. Please check your schedule.',
+    noticeBoardMessage: '',
   });
 
   useEffect(() => {
