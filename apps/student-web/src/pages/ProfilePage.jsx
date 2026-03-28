@@ -163,9 +163,16 @@ const ProfilePage = () => {
     }, [student, examFilter]);
 
     useEffect(() => {
+        // Instant Load from Cache
+        const cached = api.getCachedProfile();
+        if (cached) {
+            setStudent(cached);
+            setLoading(false);
+        }
+
         const fetchStudent = async () => {
             try {
-                setLoading(true);
+                if (!cached) setLoading(true);
                 const [studentData, settingsData] = await Promise.all([
                     api.getStudentProfile(collegeId),
                     api.getSettings().catch(() => null),
@@ -185,7 +192,7 @@ const ProfilePage = () => {
                     setShowNoticeModal(true);
                 }
             } catch (err) {
-                setError(err.message || 'Error fetching student data');
+                if (!cached) setError(err.message || 'Error fetching student data');
                 if (err.status === 401) navigate('/');
             } finally {
                 setLoading(false);
@@ -221,8 +228,16 @@ const ProfilePage = () => {
 
             <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4 mb-8">
-
-                    <div className="flex gap-2 flex-wrap items-center">
+                    {/* Scrollable Container for Mobile Buttons */}
+                    <div 
+                        className="flex gap-2 items-center overflow-x-auto pb-2 w-full md:w-auto no-scrollbar"
+                        style={{ 
+                            msOverflowStyle: 'none', 
+                            scrollbarWidth: 'none',
+                            WebkitOverflowScrolling: 'touch'
+                        }}
+                    >
+                        <div className="flex gap-2 flex-nowrap items-center min-w-max">
                         {/* Exam filter buttons */}
                         {examFilterOptions.map((opt) => {
                             const isSelected = examFilter === opt;
@@ -235,11 +250,8 @@ const ProfilePage = () => {
                                 <button
                                     key={opt}
                                     onClick={() => setExamFilter(opt)}
-                                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; e.currentTarget.style.boxShadow = `0 6px 16px ${colors.shadow}`; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = isSelected ? `0 4px 12px ${colors.shadow}` : 'none'; }}
-                                    onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(0.95)'; e.currentTarget.style.boxShadow = 'none'; }}
-                                    onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; e.currentTarget.style.boxShadow = `0 6px 16px ${colors.shadow}`; }}
-                                    style={{ ...btnBase, backgroundColor: isSelected ? colors.activeBg : colors.base, color: isSelected ? 'white' : colors.text, boxShadow: isSelected ? `0 4px 12px ${colors.shadow}` : 'none' }}
+                                    className="active:scale-95 transition-transform"
+                                    style={{ ...btnBase, backgroundColor: isSelected ? colors.activeBg : colors.base, color: isSelected ? 'white' : colors.text, boxShadow: isSelected ? `0 4px 12px ${colors.shadow}` : 'none', flexShrink: 0 }}
                                 >
                                     {opt}
                                 </button>
@@ -251,11 +263,8 @@ const ProfilePage = () => {
                         {/* Room Search button */}
                         <button
                             onClick={() => navigate(`/student/${collegeId}/room`, { state: { roomName: upcomingExams[0]?.room, collegeId } })}
-                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(79,70,229,0.35)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
-                            onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(0.95)'; e.currentTarget.style.boxShadow = 'none'; }}
-                            onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(79,70,229,0.35)'; }}
-                            style={{ ...btnBase, backgroundColor: '#e0e7ff', color: '#4f46e5' }}
+                            className="active:scale-95 transition-transform"
+                            style={{ ...btnBase, backgroundColor: '#e0e7ff', color: '#4f46e5', flexShrink: 0 }}
                         >
                             Room
                         </button>
@@ -265,11 +274,8 @@ const ProfilePage = () => {
                         {/* Notice button */}
                         <button
                             onClick={() => setShowNoticeModal(true)}
-                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(217,119,6,0.35)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
-                            onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(0.95)'; e.currentTarget.style.boxShadow = 'none'; }}
-                            onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(217,119,6,0.35)'; }}
-                            style={{ ...btnBase, backgroundColor: '#fef3c7', color: '#d97706', position: 'relative' }}
+                            className="active:scale-95 transition-transform"
+                            style={{ ...btnBase, backgroundColor: '#fef3c7', color: '#d97706', position: 'relative', flexShrink: 0 }}
                         >
                             Notice
                             {hasActiveNotice && (
@@ -280,16 +286,17 @@ const ProfilePage = () => {
                                 }} />
                             )}
                         </button>
+                        </div>
                     </div>
 
-                    <div className="flex gap-3">
-                        <Button variant="danger" onClick={() => navigate('/')} icon={ArrowLeft}>Back</Button>
+                    <div className="flex w-full md:w-auto justify-end">
+                        <Button variant="danger" onClick={() => navigate('/')} icon={ArrowLeft} className="w-full md:w-auto">Back</Button>
                     </div>
                 </div>
 
                 {/* Student Profile Card */}
-                <Card className="mb-8" style={{ backgroundColor: '#f0f4f8' }}>
-                    <h3 className="text-3xl font-bold text-[#2d368e] border-b pb-4 mb-6">{student.name}</h3>
+                <Card className="mb-8" padding="24px 20px" style={{ backgroundColor: '#f0f4f8' }}>
+                    <h3 className="text-2xl md:text-3xl font-bold text-[#2d368e] border-b pb-4 mb-6">{student.name}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-base">
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Student Code :</span>

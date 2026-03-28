@@ -117,7 +117,7 @@ const SearchPage = () => {
                 </header>
 
                 <Card
-                    padding="32px 24px"
+                    padding="24px 20px" // More compact for mobile
                     style={{
                         border: '1px solid rgba(226, 232, 240, 0.8)',
                         animation: shake ? 'shake 0.6s cubic-bezier(.36,.07,.19,.97) both' : 'none',
@@ -136,7 +136,7 @@ const SearchPage = () => {
                     </div>
                     <h2
                         style={{
-                            fontSize: '1.5rem',
+                            fontSize: '1.25rem', // Slightly smaller for mobile
                             fontWeight: 700,
                             color: '#000000',
                             marginBottom: '16px',
@@ -166,11 +166,12 @@ const SearchPage = () => {
                             border: error ? '2px solid #ef4444' : '1px solid #e5e7eb',
                             borderRadius: '8px',
                             padding: '14px 16px',
-                            fontSize: '1rem',
+                            fontSize: '16px', // Mandatory for iOS focus stability
                             marginBottom: '16px',
                             boxSizing: 'border-box',
                             outline: 'none',
                             backgroundColor: error ? '#fef2f2' : 'white',
+                            WebkitAppearance: 'none', // Reset iOS styles
                         }}
                         value={studentId}
                         onChange={(e) => {
@@ -247,11 +248,12 @@ const SearchPage = () => {
                             border: error ? '2px solid #ef4444' : '1px solid #e5e7eb',
                             borderRadius: '8px',
                             padding: '14px 16px',
-                            fontSize: '1rem',
+                            fontSize: '16px', // Mandatory for iOS focus stability
                             marginBottom: error ? '8px' : '16px',
                             boxSizing: 'border-box',
                             outline: 'none',
                             backgroundColor: error ? '#fef2f2' : 'white',
+                            WebkitAppearance: 'none', // Reset iOS styles
                         }}
                         value={rollNumber}
                         onChange={(e) => {

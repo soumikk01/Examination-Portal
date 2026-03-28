@@ -40,12 +40,12 @@ export async function createManyFromForm(payload) {
   } = payload;
 
   const toUtcMidnight = (dateStr) => {
-    if (!dateStr) return null;
-    const [yearRaw, monthRaw, dayRaw] = dateStr.split('-').map(Number);
-    const year = Number.isInteger(yearRaw) ? yearRaw : new Date().getUTCFullYear();
-    const month = Number.isInteger(monthRaw) ? monthRaw - 1 : 0;
-    const day = Number.isInteger(dayRaw) ? dayRaw : 1;
-    return new Date(Date.UTC(year, month, day));
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return null;
+    const [year, month, day] = parts.map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    return new Date(Date.UTC(year, month - 1, day));
   };
 
   const base = {
@@ -128,7 +128,8 @@ export async function listForStudent(student) {
 
   const byKey = new Map();
   for (const row of rows) {
-    const key = `${row.examId}:${row.subject}:${row.date?.toISOString() ?? ''}`;
+    const dateStr = row.date instanceof Date ? row.date.toISOString().split('T')[0] : '';
+    const key = `${row.examId}:${row.subject}:${dateStr}`;
     const existing = byKey.get(key);
     if (!existing || (row.studentId === student.id && existing.studentId !== student.id)) {
       byKey.set(key, row);
