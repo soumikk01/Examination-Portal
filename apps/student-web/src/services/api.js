@@ -59,7 +59,7 @@ apiClient.interceptors.response.use(
 // Helper to handle sessionStorage cache
 const cache = {
     set: (key, data) => {
-        try { sessionStorage.setItem(`ep_cache_${key}`, JSON.stringify(data)); } catch (e) {}
+        try { sessionStorage.setItem(`ep_cache_${key}`, JSON.stringify(data)); } catch (e) { /* ignore */ }
     },
     get: (key) => {
         try {

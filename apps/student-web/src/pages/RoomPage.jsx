@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { api } from '../services/api';
 import { ArrowLeft, User } from "lucide-react";
 import { PageLayout } from '../components';
@@ -319,7 +319,7 @@ export default function SeatingChart3D() {
         }}>
           <div style={styles.scene}>
             <div style={styles.teacherArea}>
-              <span style={styles.teacherLabel}>Front of Room (Teacher's Desk)</span>
+              <span style={styles.teacherLabel}>Front of Room (Teacher&apos;s Desk)</span>
               <TeacherTable roomName={roomName || seating?.roomNo} />
             </div>
 
