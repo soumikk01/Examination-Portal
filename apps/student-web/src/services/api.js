@@ -72,7 +72,13 @@ const cache = {
 
 export const api = {
     getHealth: () => apiClient.get('/health'),
-    getSettings: () => apiClient.get('/settings'),
+    getSettings: async () => {
+        const cached = cache.get('settings');
+        if (cached) return cached;
+        const data = await apiClient.get('/settings');
+        cache.set('settings', data);
+        return data;
+    },
 
     login: async (identifier, verification) => {
         const data = await apiClient.post('/auth/login', { 
@@ -104,6 +110,7 @@ export const api = {
     // Cache retrieval for Instant Load
     getCachedProfile: () => cache.get('profile'),
     getCachedSeating: () => cache.get('seating'),
+    getCachedSettings: () => cache.get('settings'),
 
     logout: () => {
         localStorage.removeItem('examination_portal_token');
