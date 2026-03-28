@@ -60,6 +60,8 @@ export default function SeatingChart3D() {
   const [seating, setSeating] = useState(null);
   const [error, setError] = useState(null);
 
+  const columns = seating?.columns || [];
+
   useEffect(() => {
     const fetchSeating = async () => {
       try {
@@ -83,9 +85,14 @@ export default function SeatingChart3D() {
 
     const handleResize = () => {
       const width = window.innerWidth;
-      const targetWidth = 800; // Increased to account for door/extra columns
-      if (width < targetWidth) setScale((width - 40) / targetWidth);
-      else setScale(1);
+      // On mobile, we aim for a scrollable experience if width is too small
+      const targetWidth = columns.length * 134; // Each column + gap
+      if (width < 768) {
+         // Minor scaling allowed for mobile to fit a bit more, but not too much
+         setScale(Math.max(0.75, (width - 40) / targetWidth));
+      } else {
+         setScale(1);
+      }
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -93,7 +100,7 @@ export default function SeatingChart3D() {
       window.removeEventListener("resize", handleResize);
       clearTimeout(timer);
     };
-  }, []);
+  }, [columns.length]);
 
   const renderTopNav = () => (
       <div style={{ width: '100%', maxWidth: '1152px', marginTop: '16px', marginBottom: '32px' }}>
@@ -291,8 +298,7 @@ export default function SeatingChart3D() {
   }
 
   const mySeat = seating?.mySeat; // { columnNo, seatNo }
-  const columns = seating?.columns || [];
-
+  
   return (
     <PageLayout>
       {renderTopNav()}
@@ -301,7 +307,7 @@ export default function SeatingChart3D() {
         marginTop: "10px", width: "100%", display: "flex", justifyContent: "center",
       }}>
         <div style={{
-           transform: `scale(${scale})`, transformOrigin: "top center", transition: "transform 0.15s ease-out", padding: "10px"
+           width: "100%", padding: "10px"
         }}>
           <div style={styles.scene}>
             <div style={styles.teacherArea}>
@@ -309,57 +315,78 @@ export default function SeatingChart3D() {
               <TeacherTable roomName={roomName || seating?.roomNo} />
             </div>
 
-            <div style={styles.grid}>
-              {/* Top Row: EXTRA | DEPARTMENTS | DOOR */}
-              <div style={{...styles.deskRow, marginBottom: '15px', alignItems: 'center'}}>
-                <div style={styles.desk(false, true)}>
-                   <strong style={{color: '#94a3b8', fontSize: '11px', letterSpacing: '0.05em'}}>EXTRA</strong>
+          {/* Seating Layout Wrap */}
+          <div 
+            style={{ 
+              width: '100%', 
+              overflowX: 'auto', 
+              paddingBottom: '20px',
+              WebkitOverflowScrolling: 'touch', // Smooth scroll for iOS
+              display: 'flex',
+              justifyContent: scale === 1 ? 'center' : 'flex-start'
+            }}
+            className="no-scrollbar"
+          >
+            <div style={{ 
+              transform: `scale(${scale})`, 
+              transformOrigin: "top left", 
+              transition: "transform 0.2s ease",
+              minWidth: 'max-content',
+              padding: '10px'
+            }}>
+              <div style={styles.grid}>
+                {/* Top Row: EXTRA | DEPARTMENTS | DOOR */}
+                <div style={{...styles.deskRow, marginBottom: '15px', alignItems: 'center'}}>
+                  <div style={styles.desk(false, true)}>
+                     <strong style={{color: '#94a3b8', fontSize: '11px', letterSpacing: '0.05em'}}>EXTRA</strong>
+                  </div>
+                  
+                  {columns.slice(1, -1).map((col, i) => (
+                    <div key={i} style={{ width: "110px", textAlign: 'center', fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                      {col.dept || "---"}
+                    </div>
+                  ))}
+
+                  <div style={{...styles.desk(false, false), background: '#1e293b', border: 'none'}}>
+                     <strong style={{color: '#ffffff', fontSize: '11px', letterSpacing: '0.05em'}}>DOOR</strong>
+                  </div>
                 </div>
-                
-                {columns.slice(1, -1).map((col, i) => (
-                  <div key={i} style={{ width: "110px", textAlign: 'center', fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                    {col.dept || "---"}
+
+                {Array.from({ length: ROWS }).map((_, r) => (
+                  <div key={r} style={styles.deskRow}>
+                    {columns.map((col, cIdx) => {
+                      const seat = col.seats[r];
+                      const isMySeat = mySeat && mySeat.columnNo === (cIdx + 1) && (seat?.seatNo === mySeat.seatNo);
+                      
+                      return (
+                        <div key={cIdx} style={styles.desk(isMySeat, seat?.isExtra)}>
+                          {isMySeat && (
+                            <div style={styles.avatarContainer}>
+                              <User size={14} color="#3b82f6" strokeWidth={3} />
+                            </div>
+                          )}
+                          {isMySeat && <strong style={{fontSize: '9px', color: '#fff', textTransform: 'uppercase', marginBottom: '2px'}}>YOU</strong>}
+                          
+                          <div style={styles.seatInfo(isMySeat)}>
+                            {isMySeat ? (
+                              <>
+                                <div style={{fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px'}}>{seat?.studentName}</div>
+                                <div style={{opacity: 0.8, fontSize: '8px'}}>{seat?.rollNo}</div>
+                              </>
+                            ) : seat?.isExtra ? (
+                              <span style={{color: '#94a3b8', fontStyle: 'italic', fontSize: '8px'}}>EXTRA</span>
+                            ) : (
+                              <span style={{color: '#cbd5e1'}}>---</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
-
-                <div style={{...styles.desk(false, false), background: '#1e293b', border: 'none'}}>
-                   <strong style={{color: '#ffffff', fontSize: '11px', letterSpacing: '0.05em'}}>DOOR</strong>
-                </div>
               </div>
-
-              {Array.from({ length: ROWS }).map((_, r) => (
-                <div key={r} style={styles.deskRow}>
-                  {columns.map((col, cIdx) => {
-                    const seat = col.seats[r];
-                    const isMySeat = mySeat && mySeat.columnNo === (cIdx + 1) && (seat?.seatNo === mySeat.seatNo);
-                    
-                    return (
-                      <div key={cIdx} style={styles.desk(isMySeat, seat?.isExtra)}>
-                        {isMySeat && (
-                          <div style={styles.avatarContainer}>
-                            <User size={14} color="#3b82f6" strokeWidth={3} />
-                          </div>
-                        )}
-                        {isMySeat && <strong style={{fontSize: '9px', color: '#fff', textTransform: 'uppercase', marginBottom: '2px'}}>YOU</strong>}
-                        
-                        <div style={styles.seatInfo(isMySeat)}>
-                          {isMySeat ? (
-                            <>
-                              <div style={{fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px'}}>{seat?.studentName}</div>
-                              <div style={{opacity: 0.8, fontSize: '8px'}}>{seat?.rollNo}</div>
-                            </>
-                          ) : seat?.isExtra ? (
-                            <span style={{color: '#94a3b8', fontStyle: 'italic', fontSize: '8px'}}>EXTRA</span>
-                          ) : (
-                            <span style={{color: '#cbd5e1'}}>---</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
             </div>
+          </div>
           </div>
         </div>
       </div>
