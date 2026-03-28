@@ -187,6 +187,9 @@ v1Router.get('/student/exams', verifyToken, examScheduleController.listForStuden
 // Public/student-safe filters for dropdowns
 v1Router.get('/student/exams/filters', examScheduleController.listPublishedFilters);
 
+// Student Seating
+v1Router.get('/student/seating', verifyToken, seatingController.getStudentSeating);
+
 // Student profile routes (keep wildcard last so it doesn't shadow other /student/* routes)
 v1Router.get('/student/*', verifyToken, authorizeStudent, studentController.getProfile);
 
@@ -205,7 +208,7 @@ v1Router.post('/seating', seatingController.assign);
 v1Router.get('/seating/room/:roomNo', authorizeAdmin, seatingController.getRoomSeating);
 v1Router.post('/seating/publish', authorizeAdmin, seatingController.publish);
 v1Router.get('/seating/:examGroup', authorizeAdmin, seatingController.getSeating);
-v1Router.get('/student/seating', verifyToken, seatingController.getStudentSeating);
+
 
 // Settings
 import * as settingsController from './modules/settings/settings.controller.js';

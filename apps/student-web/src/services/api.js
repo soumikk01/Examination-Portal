@@ -88,6 +88,9 @@ export const api = {
         window.location.href = '/';
     },
 
+    // Seating
+    getSeating: () => apiClient.get('/student/seating'),
+
     // Legacy/Admin methods
     createStudent: (studentData) =>
         apiClient.post('/student', studentData),

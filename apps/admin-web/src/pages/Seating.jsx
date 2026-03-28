@@ -103,9 +103,9 @@ const styles = `
   }
   .sa2-table th, .sa2-table td {
     border: 1px solid #555; padding: 0;
-    vertical-align: top; height: 22mm;
+    vertical-align: top; height: 18mm;
   }
-  .sa2-table th { vertical-align: middle; padding: 3px 4px; font-size: 11px; font-weight: 700; text-align: center; }
+  .sa2-table th { vertical-align: middle; padding: 3px 4px; font-size: 11px; font-weight: 700; text-align: center; height: auto; }
 
   /* Column header types */
   .sa2-th-extra { background: #f5f5f5; }
@@ -151,8 +151,12 @@ const styles = `
   .sa2-info-msg { font-size: .82rem; color: #64748b; margin-bottom: .75rem; }
 
   @media print {
-    .sa2-a4-outer, .sa2-controls, .sa2-no-print { display: none !important; }
-    .sa2-a4 { box-shadow: none !important; }
+    body * { visibility: hidden; }
+    .sa2-a4-outer, .sa2-a4-outer * { visibility: visible; }
+    .sa2-a4-outer { position: fixed; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: white !important; border: none; overflow: hidden; }
+    .sa2-a4 { box-shadow: none !important; margin: 0 auto; padding: 8mm 10mm !important; border: none; width: 297mm; height: 210mm; box-sizing: border-box; }
+    .sa2-no-print, .sa2-no-print * { display: none !important; visibility: hidden !important; }
+    @page { size: landscape; margin: 0mm; }
   }
 `;
 
@@ -211,29 +215,6 @@ export default function Seating() {
     }
   };
 
-  // ── PDF export ─────────────────────────────────────────────────────────
-  const handleDownloadPDF = async () => {
-    const el = printRef.current;
-    if (!el) return;
-    try {
-      el.classList.add('hide-shadow');
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      el.classList.remove('hide-shadow');
-
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-      const W = pdf.internal.pageSize.getWidth();
-      const H = (canvas.height * W) / canvas.width;
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, W, H);
-      pdf.save(`seating-${room || 'preview'}.pdf`);
-    } catch (e) {
-      if (printRef.current) printRef.current.classList.remove('hide-shadow');
-      setErrMsg('PDF export failed: ' + e.message);
-    }
-  };
 
   // ── Build table data ──────────────────────────────────────────────────
   const ROWS = seating ? seating.seatsPerColumn : 8;
@@ -307,17 +288,9 @@ export default function Seating() {
             {status === 'loading' ? 'Loading…' : 'Generate'}
           </button>
 
-          <button 
-            className={`sa2-btn ${seating?.isPublished ? 'sa2-btn-blue' : 'sa2-btn-green'}`} 
-            onClick={handlePublish} 
-            disabled={!seating}
-          >
-            {seating?.isPublished ? 'Unpublish' : 'Publish'}
-          </button>
 
-          <button className="sa2-btn sa2-btn-green" onClick={handleDownloadPDF} disabled={!seating}>
-            Download PDF
-          </button>
+
+
 
           {status === 'ok'  && <span className="sa2-status sa2-ok">✓ Loaded</span>}
           {status === 'err' && <span className="sa2-status sa2-err">Error</span>}
@@ -325,8 +298,20 @@ export default function Seating() {
 
         {errMsg && <p style={{ color: '#b91c1c', fontSize: '.85rem', marginBottom: '.75rem' }}>⚠ {errMsg}</p>}
 
-        {/* A4 PDF Preview */}
         <div className="sa2-a4-outer">
+          <div className="sa2-no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', width: '297mm', margin: '0 auto 1rem auto' }}>
+            <button 
+              className={`sa2-btn ${seating?.isPublished ? 'sa2-btn-blue' : 'sa2-btn-green'}`} 
+              onClick={handlePublish} 
+              disabled={!seating}
+              style={{ fontSize: '0.9rem', padding: '0.6rem 1.25rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+            >
+              {seating?.isPublished ? 'Unpublish' : 'Publish'}
+            </button>
+            <button className="sa2-btn sa2-btn-blue" onClick={() => window.print()} disabled={!seating || status !== 'ok'} style={{ fontSize: '0.9rem', padding: '0.6rem 1.25rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+              Print
+            </button>
+          </div>
           <div className="sa2-a4" ref={printRef}>
 
             {/* Letterhead */}
