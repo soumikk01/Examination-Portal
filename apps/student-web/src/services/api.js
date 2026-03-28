@@ -56,6 +56,20 @@ apiClient.interceptors.response.use(
     }
 );
 
+// Helper to handle sessionStorage cache
+const cache = {
+    set: (key, data) => {
+        try { sessionStorage.setItem(`ep_cache_${key}`, JSON.stringify(data)); } catch (e) {}
+    },
+    get: (key) => {
+        try {
+            const val = sessionStorage.getItem(`ep_cache_${key}`);
+            return val ? JSON.parse(val) : null;
+        } catch (e) { return null; }
+    },
+    clear: () => sessionStorage.clear()
+};
+
 export const api = {
     getHealth: () => apiClient.get('/health'),
     getSettings: () => apiClient.get('/settings'),
@@ -69,27 +83,40 @@ export const api = {
         if (data.token) {
             localStorage.setItem('examination_portal_token', data.token);
             localStorage.setItem('examination_portal_student', JSON.stringify(data.student));
+            // Initialize cache
+            cache.set('profile', data.student);
         }
         return data;
     },
 
-    getStudentProfile: (collegeId) =>
-        apiClient.get(`/student/${encodeURIComponent(collegeId)}`),
+    getStudentProfile: async (collegeId) => {
+        const data = await apiClient.get(`/student/${encodeURIComponent(collegeId)}`);
+        cache.set('profile', data);
+        return data;
+    },
+
+    getSeating: async () => {
+        const data = await apiClient.get('/student/seating');
+        cache.set('seating', data);
+        return data;
+    },
+
+    // Cache retrieval for Instant Load
+    getCachedProfile: () => cache.get('profile'),
+    getCachedSeating: () => cache.get('seating'),
+
+    logout: () => {
+        localStorage.removeItem('examination_portal_token');
+        localStorage.removeItem('examination_portal_student');
+        cache.clear();
+        window.location.href = '/';
+    },
 
     getExamScheduleFilters: ({ mode, level } = {}) =>
         apiClient.get('/student/exams/filters', { params: { mode, level } }),
 
     getStudentExams: ({ departmentCode, semester, mode, scheduleType, level } = {}) =>
         apiClient.get('/student/exams', { params: { departmentCode, semester, mode, scheduleType, level } }),
-
-    logout: () => {
-        localStorage.removeItem('examination_portal_token');
-        localStorage.removeItem('examination_portal_student');
-        window.location.href = '/';
-    },
-
-    // Seating
-    getSeating: () => apiClient.get('/student/seating'),
 
     // Legacy/Admin methods
     createStudent: (studentData) =>

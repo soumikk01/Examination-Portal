@@ -163,9 +163,16 @@ const ProfilePage = () => {
     }, [student, examFilter]);
 
     useEffect(() => {
+        // Instant Load from Cache
+        const cached = api.getCachedProfile();
+        if (cached) {
+            setStudent(cached);
+            setLoading(false);
+        }
+
         const fetchStudent = async () => {
             try {
-                setLoading(true);
+                if (!cached) setLoading(true);
                 const [studentData, settingsData] = await Promise.all([
                     api.getStudentProfile(collegeId),
                     api.getSettings().catch(() => null),
@@ -185,7 +192,7 @@ const ProfilePage = () => {
                     setShowNoticeModal(true);
                 }
             } catch (err) {
-                setError(err.message || 'Error fetching student data');
+                if (!cached) setError(err.message || 'Error fetching student data');
                 if (err.status === 401) navigate('/');
             } finally {
                 setLoading(false);

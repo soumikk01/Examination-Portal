@@ -63,12 +63,20 @@ export default function SeatingChart3D() {
   const columns = seating?.columns || [];
 
   useEffect(() => {
+    // Instant Load from Cache
+    const cached = api.getCachedSeating();
+    if (cached) {
+      setSeating(cached);
+      setLoading(false);
+    }
+
     const fetchSeating = async () => {
       try {
+        if (!cached) setLoading(true);
         const data = await api.getSeating();
         setSeating(data);
       } catch (e) {
-        setError(e.message || 'Failed to load seating information.');
+        if (!cached) setError(e.message || 'Failed to load seating information.');
       } finally {
         setLoading(false);
       }
@@ -78,7 +86,7 @@ export default function SeatingChart3D() {
     // Fallback: If still loading after 8 seconds, show an error.
     const timer = setTimeout(() => {
       setLoading(current => {
-        if (current) setError("Taking longer than expected. Please refresh the page or check your connection.");
+        if (current && !cached) setError("Taking longer than expected. Please refresh the page or check your connection.");
         return false;
       });
     }, 8000);
