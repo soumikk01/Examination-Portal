@@ -199,7 +199,7 @@ const ProfilePage = () => {
                 }
             } catch (err) {
                 if (!cached) setError(err.message || 'Error fetching student data');
-                if (err.status === 401) navigate('/');
+                if (err.response?.status === 401 || err.status === 401) navigate('/');
             } finally {
                 setLoading(false);
             }
@@ -335,7 +335,7 @@ const ProfilePage = () => {
                                     <span className="text-4xl mb-2 block">🎉</span>
                                     <h4 className="text-xl font-bold text-green-700 mb-2">All exams completed!</h4>
                                     <p className="text-green-600">
-                                        {examFilter !== 'ALL' ? `All ${examFilter} exams are done.` : 'Congratulations! You have completed all your scheduled exams.'}
+                                        {examFilter === 'Profile' ? 'Congratulations! You have completed all your scheduled exams.' : `All ${examFilter} exams are done.`}
                                     </p>
                                 </div>
                             )}

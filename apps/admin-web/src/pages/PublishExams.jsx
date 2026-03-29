@@ -116,8 +116,7 @@ const PublishExams = () => {
   const [publishing, setPublishing] = useState('');
   const [deleting, setDeleting] = useState('');
   
-  const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
-  const showAlert = (message) => setModalState({ isOpen: true, title: 'Alert', message, type: 'alert', onConfirm: null });
+  const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null });
   const showConfirm = (message, onConfirm) => setModalState({ isOpen: true, title: 'Confirm Action', message, type: 'confirm', onConfirm });
 
   const load = () => {
