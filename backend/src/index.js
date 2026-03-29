@@ -102,7 +102,7 @@ const limiter = rateLimit({
   max: 200, // generous limit — covers normal admin + student usage
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => {
+  skip: (_req) => {
     // Disable rate limiting in local development (Vite proxy causes false positives)
     if (process.env.NODE_ENV === 'development') return true;
     return false;
