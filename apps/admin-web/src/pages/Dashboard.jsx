@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, Calendar, Users, Target, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Settings, Calendar, Users, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 import api from '../services/api';
 
@@ -163,8 +163,8 @@ const Dashboard = () => {
           </h2>
           {summary?.activeSchedules?.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {summary.activeSchedules.map((schedule, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #f3f4f6' }}>
+              {summary.activeSchedules.map((schedule) => (
+                <div key={`${schedule.semester}-${schedule.mode}-${schedule.type}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #f3f4f6' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: '600', color: '#374151' }}>Semester {schedule.semester}</span>
                     <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{schedule.mode} • {schedule.type.replace(/_/g, ' ')}</span>
@@ -196,8 +196,8 @@ const Dashboard = () => {
           </h2>
           {summary?.activeSeating?.length > 0 ? (
              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {summary.activeSeating.map((seat, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#fffbeb', borderRadius: '6px', border: '1px solid #fef3c7' }}>
+              {summary.activeSeating.map((seat) => (
+                <div key={seat.examGroup} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#fffbeb', borderRadius: '6px', border: '1px solid #fef3c7' }}>
                   <span style={{ fontWeight: '600', color: '#92400e' }}>{seat.examGroup}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span style={{ color: '#d97706', fontSize: '0.875rem', fontWeight: '500' }}>{seat.totalSeats} seats allotted</span>

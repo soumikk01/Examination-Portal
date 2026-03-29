@@ -38,8 +38,8 @@ const Modal = ({ isOpen, title, message, type = 'alert', onConfirm, onClose }) =
             </button>
           )}
           <button 
-            onClick={() => {
-              if (onConfirm) onConfirm();
+            onClick={async () => {
+              if (onConfirm) await onConfirm();
               onClose();
             }}
             style={{ 

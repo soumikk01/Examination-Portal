@@ -14,7 +14,6 @@ const Settings = () => {
     newPassword: '',
     confirmPassword: '',
     sessionTimeout: 30,
-    sessionTimeout: 30,
     noticeBoardMessage: '',
   });
 

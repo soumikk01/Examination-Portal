@@ -99,16 +99,13 @@ app.use(express.json());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100, // standard limit for student/auth
+  max: 200, // generous limit — covers normal admin + student usage
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
     // Disable rate limiting in local development (Vite proxy causes false positives)
     if (process.env.NODE_ENV === 'development') return true;
-
-    // skip strict rate limit for admin-authorized requests
-    const authHeader = req.headers['authorization'];
-    return authHeader && authHeader.includes('Bearer');
+    return false;
   }
 });
 app.use(limiter);
