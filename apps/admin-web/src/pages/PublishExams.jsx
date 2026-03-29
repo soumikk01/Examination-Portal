@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import Modal from '../components/Modal';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
 
@@ -114,6 +115,9 @@ const PublishExams = () => {
   const [error, setError] = useState('');
   const [publishing, setPublishing] = useState('');
   const [deleting, setDeleting] = useState('');
+  
+  const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null });
+  const showConfirm = (message, onConfirm) => setModalState({ isOpen: true, title: 'Confirm Action', message, type: 'confirm', onConfirm });
 
   const load = () => {
     setLoading(true);
@@ -159,19 +163,19 @@ const PublishExams = () => {
     }
   };
 
-  const del = async (uploadId) => {
-    const ok = window.confirm('Delete this draft batch? This cannot be undone.');
-    if (!ok) return;
-    setDeleting(uploadId);
-    setError('');
-    try {
-      await api.delete(`/exam/batch/${encodeURIComponent(uploadId)}`);
-      load();
-    } catch (err) {
-      setError(getUserFriendlyApiError(err, 'Failed to delete batch'));
-    } finally {
-      setDeleting('');
-    }
+  const del = (uploadId) => {
+    showConfirm('Delete this draft batch? This cannot be undone.', async () => {
+      setDeleting(uploadId);
+      setError('');
+      try {
+        await api.delete(`/exam/batch/${encodeURIComponent(uploadId)}`);
+        load();
+      } catch (err) {
+        setError(getUserFriendlyApiError(err, 'Failed to delete batch'));
+      } finally {
+        setDeleting('');
+      }
+    });
   };
 
   if (loading) {
@@ -367,6 +371,14 @@ const PublishExams = () => {
           ))}
         </div>
       )}
+      <Modal 
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        type={modalState.type}
+        onConfirm={modalState.onConfirm}
+        onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
