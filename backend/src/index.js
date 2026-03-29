@@ -20,6 +20,7 @@ import * as examScheduleController from './modules/examSchedule/examSchedule.con
 import * as roomController from './modules/rooms/room.controller.js';
 import * as seatingController from './modules/seating/seating.controller.js';
 import * as optionsController from './modules/options/options.controller.js';
+import * as dashboardController from './modules/dashboard/dashboard.controller.js';
 import multer from 'multer';
 
 const app = express();
@@ -131,24 +132,39 @@ v1Router.get('/health', async (req, res) => {
     status: 'UP',
     version: 'v1',
     timestamp: new Date(),
-    checks: { database: 'DOWN', redis: 'DOWN' },
+    uptime: process.uptime(), // seconds
+    checks: {
+      database: { status: 'DOWN', latency: null, error: null },
+      redis: { status: 'DOWN', latency: null, error: null }
+    },
   };
 
+  // Check DB
   try {
+    const dbStart = performance.now();
     await prisma.$queryRaw`SELECT 1`;
-    health.checks.database = 'UP';
+    health.checks.database.latency = Math.round(performance.now() - dbStart);
+    health.checks.database.status = 'UP';
   } catch (err) {
     health.status = 'DEGRADED';
+    health.checks.database.error = err.code || 'ECONNREFUSED';
     logger.error('Health Check - Database Error:', err.message);
   }
 
+  // Check Redis
   try {
     if (redis.status === 'ready') {
+      const rdStart = performance.now();
       await redis.ping();
-      health.checks.redis = 'UP';
+      health.checks.redis.latency = Math.round(performance.now() - rdStart);
+      health.checks.redis.status = 'UP';
+    } else {
+      health.status = 'DEGRADED';
+      health.checks.redis.error = 'DISCONNECTED';
     }
   } catch (err) {
     health.status = 'DEGRADED';
+    health.checks.redis.error = err.code || 'ECONNREFUSED';
     logger.error('Health Check - Redis Error:', err.message);
   }
 
@@ -158,6 +174,11 @@ v1Router.get('/health', async (req, res) => {
 v1Router.post('/auth/login', validate(verificationSchema), authController.login);
 v1Router.post('/auth/admin/login', validate(adminLoginSchema), authController.adminLogin);
 v1Router.put('/auth/admin/password', authorizeAdmin, authController.updateAdminPassword);
+
+// Dashboard
+v1Router.get('/dashboard/summary', authorizeAdmin, dashboardController.getDashboardSummary);
+v1Router.delete('/dashboard/schedules', authorizeAdmin, dashboardController.deleteSchedules);
+v1Router.delete('/dashboard/seating/:examGroup', authorizeAdmin, dashboardController.deleteSeating);
 
 // Options (programs, branches, semesters) – from DB, no hardcoded data
 v1Router.get('/options/programs', authorizeAdmin, optionsController.getPrograms);
