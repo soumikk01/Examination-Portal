@@ -240,8 +240,8 @@ app.use((err, req, res, _next) => {
   });
 
   if (err.code?.startsWith('P')) {
-    return res.status(400).json({
-      error: 'Database operation failed',
+    return res.status(503).json({
+      error: 'Service temporarily unavailable. We are experiencing high traffic, please try again momentarily.',
       code: err.code,
       requestId: req.id,
     });
@@ -277,8 +277,16 @@ app.use((err, req, res, _next) => {
   });
 });
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   logger.info(`Server running on http://localhost:${PORT}`);
+  
+  // Test database connection on startup
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    logger.info('[SUCCESS] Database connected successfully');
+  } catch (error) {
+    logger.error('[ERROR] Database connection failed: ' + error.message);
+  }
 });
 
 const gracefulShutdown = async () => {
