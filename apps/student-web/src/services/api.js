@@ -125,9 +125,6 @@ export const api = {
     getStudentExams: ({ departmentCode, semester, mode, scheduleType, level } = {}) =>
         apiClient.get('/student/exams', { params: { departmentCode, semester, mode, scheduleType, level } }),
 
-    // Legacy/Admin methods
-    createStudent: (studentData) =>
-        apiClient.post('/student', studentData),
 };
 
 export { apiClient as default };
