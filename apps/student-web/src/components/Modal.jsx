@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const Modal = ({ isOpen, title, message, type = 'alert', onConfirm, onClose }) => {
   if (!isOpen) return null;
