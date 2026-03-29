@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Settings, Calendar, Users, Target, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import Modal from '../components/Modal';
 import api from '../services/api';
 
 const Dashboard = () => {
@@ -9,6 +10,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [unreachable, setUnreachable] = useState(false);
+  const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+
+  const showAlert = (message) => setModalState({ isOpen: true, title: 'Alert', message, type: 'alert', onConfirm: null });
 
   const fetchData = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -50,24 +54,38 @@ const Dashboard = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleDeleteSchedule = async (schedule) => {
-    if (!window.confirm(`Are you sure you want to delete all published tests for Semester ${schedule.semester} (${schedule.mode} - ${schedule.type.replace(/_/g, ' ')})? This will unpublish them from student view.`)) return;
-    try {
-      await api.delete('/dashboard/schedules', { data: { semester: schedule.semester, mode: schedule.mode, scheduleType: schedule.type } });
-      fetchData(false);
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete schedule.');
-    }
+  const handleDeleteSchedule = (schedule) => {
+    setModalState({
+      isOpen: true,
+      title: 'Confirm Deletion',
+      type: 'confirm',
+      message: `Are you sure you want to delete all published tests for Semester ${schedule.semester} (${schedule.mode} - ${schedule.type.replace(/_/g, ' ')})? This will unpublish them from student view.`,
+      onConfirm: async () => {
+        try {
+          await api.delete('/dashboard/schedules', { data: { semester: schedule.semester, mode: schedule.mode, scheduleType: schedule.type } });
+          fetchData(false);
+        } catch (err) {
+          showAlert(err.response?.data?.error || 'Failed to delete schedule.');
+        }
+      }
+    });
   };
 
-  const handleDeleteSeating = async (examGroup) => {
-    if (!window.confirm(`Are you sure you want to delete the seating allotment for ${examGroup}? This will clear seat allocations.`)) return;
-    try {
-      await api.delete(`/dashboard/seating/${encodeURIComponent(examGroup)}`);
-      fetchData(false);
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete seating assignment.');
-    }
+  const handleDeleteSeating = (examGroup) => {
+    setModalState({
+      isOpen: true,
+      title: 'Confirm Deletion',
+      type: 'confirm',
+      message: `Are you sure you want to delete the seating allotment for ${examGroup}? This will clear seat allocations.`,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/dashboard/seating/${encodeURIComponent(examGroup)}`);
+          fetchData(false);
+        } catch (err) {
+          showAlert(err.response?.data?.error || 'Failed to delete seating assignment.');
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -308,6 +326,15 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      <Modal 
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        type={modalState.type}
+        onConfirm={modalState.onConfirm}
+        onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

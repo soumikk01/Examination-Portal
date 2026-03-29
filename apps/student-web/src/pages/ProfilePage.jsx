@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
+import Modal from '../components/Modal';
 import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
 import { parseExamDateTime } from '../utils/dateUtils';
 
@@ -141,6 +142,9 @@ const ProfilePage = () => {
     const [error, setError] = useState(null);
     const [examFilter, setExamFilter] = useState(location.state?.filter || 'Profile');
     const [showNoticeModal, setShowNoticeModal] = useState(false);
+    
+    const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+    const showAlert = (message, onConfirm) => setModalState({ isOpen: true, title: 'Alert', message, type: 'alert', onConfirm });
 
     const examFilterOptions = ['Profile', 'Regular', 'Backlog'];
 
@@ -179,8 +183,10 @@ const ProfilePage = () => {
                 ]);
 
                 if (settingsData?.maintenanceMode) {
-                    alert('Portal is currently under maintenance. Please try again later.');
-                    api.logout();
+                    showAlert('Portal is currently under maintenance. Please try again later.', () => {
+                        api.logout();
+                        navigate('/');
+                    });
                     return;
                 }
 
@@ -384,6 +390,15 @@ const ProfilePage = () => {
                     </div>
                 </div>
             </div>
+
+            <Modal 
+                isOpen={modalState.isOpen}
+                title={modalState.title}
+                message={modalState.message}
+                type={modalState.type}
+                onConfirm={modalState.onConfirm}
+                onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+            />
         </PageLayout>
     );
 };

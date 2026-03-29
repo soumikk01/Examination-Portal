@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save, Shield, Settings as SettingsIcon, Bell } from 'lucide-react';
+import Modal from '../components/Modal';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
 
@@ -13,8 +14,15 @@ const Settings = () => {
     newPassword: '',
     confirmPassword: '',
     sessionTimeout: 30,
+    sessionTimeout: 30,
     noticeBoardMessage: '',
   });
+
+  const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+
+  const showAlert = (message) => setModalState({ isOpen: true, title: 'Alert', message, type: 'alert', onConfirm: null });
+  
+  const showConfirm = (message, onConfirm) => setModalState({ isOpen: true, title: 'Confirm Action', message, type: 'confirm', onConfirm });
 
   useEffect(() => {
     api.get('/settings').then((data) => {
@@ -36,9 +44,9 @@ const Settings = () => {
   const saveSettings = async (updates, successMsg) => {
     try {
       await api.put('/settings', updates);
-      alert(successMsg || 'Settings saved successfully!');
+      showAlert(successMsg || 'Settings saved successfully!');
     } catch (err) {
-      alert(getUserFriendlyApiError(err, 'Failed to save settings'));
+      showAlert(getUserFriendlyApiError(err, 'Failed to save settings'));
     }
   };
 
@@ -65,7 +73,7 @@ const Settings = () => {
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     if (formData.newPassword !== formData.confirmPassword) {
-      alert('New passwords do not match!');
+      showAlert('New passwords do not match!');
       return;
     }
     try {
@@ -73,10 +81,10 @@ const Settings = () => {
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword
       });
-      alert('Password updated successfully!');
+      showAlert('Password updated successfully!');
       setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
     } catch (err) {
-      alert(getUserFriendlyApiError(err, 'Failed to update password'));
+      showAlert(getUserFriendlyApiError(err, 'Failed to update password'));
     }
   };
 
@@ -191,10 +199,10 @@ const Settings = () => {
                 style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fca5a5' }}
                 onClick={(e) => {
                   e.preventDefault();
-                  if (window.confirm('Are you sure you want to remove the notice from the student portal?')) {
+                  showConfirm('Are you sure you want to remove the notice from the student portal?', () => {
                     setFormData(prev => ({ ...prev, noticeBoardMessage: '' }));
                     saveSettings({ noticeBoardMessage: '' }, 'Notice removed successfully!');
-                  }
+                  });
                 }}
               >
                 Delete Notice
@@ -269,6 +277,15 @@ const Settings = () => {
         </div>
 
       </div>
+      
+      <Modal 
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        type={modalState.type}
+        onConfirm={modalState.onConfirm}
+        onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
