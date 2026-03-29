@@ -9,6 +9,7 @@ import {
   Upload,
   Megaphone,
   Settings,
+  History,
 } from 'lucide-react';
 import logo from '../assets/logo.png';
 
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/exam-schedule', label: 'Exam Schedule', icon: CalendarDays },
   { to: '/upload-schedule', label: 'Upload Schedule', icon: Upload },
   { to: '/publish-exams', label: 'Publish Exams', icon: Megaphone },
+  { to: '/history', label: 'History', icon: History },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

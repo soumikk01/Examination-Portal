@@ -21,6 +21,7 @@ import * as roomController from './modules/rooms/room.controller.js';
 import * as seatingController from './modules/seating/seating.controller.js';
 import * as optionsController from './modules/options/options.controller.js';
 import * as dashboardController from './modules/dashboard/dashboard.controller.js';
+import * as historyController from './modules/history/history.controller.js';
 import multer from 'multer';
 
 const app = express();
@@ -176,6 +177,11 @@ v1Router.put('/auth/admin/password', authorizeAdmin, authController.updateAdminP
 v1Router.get('/dashboard/summary', authorizeAdmin, dashboardController.getDashboardSummary);
 v1Router.delete('/dashboard/schedules', authorizeAdmin, dashboardController.deleteSchedules);
 v1Router.delete('/dashboard/seating/:examGroup', authorizeAdmin, dashboardController.deleteSeating);
+
+// History
+v1Router.get('/history', authorizeAdmin, historyController.getHistory);
+v1Router.delete('/history/schedule/:uploadId', authorizeAdmin, historyController.deleteSchedule);
+v1Router.delete('/history/seating/:examGroup', authorizeAdmin, historyController.deleteSeatingGroup);
 
 // Options (programs, branches, semesters) – from DB, no hardcoded data
 v1Router.get('/options/programs', authorizeAdmin, optionsController.getPrograms);
