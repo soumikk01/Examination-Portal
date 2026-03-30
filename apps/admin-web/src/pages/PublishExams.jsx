@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import Modal from '../components/Modal';
+import { Modal } from '@exam-portal/ui';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
 

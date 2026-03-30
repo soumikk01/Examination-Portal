@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
-import Modal from '../components/Modal';
+import { Modal } from '@exam-portal/ui';
 import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
 import { parseExamDateTime } from '../utils/dateUtils';
 

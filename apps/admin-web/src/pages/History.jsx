@@ -14,7 +14,7 @@ import {
   Building2,
 } from 'lucide-react';
 import api from '../services/api';
-import Modal from '../components/Modal';
+import { Modal } from '@exam-portal/ui';
 import { getUserFriendlyApiError } from '../utils/apiError';
 
 // ─────────────────────────────────────────────
