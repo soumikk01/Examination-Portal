@@ -1,5 +1,3 @@
-
-
 const Modal = ({ isOpen, title, message, type = 'alert', onConfirm, onClose }) => {
   if (!isOpen) return null;
 
@@ -30,26 +28,26 @@ const Modal = ({ isOpen, title, message, type = 'alert', onConfirm, onClose }) =
         <p style={{ color: '#4b5563', marginBottom: '2rem', lineHeight: '1.5' }}>{message}</p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
           {type === 'confirm' && (
-            <button 
+            <button
               onClick={onClose}
               style={{ padding: '0.5rem 1rem', border: '1px solid #d1d5db', borderRadius: '4px', backgroundColor: 'white', color: '#374151', cursor: 'pointer', fontWeight: '500' }}
             >
               Cancel
             </button>
           )}
-          <button 
-            onClick={() => {
-              if (onConfirm) onConfirm();
+          <button
+            onClick={async () => {
+              if (onConfirm) await onConfirm();
               onClose();
             }}
-            style={{ 
-              padding: '0.5rem 1rem', 
-              border: 'none', 
-              borderRadius: '4px', 
-              backgroundColor: type === 'confirm' ? '#ef4444' : '#3b82f6', 
-              color: 'white', 
-              cursor: 'pointer', 
-              fontWeight: '500' 
+            style={{
+              padding: '0.5rem 1rem',
+              border: 'none',
+              borderRadius: '4px',
+              backgroundColor: type === 'confirm' ? '#ef4444' : '#3b82f6',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: '500'
             }}
           >
             OK

@@ -20,8 +20,8 @@ services:
   # Student Frontend (React + Nginx)
   student-web:
     build:
-      context: ../apps/student-web
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: apps/student-web/Dockerfile
     container_name: exam-portal-student-web
     ports:
       - "80:80"
@@ -32,8 +32,8 @@ services:
   # Admin Frontend (React + Nginx)
   admin-web:
     build:
-      context: ../apps/admin-web
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: apps/admin-web/Dockerfile
     container_name: exam-portal-admin-web
     ports:
       - "8080:80"

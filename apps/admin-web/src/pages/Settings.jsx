@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save, Shield, Settings as SettingsIcon, Bell } from 'lucide-react';
-import Modal from '../components/Modal';
+import { Modal } from '@exam-portal/ui';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
 

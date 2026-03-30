@@ -1,0 +1,14 @@
+{
+  "name": "@exam-portal/ui",
+  "version": "1.0.0",
+  "description": "Shared UI components for Examination Portal apps",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "private": true,
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}

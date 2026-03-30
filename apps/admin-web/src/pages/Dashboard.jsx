@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Settings, Calendar, Users, Trash2 } from 'lucide-react';
-import Modal from '../components/Modal';
+import { Modal } from '@exam-portal/ui';
 import api from '../services/api';
 
 const Dashboard = () => {

@@ -49,3 +49,7 @@ apps/admin-web/dist/
 *.tgz
 *.bak
 .cache/
+
+# Dev scratch files — never commit debug or temp files
+tmp/
+data/

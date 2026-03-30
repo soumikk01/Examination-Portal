@@ -3,26 +3,27 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy package files
+# Copy root configurations for global NPM workspaces
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Copy packages and the app workspace source code
+COPY packages/ ./packages/
+COPY apps/student-web/ ./apps/student-web/
 
-# Copy source code
-COPY . .
+# Install dependencies using the root workspace context
+RUN npm install
 
-# Build the app
-RUN npm run build
+# Build the specific workspace
+RUN npm run build -w apps/student-web
 
 # Production stage
 FROM nginx:alpine
 
-# Copy built files to nginx
-COPY --from=build /app/dist /usr/share/nginx/html
+# The build output is now located inside the nested workspace folder
+COPY --from=build /app/apps/student-web/dist /usr/share/nginx/html
 
 # Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/student-web/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80
