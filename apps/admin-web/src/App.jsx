@@ -10,6 +10,7 @@ import Seating from './pages/Seating';
 import ExamSchedule from './pages/ExamSchedule';
 import UploadSchedule from './pages/UploadSchedule';
 import PublishExams from './pages/PublishExams';
+import History from './pages/History';
 import Settings from './pages/Settings';
 
 const App = () => {
@@ -37,6 +38,7 @@ const App = () => {
           <Route path="/exam-schedule" element={<ExamSchedule />} />
           <Route path="/upload-schedule" element={<UploadSchedule />} />
           <Route path="/publish-exams" element={<PublishExams />} />
+          <Route path="/history" element={<History />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
