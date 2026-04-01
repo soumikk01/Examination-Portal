@@ -4,6 +4,18 @@ import { Modal } from '@exam-portal/ui';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
 
+// ─── Style constants ─────────────────────────────────────────────────────────
+const peThStyle = {
+  padding: '0.45rem 0.7rem',
+  textAlign: 'center',
+  fontWeight: 700,
+  color: 'var(--admin-text-muted)',
+  whiteSpace: 'nowrap',
+  borderBottom: '1px solid var(--admin-border)',
+};
+const peTdStyle = { padding: '0.4rem 0.7rem', textAlign: 'center' };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function groupByUpload(rows) {
   const map = new Map();
   for (const r of rows || []) {
@@ -38,7 +50,7 @@ function SemesterCategoryBadge({ semester, academicYear }) {
         border: '1px solid var(--admin-border)',
         fontSize: '0.85rem',
         fontWeight: 750,
-        color: cat === 'ODD' ? '#0f172a' : '#0f172a',
+        color: '#0f172a',
         background: cat === 'ODD' ? 'rgba(16,185,129,0.12)' : 'rgba(59,130,246,0.12)',
         whiteSpace: 'nowrap',
       }}
@@ -52,17 +64,13 @@ function SemesterCategoryBadge({ semester, academicYear }) {
 
 function getModeColor(mode) {
   const m = String(mode || '').toUpperCase();
-  if (m === 'REGULAR') return '#16a34a'; // green
-  if (m === 'BACKLOG') return '#ea580c'; // orange
+  if (m === 'REGULAR') return '#16a34a';
+  if (m === 'BACKLOG') return '#ea580c';
   return 'var(--admin-text-muted)';
 }
 
 function formatDate(d) {
-  try {
-    return new Date(d).toLocaleDateString();
-  } catch {
-    return '—';
-  }
+  try { return new Date(d).toLocaleDateString(); } catch { return '—'; }
 }
 
 function sortByDateTime(a, b) {
@@ -73,7 +81,7 @@ function sortByDateTime(a, b) {
 }
 
 function groupByDepartment(items) {
-  const map = new Map(); // deptCode -> rows
+  const map = new Map();
   for (const r of items || []) {
     const code = (r.departmentCode || r.branch || 'UNKNOWN').toString().toUpperCase();
     const arr = map.get(code) || [];
@@ -89,23 +97,7 @@ function groupByDepartment(items) {
     .sort((a, b) => a.code.localeCompare(b.code));
 }
 
-function groupByDay(rows) {
-  const map = new Map(); // yyyy-mm-dd -> rows
-  for (const r of rows || []) {
-    const key = r.examDate ? new Date(r.examDate).toISOString().slice(0, 10) : 'UNKNOWN';
-    const arr = map.get(key) || [];
-    arr.push(r);
-    map.set(key, arr);
-  }
-  return [...map.entries()]
-    .map(([iso, items]) => ({
-      iso,
-      items: items.slice().sort(sortByDateTime),
-      dateLabel: iso === 'UNKNOWN' ? 'Date unknown' : formatDate(iso),
-    }))
-    .sort((a, b) => a.iso.localeCompare(b.iso));
-}
-
+// ─── Main component ───────────────────────────────────────────────────────────
 const PublishExams = () => {
   const [params] = useSearchParams();
   const initialUploadId = params.get('uploadId') || '';
@@ -115,9 +107,10 @@ const PublishExams = () => {
   const [error, setError] = useState('');
   const [publishing, setPublishing] = useState('');
   const [deleting, setDeleting] = useState('');
-  
+
   const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'confirm', onConfirm: null });
-  const showConfirm = (message, onConfirm) => setModalState({ isOpen: true, title: 'Confirm Action', message, type: 'confirm', onConfirm });
+  const showConfirm = (message, onConfirm) =>
+    setModalState({ isOpen: true, title: 'Confirm Action', message, type: 'confirm', onConfirm });
 
   const load = () => {
     setLoading(true);
@@ -129,21 +122,14 @@ const PublishExams = () => {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const groups = useMemo(() => {
     return groupByUpload(rows).sort((a, b) => {
-      // If a specific uploadId is requested, pin it to the top.
       if (initialUploadId) {
-        const aIsPinned = a.uploadId === initialUploadId;
-        const bIsPinned = b.uploadId === initialUploadId;
-        if (aIsPinned && !bIsPinned) return -1;
-        if (!aIsPinned && bIsPinned) return 1;
+        if (a.uploadId === initialUploadId) return -1;
+        if (b.uploadId === initialUploadId) return 1;
       }
-
-      // Otherwise (or after pinning), sort by uploadId desc for consistent ordering.
       if (a.uploadId < b.uploadId) return 1;
       if (a.uploadId > b.uploadId) return -1;
       return 0;
@@ -179,11 +165,7 @@ const PublishExams = () => {
   };
 
   if (loading) {
-    return (
-      <div className="admin-card">
-        <p>Loading draft schedules…</p>
-      </div>
-    );
+    return <div className="admin-card"><p>Loading draft schedules…</p></div>;
   }
 
   return (
@@ -198,7 +180,7 @@ const PublishExams = () => {
       {groups.length === 0 ? (
         <p>No draft schedules found. Upload a PDF first.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {groups.map((g) => (
             <div
               key={g.uploadId}
@@ -209,32 +191,22 @@ const PublishExams = () => {
                 background: g.uploadId === initialUploadId ? 'rgba(37,99,235,0.06)' : 'transparent',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+              {/* Batch header row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>Upload batch</div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--admin-text-muted)' }}>
-                    <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}>
-                      {g.uploadId}
-                    </span>
+                    <span style={{ fontFamily: 'ui-monospace, monospace' }}>{g.uploadId}</span>
                   </div>
                   <div style={{ marginTop: '0.35rem', fontSize: '0.9rem' }}>
                     <b>{g.items.length}</b> rows
-                    {g.branches.length ? (
-                      <>
-                        {' '}
-                        • branches: <b>{g.branches.join(', ')}</b>
-                      </>
-                    ) : null}
+                    {g.branches.length ? <> • branches: <b>{g.branches.join(', ')}</b></> : null}
                     {g.from && g.to ? (
-                      <>
-                        {' '}
-                        • dates: <b>{g.from.toLocaleDateString()}</b> → <b>{g.to.toLocaleDateString()}</b>
-                      </>
+                      <> • dates: <b>{g.from.toLocaleDateString()}</b> → <b>{g.to.toLocaleDateString()}</b></>
                     ) : null}
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <SemesterCategoryBadge semester={g.semester} academicYear={g.academicYear} />
                   <button
                     type="button"
@@ -257,131 +229,100 @@ const PublishExams = () => {
                 </div>
               </div>
 
-              {/* PDF-like preview: big department blocks, small schedule cards */}
-              <div style={{ marginTop: '0.9rem' }}>
-                <div
-                  style={{
-                    display: 'grid',
-                    // Keep boxes aligned: 2 columns on typical screens, then wrap down.
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(520px, 1fr))',
-                    gap: '0.9rem',
-                  }}
-                >
-                  {groupByDepartment(g.items).map((dept) => {
-                    const days = groupByDay(dept.rows);
-                    return (
-                      <div
-                        key={dept.code}
-                        style={{
-                          border: '1px solid var(--admin-border)',
-                          borderRadius: 14,
-                          background: 'white',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div
-                          style={{
-                            padding: '0.75rem 0.85rem',
-                            background: 'rgba(15,23,42,0.04)',
-                            borderBottom: '1px solid var(--admin-border)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            gap: '0.75rem',
-                            alignItems: 'baseline',
-                            flexWrap: 'wrap',
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontWeight: 850, letterSpacing: '0.2px' }}>{dept.code}</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                              {dept.name ? dept.name : 'Department schedule'}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                            <b>{dept.rows.length}</b> rows
-                          </div>
-                        </div>
-
-                        <div style={{ padding: '0.85rem' }}>
-                          {days.slice(0, 3).map((day) => (
-                            <div key={day.iso} style={{ marginBottom: '0.85rem' }}>
-                              <div
-                                style={{
-                                  fontSize: '0.85rem',
-                                  fontWeight: 750,
-                                  color: '#0f172a',
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  gap: '0.75rem',
-                                  alignItems: 'baseline',
-                                  marginBottom: '0.45rem',
-                                }}
-                              >
-                                <span>{day.dateLabel}</span>
-                                <span style={{ color: 'var(--admin-text-muted)', fontWeight: 650 }}>
-                                  {day.items[0]?.examDay || ''}
-                                </span>
-                              </div>
-
-                              <div style={{ display: 'grid', gap: '0.5rem' }}>
-                                {day.items.slice(0, 5).map((r) => (
-                                  <div
-                                    key={r.id}
-                                    style={{
-                                      border: '1px solid var(--admin-border)',
-                                      borderRadius: 12,
-                                      padding: '0.65rem 0.75rem',
-                                      background: 'rgba(255,255,255,0.9)',
-                                    }}
-                                  >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                      <div style={{ fontWeight: 800, color: '#111827' }}>{r.subject}</div>
-                                      <div style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)', fontWeight: 650 }}>
-                                        {r.examTime || '—'}
-                                      </div>
-                                    </div>
-                                    <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                                      Paper: <b>{r.paperCode || '—'}</b>
-                                      {' • '}
-                                      Mode:{' '}
-                                      <span style={{ fontWeight: 700, color: getModeColor(r.mode) }}>
-                                        {r.mode || 'REGULAR'}
-                                      </span>
-                                      {' • '}
-                                      Status: <b>{r.status}</b>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-
-                          {(days.length > 3 || days.some((d) => (d.items?.length || 0) > 5)) && (
-                            <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                              Preview truncated. Use “Exam Schedule” page to view full rows.
-                            </div>
-                          )}
-                        </div>
+              {/* Department tables — full data, properly structured */}
+              <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {groupByDepartment(g.items).map((dept) => (
+                  <div
+                    key={dept.code}
+                    style={{ border: '1px solid var(--admin-border)', borderRadius: 10, overflow: 'hidden' }}
+                  >
+                    {/* Department header */}
+                    <div
+                      style={{
+                        padding: '0.55rem 0.85rem',
+                        background: 'rgba(37,99,235,0.07)',
+                        borderBottom: '1px solid var(--admin-border)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div style={{ fontWeight: 800 }}>
+                        {dept.code}
+                        {dept.name
+                          ? <span style={{ fontWeight: 500, color: 'var(--admin-text-muted)', marginLeft: '0.5rem' }}>({dept.name})</span>
+                          : null}
                       </div>
-                    );
-                  })}
-                </div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
+                        <b>{dept.rows.length}</b> rows
+                      </div>
+                    </div>
+
+                    {/* Schedule table — all rows, date-sorted */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ background: 'rgba(0,0,0,0.03)' }}>
+                            <th style={peThStyle}>Date</th>
+                            <th style={peThStyle}>Day</th>
+                            <th style={peThStyle}>Time</th>
+                            <th style={{ ...peThStyle, textAlign: 'left' }}>Subject</th>
+                            <th style={peThStyle}>Paper Code</th>
+                            <th style={peThStyle}>Mode</th>
+                            <th style={peThStyle}>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dept.rows.slice().sort(sortByDateTime).map((r, idx) => (
+                            <tr
+                              key={r.id || idx}
+                              style={{
+                                borderBottom: '1px solid var(--admin-border)',
+                                background: idx % 2 === 0 ? 'white' : 'rgba(0,0,0,0.018)',
+                              }}
+                            >
+                              <td style={{ ...peTdStyle, whiteSpace: 'nowrap' }}>
+                                {r.examDate ? formatDate(r.examDate) : '—'}
+                              </td>
+                              <td style={{ ...peTdStyle, whiteSpace: 'nowrap', color: 'var(--admin-text-muted)' }}>
+                                {r.examDay || '—'}
+                              </td>
+                              <td style={{ ...peTdStyle, whiteSpace: 'nowrap' }}>
+                                {r.examTime || '—'}
+                              </td>
+                              <td style={{ ...peTdStyle, textAlign: 'left', fontWeight: 600 }}>
+                                {r.subject || '—'}
+                              </td>
+                              <td style={{ ...peTdStyle, fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                                {r.paperCode || '—'}
+                              </td>
+                              <td style={{ ...peTdStyle, fontWeight: 700, color: getModeColor(r.mode) }}>
+                                {r.mode || 'REGULAR'}
+                              </td>
+                              <td style={peTdStyle}>{r.status || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
       )}
-      <Modal 
+
+      <Modal
         isOpen={modalState.isOpen}
         title={modalState.title}
         message={modalState.message}
         type={modalState.type}
         onConfirm={modalState.onConfirm}
-        onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => setModalState((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );
 };
 
 export default PublishExams;
-

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const API = "/api/v1";
@@ -9,14 +9,15 @@ const getAuthHeaders = () => {
 
 // UG and PG department columns
 const UG_BRANCHES = ["AGE", "BME", "CE", "CSE", "AIML", "CST", "EE", "ECE", "IT", "ME"];
-const PG_BRANCHES = ["CSE", "ECE", "ME", "CE", "EE"];
+const PG_REGULAR_BRANCHES = ["BBA", "BBA-DM", "BBA-HM", "BCA", "MCSE", "EDPS", "MME", "MBA", "MCA"];
+const PG_BACKLOG_BRANCHES = ["BBA", "BBA-DM", "BBA-HM", "BCA", "MCSE", "EDPS", "MME", "MBA", "MCA"];
 
 // All 4 exam type sections
 const SECTIONS = [
   { key: "UG_REGULAR", label: "UG REGULAR", branches: UG_BRANCHES },
   { key: "UG_BACKLOG", label: "UG BACKLOG", branches: UG_BRANCHES },
-  { key: "PG_REGULAR", label: "PG REGULAR", branches: PG_BRANCHES },
-  { key: "PG_BACKLOG", label: "PG BACKLOG", branches: PG_BRANCHES },
+  { key: "PG_REGULAR", label: "BBA+BCA + PG REGULAR", branches: PG_REGULAR_BRANCHES },
+  { key: "PG_BACKLOG", label: "BBA+BCA + PG BACKLOG", branches: PG_BACKLOG_BRANCHES },
 ];
 
 const VENUES = [
@@ -108,15 +109,18 @@ const styles = `
     font-family: 'Calibri', 'Arial Narrow', Arial, sans-serif;
     font-size: 10.5px;
     white-space: nowrap;
+    width: 100%;
+    table-layout: fixed;
   }
   .ra-table th, .ra-table td {
     border: 1px solid #9e9e9e;
     text-align: center;
     padding: 2px 3px;
     line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .ra-th-room {
-    width: 56px; min-width: 56px;
     text-align: left;
     padding-left: 5px;
     font-weight: 700;
@@ -143,14 +147,12 @@ const styles = `
     color: #1f3864;
     font-weight: 700;
     font-size: 9.5px;
-    width: 34px; min-width: 34px;
   }
   .ra-th-total {
     background: #c6efce;
     color: #375623;
     font-weight: 800;
     font-size: 9.5px;
-    width: 38px; min-width: 38px;
   }
   .ra-td-room {
     text-align: left;
@@ -265,6 +267,32 @@ export default function RoomAllotment() {
 
   // Save status
   const [saveStatus, setSaveStatus] = useState("idle"); // idle|saving|ok|error
+  const [setBtnStatus, setSetBtnStatus] = useState("idle"); // idle|saving
+
+  // View toggles for table sections
+  const [showPgRegular, setShowPgRegular] = useState(false);
+  const [showPgBacklog, setShowPgBacklog] = useState(false);
+
+  // Room capacities fetched from DB
+  const [dbCapacities, setDbCapacities] = useState({});
+
+  // Fetch initial capacities
+  useEffect(() => {
+    fetch(`${API}/rooms`, { headers: getAuthHeaders() })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const map = {};
+          data.forEach(r => { map[r.roomNo] = r.capacity; });
+          setDbCapacities(map);
+          setRows(prev => prev.map(r => map[r.roomNo] ? { ...r, capacity: map[r.roomNo] } : r));
+        }
+      })
+      .catch(e => {
+        // eslint-disable-next-line no-console
+        console.error("Could not fetch room capacities", e);
+      });
+  }, []);
 
   // ── Fetch student counts from backend ──────────────────────────────────────
   const handleGenerate = useCallback(async () => {
@@ -299,9 +327,23 @@ export default function RoomAllotment() {
   };
 
   // ── Set capacity for chosen room (and auto-distribute) ─────────────────────
-  const handleSetCapacity = useCallback(() => {
+  const handleSetCapacity = useCallback(async () => {
     const cap = parseInt(capInput, 10);
     if (!selRoom || !cap || cap <= 0) return;
+
+    setSetBtnStatus("saving");
+    try {
+      await fetch(`${API}/rooms/${encodeURIComponent(selRoom)}/capacity`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ capacity: cap }),
+      });
+      setDbCapacities(prev => ({ ...prev, [selRoom]: cap }));
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    }
+    setSetBtnStatus("idle");
 
     setRows(prev => {
       const updated = prev.map(r => r.roomNo === selRoom ? { ...r, capacity: cap } : r);
@@ -356,7 +398,7 @@ export default function RoomAllotment() {
 
   // ── Retry: clear all allocations ─────────────────────────────────────────
   const handleRetry = () => {
-    setRows(buildInitialRows());
+    setRows(buildInitialRows().map(r => dbCapacities[r.roomNo] ? { ...r, capacity: dbCapacities[r.roomNo] } : r));
     setStudentCounts(null);
     setFetchStatus("idle");
     setSemester("");
@@ -379,6 +421,11 @@ export default function RoomAllotment() {
     : 0;
 
   // ─── Render helpers ──────────────────────────────────────────────────────
+  const visibleSections = [
+    showPgRegular ? SECTIONS[2] : SECTIONS[0], // 0 is UG_REGULAR, 2 is PG_REGULAR
+    showPgBacklog ? SECTIONS[3] : SECTIONS[1], // 1 is UG_BACKLOG, 3 is PG_BACKLOG
+  ];
+
   function getStudentRowVal(secKey, branch) {
     return studentCounts ? (studentCounts[secKey]?.[branch] || 0) : null;
   }
@@ -474,10 +521,10 @@ export default function RoomAllotment() {
           <button
             className="ra-btn ra-btn-blue"
             onClick={handleSetCapacity}
-            disabled={!selRoom || !capInput}
+            disabled={!selRoom || !capInput || setBtnStatus === "saving"}
             title="Set capacity for this room and auto-distribute students"
           >
-            Set
+            {setBtnStatus === "saving" ? "Saving..." : "Set"}
           </button>
 
           <div style={{ flex: 1 }} />
@@ -519,10 +566,10 @@ export default function RoomAllotment() {
         <div className="ra-scroll">
           <table className="ra-table">
             <colgroup>
-              <col style={{ width: 56 }} />
-              {SECTIONS.map(sec =>
-                sec.branches.map((_, bi) => <col key={sec.key + bi} style={{ width: 34 }} />).concat(
-                  <col key={sec.key + "total"} style={{ width: 40 }} />
+              <col style={{ width: 64 }} />
+              {visibleSections.map(sec =>
+                sec.branches.map((_, bi) => <col key={sec.key + bi} />).concat(
+                  <col key={sec.key + "total"} style={{ width: 50 }} />
                 )
               )}
             </colgroup>
@@ -531,16 +578,26 @@ export default function RoomAllotment() {
               {/* Row 1: Section headers */}
               <tr>
                 <th className="ra-th-room" rowSpan={3}>Room<br />No</th>
-                {SECTIONS.map(sec => (
-                  <th key={sec.key} className="ra-th-section" colSpan={sec.branches.length + 1}>
-                    {sec.label}
+                {visibleSections.map(sec => (
+                  <th 
+                    key={sec.key} 
+                    className="ra-th-section" 
+                    colSpan={sec.branches.length + 1}
+                    onClick={() => {
+                      if (sec.key.includes("REGULAR")) setShowPgRegular(!showPgRegular);
+                      if (sec.key.includes("BACKLOG")) setShowPgBacklog(!showPgBacklog);
+                    }}
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    title={`Click to switch between UG and PG`}
+                  >
+                    {sec.label} ↔
                   </th>
                 ))}
               </tr>
 
               {/* Row 2: Venue */}
               <tr>
-                {SECTIONS.map(sec => (
+                {visibleSections.map(sec => (
                   <th key={sec.key} className="ra-th-venue" colSpan={sec.branches.length + 1}>
                     (Venue: C Block – Formerly known as CMS Building)
                   </th>
@@ -549,7 +606,7 @@ export default function RoomAllotment() {
 
               {/* Row 3: Branch cols */}
               <tr>
-                {SECTIONS.map(sec => (
+                {visibleSections.map(sec => (
                   <>
                     {sec.branches.map(b => (
                       <th key={sec.key + b} className="ra-th-col">{b}</th>
@@ -564,7 +621,7 @@ export default function RoomAllotment() {
               {/* Student row */}
               <tr className="ra-row-student">
                 <td className="ra-td-room">Student</td>
-                {SECTIONS.map(sec => (
+                {visibleSections.map(sec => (
                   <>
                     {sec.branches.map(b => {
                       const v = getStudentRowVal(sec.key, b);
@@ -580,7 +637,7 @@ export default function RoomAllotment() {
               {/* Available (capacity) row */}
               <tr className="ra-row-avail">
                 <td className="ra-td-room" style={{ color: "#fff" }}>Available</td>
-                {SECTIONS.map(sec => (
+                {visibleSections.map(sec => (
                   <>
                     {sec.branches.map(b => (
                       <td key={sec.key + b}></td>
@@ -596,7 +653,7 @@ export default function RoomAllotment() {
               {rows.filter(r => !r.isMB).map(row => (
                 <tr key={row.roomNo} className="ra-row-data" style={row.roomNo === selRoom ? { outline: "2px solid #3b82f6" } : {}}>
                   <td className="ra-td-room">{row.roomNo}</td>
-                  {SECTIONS.map(sec => (
+                  {visibleSections.map(sec => (
                     <>
                       {sec.branches.map(b => {
                         const v = getRoomVal(row, sec.key, b);
@@ -613,7 +670,7 @@ export default function RoomAllotment() {
               {/* Main Building venue divider */}
               <tr className="ra-row-venue ra-divider">
                 <td className="ra-td-room" />
-                {SECTIONS.map((sec, si) => (
+                {visibleSections.map((sec, si) => (
                   <td key={sec.key} colSpan={sec.branches.length + 1} style={{ textAlign: "center" }}>
                     {si === 0 ? "(Venue: Main Building)" : ""}
                   </td>
@@ -624,7 +681,7 @@ export default function RoomAllotment() {
               {rows.filter(r => r.isMB).map(row => (
                 <tr key={row.roomNo} className="ra-row-mb" style={row.roomNo === selRoom ? { outline: "2px solid #3b82f6" } : {}}>
                   <td className="ra-td-room">{row.roomNo}</td>
-                  {SECTIONS.map(sec => (
+                  {visibleSections.map(sec => (
                     <>
                       {sec.branches.map(b => {
                         const v = getRoomVal(row, sec.key, b);
