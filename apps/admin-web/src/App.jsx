@@ -12,8 +12,10 @@ import UploadSchedule from './pages/UploadSchedule';
 import PublishExams from './pages/PublishExams';
 import History from './pages/History';
 import Settings from './pages/Settings';
+import { useTheme } from './utils/useTheme';
 
 const App = () => {
+  useTheme(); // applies saved/system theme to <html data-theme>
   return (
     <Router>
       <Routes>

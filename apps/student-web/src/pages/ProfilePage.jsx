@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { Modal } from '@exam-portal/ui';
 import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
 import { parseExamDateTime } from '../utils/dateUtils';
+import ThemeToggle from '../components/ThemeToggle';
 
 const ProfileSkeleton = () => (
     <PageLayout>
@@ -292,6 +293,11 @@ const ProfilePage = () => {
                                 }} />
                             )}
                         </button>
+
+                        <div className="w-px h-6 bg-indigo-200 mx-1"></div>
+
+                        {/* Theme toggle */}
+                        <ThemeToggle />
                         </div>
                     </div>
 

@@ -1,4 +1,6 @@
-:root {
+/* ── Light theme ─────────────────────────────────────────── */
+:root,
+[data-theme="light"] {
   --primary: #4f46e5;
   --primary-hover: #4338ca;
   --bg-light: #f3f7ff;
@@ -6,6 +8,25 @@
   --text-dark: #1e1b4b;
   --text-muted: #64748b;
   --border-color: #e2e8f0;
+  --toggle-track: #f1f5f9;
+  --input-bg: #ffffff;
+  --nav-bg: rgba(255,255,255,0.9);
+  --nav-text: #1e1b4b;
+}
+
+/* ── Dark theme ──────────────────────────────────────────── */
+[data-theme="dark"] {
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
+  --bg-light: #0f172a;
+  --card-bg: #1e293b;
+  --text-dark: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border-color: #334155;
+  --toggle-track: #0f172a;
+  --input-bg: #0f172a;
+  --nav-bg: rgba(15,23,42,0.95);
+  --nav-text: #f1f5f9;
 }
 
 * {
@@ -22,6 +43,7 @@ body {
     system-ui,
     -apple-system,
     sans-serif;
+  transition: background 0.25s, color 0.2s;
 }
 
 .glass-card {

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import SearchPage from './pages/SearchPage';
 import ProfilePage from './pages/ProfilePage';
 import RoomPage from './pages/RoomPage';
+import { useTheme } from './utils/useTheme';
 
 // Auth guard: redirect to login if no token in localStorage
 const ProtectedRoute = ({ children }) => {
@@ -22,6 +23,9 @@ const StudentRoutes = () => {
 };
 
 const App = () => {
+  // Apply saved theme on every render (also handles system changes)
+  useTheme();
+
   return (
     <Router>
       <Routes>
@@ -50,3 +54,4 @@ const App = () => {
 };
 
 export default App;
+

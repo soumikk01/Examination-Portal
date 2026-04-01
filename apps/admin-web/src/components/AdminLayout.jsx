@@ -12,6 +12,7 @@ import {
   History,
 } from 'lucide-react';
 import logo from '../assets/logo.png';
+import ThemeToggle from './ThemeToggle';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -86,6 +87,7 @@ const AdminLayout = () => {
                 {staff.name}
               </span>
             )}
+            <ThemeToggle />
             <button
               type="button"
               onClick={handleLogout}
