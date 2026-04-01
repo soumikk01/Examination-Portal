@@ -231,17 +231,23 @@ export async function listExamGroups() {
 // Student counts split by exam type for the allotment sheet
 // Returns: { UG_REGULAR: {BRANCH: count}, UG_BACKLOG: {...}, PG_REGULAR: {...}, PG_BACKLOG: {...} }
 // ──────────────────────────────────────────────
-const UG_PROGRAMS = ['BTECH', 'BCA', 'BBA', 'DIPLOMA'];
-const PG_PROGRAMS = ['MTECH', 'MCA', 'MBA'];
+// UG: B.Tech only (Diploma removed)
+const UG_PROGRAMS = new Set(['BTECH']);
+
+// PG / BBA+BCA: all non-UG programs grouped in the PG section
+const PG_PROGRAMS = new Set(['BBA', 'BBA-DM', 'BBA-HM', 'BCA', 'MTECH', 'MCA', 'MBA', 'MCSE', 'EDPS', 'MME']);
+
+// Branches shown in PG_REGULAR (BBA-DM and BBA-HM included – no backlog variant)
+const PG_REGULAR_BRANCHES = new Set(['BBA', 'BBA-DM', 'BBA-HM', 'BCA', 'MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
+
+// Branches shown in PG_BACKLOG (now includes BBA-DM and BBA-HM)
+const PG_BACKLOG_BRANCHES = new Set(['BBA', 'BBA-DM', 'BBA-HM', 'BCA', 'MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
 
 export async function getStudentCountsForSemester({ semester }) {
   let students = [];
   try {
-    // Fetch students for the given semester with their exam modes
     students = await prisma.student.findMany({
-      where: {
-        ...(semester ? { semester: String(semester) } : {}),
-      },
+      where: { ...(semester ? { semester: String(semester) } : {}) },
       select: {
         id: true,
         branch: true,
@@ -250,40 +256,38 @@ export async function getStudentCountsForSemester({ semester }) {
       },
     });
   } catch (err) {
-    console.error("Warning: Failed to fetch students with exams relation", err);
-    // Fallback: fetch without exams (treat all as REGULAR)
+    console.error('Warning: Could not fetch exams relation – falling back to REGULAR-only mode', err);
     students = await prisma.student.findMany({
-      where: {
-        ...(semester ? { semester: String(semester) } : {}),
-      },
-      select: {
-        id: true,
-        branch: true,
-        program: true,
-      },
+      where: { ...(semester ? { semester: String(semester) } : {}) },
+      select: { id: true, branch: true, program: true },
     });
   }
 
-  const result = {
-    UG_REGULAR: {},
-    UG_BACKLOG: {},
-    PG_REGULAR: {},
-    PG_BACKLOG: {},
-  };
+  const result = { UG_REGULAR: {}, UG_BACKLOG: {}, PG_REGULAR: {}, PG_BACKLOG: {} };
 
   for (const student of students) {
-    const prog = student.program ? String(student.program).toUpperCase() : '';
-    const branch = (student.branch || 'UNKNOWN').toUpperCase();
-    const isUG = UG_PROGRAMS.includes(prog);
-    const isPG = PG_PROGRAMS.includes(prog);
+    const prog   = (student.program || '').toUpperCase().trim();
+    const branch = (student.branch  || 'UNKNOWN').toUpperCase().trim();
+
+    const isUG = UG_PROGRAMS.has(prog);
+    const isPG = PG_PROGRAMS.has(prog);
+
+    // Skip DIPLOMA, unknown, or unmapped programs entirely
     if (!isUG && !isPG) continue;
 
-    // A student is BACKLOG if any of their exams is BACKLOG (or default REGULAR if fallback used)
-    const hasBacklog = student.exams && student.exams.some(e => e.examMode === 'BACKLOG');
+    const hasBacklog = Array.isArray(student.exams) && student.exams.some(e => e.examMode === 'BACKLOG');
     const mode = hasBacklog ? 'BACKLOG' : 'REGULAR';
-    const key = `${isUG ? 'UG' : 'PG'}_${mode}`;
 
-    result[key][branch] = (result[key][branch] || 0) + 1;
+    if (isUG) {
+      // B.Tech: all branches accepted in both modes
+      result[`UG_${mode}`][branch] = (result[`UG_${mode}`][branch] || 0) + 1;
+    } else {
+      // PG / BBA+BCA: enforce separate branch allow-lists per mode
+      const allowed = mode === 'BACKLOG' ? PG_BACKLOG_BRANCHES : PG_REGULAR_BRANCHES;
+      if (allowed.has(branch)) {
+        result[`PG_${mode}`][branch] = (result[`PG_${mode}`][branch] || 0) + 1;
+      }
+    }
   }
 
   return result;
