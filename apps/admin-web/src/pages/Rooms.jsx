@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import * as XLSX from "xlsx";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const API = "/api/v1";
@@ -408,6 +409,107 @@ export default function RoomAllotment() {
     setSaveStatus("idle");
   };
 
+  // ── Download Excel ────────────────────────────────────────────────────────
+  const handleDownloadExcel = () => {
+    if (!studentCounts) return;
+
+    const aoa = [];
+
+    // Row 1: Section Headers
+    const row1 = ["Room No"];
+    SECTIONS.forEach(sec => {
+      row1.push(sec.label);
+      for(let i=0; i<sec.branches.length; i++) row1.push(""); // filler
+    });
+    aoa.push(row1);
+
+    // Row 2: Venue 
+    const row2 = [""];
+    SECTIONS.forEach(sec => {
+      row2.push("(Venue: C Block – Formerly known as CMS Building)");
+      for(let i=0; i<sec.branches.length; i++) row2.push("");
+    });
+    aoa.push(row2);
+
+    // Row 3: Branches
+    const row3 = [""];
+    SECTIONS.forEach(sec => {
+      sec.branches.forEach(b => row3.push(b));
+      row3.push("Total");
+    });
+    aoa.push(row3);
+
+    // Row 4: Student counts
+    const row4 = ["Student"];
+    SECTIONS.forEach(sec => {
+      sec.branches.forEach(b => row4.push(getStudentRowVal(sec.key, b) || ""));
+      row4.push(getStudentRowTotal(sec.key) || "");
+    });
+    aoa.push(row4);
+
+    // Row 5: Available
+    const row5 = ["Available"];
+    SECTIONS.forEach(sec => {
+      sec.branches.forEach(() => row5.push(""));
+      row5.push(totalCapacityAssigned || "");
+    });
+    aoa.push(row5);
+
+    // C Block
+    const cBlockRows = rows.filter(r => !r.isMB);
+    cBlockRows.forEach(r => {
+      const dbRow = [r.roomNo];
+      SECTIONS.forEach(sec => {
+        sec.branches.forEach(b => dbRow.push(getRoomVal(r, sec.key, b) || ""));
+        dbRow.push(getRoomTotal(r, sec.key) || "");
+      });
+      aoa.push(dbRow);
+    });
+
+    // MB separator
+    const mbSep = [""];
+    SECTIONS.forEach(sec => {
+      mbSep.push("(Venue: Main Building)");
+      for(let i=0; i<sec.branches.length; i++) mbSep.push("");
+    });
+    aoa.push(mbSep);
+
+    // MB rooms
+    const mbRows = rows.filter(r => r.isMB);
+    mbRows.forEach(r => {
+      const dbRow = [r.roomNo];
+      SECTIONS.forEach(sec => {
+        sec.branches.forEach(b => dbRow.push(getRoomVal(r, sec.key, b) || ""));
+        dbRow.push(getRoomTotal(r, sec.key) || "");
+      });
+      aoa.push(dbRow);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Merges
+    const merges = [];
+    let colIdx = 1;
+    SECTIONS.forEach(sec => {
+      const len = sec.branches.length + 1;
+      // Merge Row 1
+      merges.push({ s: { r: 0, c: colIdx }, e: { r: 0, c: colIdx + len - 1 } });
+      // Merge Row 2
+      merges.push({ s: { r: 1, c: colIdx }, e: { r: 1, c: colIdx + len - 1 } });
+      // Merge mbSep 
+      merges.push({ s: { r: 5 + cBlockRows.length, c: colIdx }, e: { r: 5 + cBlockRows.length, c: colIdx + len - 1 } });
+      colIdx += len;
+    });
+    // Merge 'Room No'
+    merges.push({ s: { r: 0, c: 0 }, e: { r: 2, c: 0 } });
+    ws['!merges'] = merges;
+
+    // Build and save
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Room Allotment");
+    XLSX.writeFile(wb, `Room_Allotment_Sem_${semester}.xlsx`);
+  };
+
   // ─── Computed values ───────────────────────────────────────────────────────
   const currentVenueRooms = selVenue
     ? (VENUES.find(v => v.label === selVenue)?.rooms || [])
@@ -427,13 +529,14 @@ export default function RoomAllotment() {
   ];
 
   function getStudentRowVal(secKey, branch) {
-    return studentCounts ? (studentCounts[secKey]?.[branch] || 0) : null;
+    if (!studentCounts) return null;
+    return studentCounts[secKey]?.[branch] || null;
   }
 
   function getStudentRowTotal(secKey) {
     if (!studentCounts) return null;
     const sec = SECTIONS.find(x => x.key === secKey);
-    return sec.branches.reduce((s, b) => s + (studentCounts[secKey]?.[b] || 0), 0);
+    return sec.branches.reduce((s, b) => s + (studentCounts[secKey]?.[b] || 0), 0) || null;
   }
 
   function getRoomVal(row, secKey, branch) {
@@ -541,6 +644,15 @@ export default function RoomAllotment() {
           {/* Retry */}
           <button className="ra-btn ra-btn-orange" onClick={handleRetry}>
             Retry
+          </button>
+
+          {/* Download Excel */}
+          <button 
+            className="ra-btn ra-btn-gray" 
+            onClick={handleDownloadExcel}
+            disabled={!studentCounts || fetchStatus !== "ok"}
+          >
+            Download Excel
           </button>
         </div>
 
