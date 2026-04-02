@@ -19,8 +19,8 @@ const Login = () => {
     setLoading(true);
     try {
       const data = await api.post('/auth/admin/login', { email, password });
-      localStorage.setItem('examination_portal_admin_token', data.token);
-      localStorage.setItem('examination_portal_admin_staff', JSON.stringify(data.staff));
+      sessionStorage.setItem('examination_portal_admin_token', data.token);
+      sessionStorage.setItem('examination_portal_admin_staff', JSON.stringify(data.staff));
       navigate(from, { replace: true });
     } catch (err) {
       setError(getUserFriendlyApiError(err, 'Login failed'));

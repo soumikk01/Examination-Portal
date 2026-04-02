@@ -5,7 +5,7 @@ import RoomPage from './pages/RoomPage';
 
 // Auth guard: redirect to login if no token in localStorage
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('examination_portal_token');
+  const token = sessionStorage.getItem('examination_portal_token');
   const location = useLocation();
   if (!token) {
     return <Navigate to="/" state={{ from: location }} replace />;

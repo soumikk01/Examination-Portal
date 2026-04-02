@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const API = "/api/v1";
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("examination_portal_admin_token");
+  const token = sessionStorage.getItem("examination_portal_admin_token");
   return { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 };
 

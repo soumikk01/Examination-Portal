@@ -14,7 +14,7 @@ const apiClient = axios.create({
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('examination_portal_token');
+        const token = sessionStorage.getItem('examination_portal_token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -31,8 +31,8 @@ apiClient.interceptors.response.use(
         
         // Handle session expiration
         if (response && response.status === 401 && !window.location.pathname.includes('/login')) {
-            localStorage.removeItem('examination_portal_token');
-            localStorage.removeItem('examination_portal_student');
+            sessionStorage.removeItem('examination_portal_token');
+            sessionStorage.removeItem('examination_portal_student');
             window.location.href = '/';
         }
 
@@ -87,8 +87,8 @@ export const api = {
         });
         
         if (data.token) {
-            localStorage.setItem('examination_portal_token', data.token);
-            localStorage.setItem('examination_portal_student', JSON.stringify(data.student));
+            sessionStorage.setItem('examination_portal_token', data.token);
+            sessionStorage.setItem('examination_portal_student', JSON.stringify(data.student));
             // Initialize cache
             cache.set('profile', data.student);
         }
@@ -113,8 +113,8 @@ export const api = {
     getCachedSettings: () => cache.get('settings'),
 
     logout: () => {
-        localStorage.removeItem('examination_portal_token');
-        localStorage.removeItem('examination_portal_student');
+        sessionStorage.removeItem('examination_portal_token');
+        sessionStorage.removeItem('examination_portal_student');
         cache.clear();
         window.location.href = '/';
     },

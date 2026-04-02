@@ -28,12 +28,12 @@ const navItems = [
 const AdminLayout = () => {
   const navigate = useNavigate();
 
-  const staffJson = localStorage.getItem('examination_portal_admin_staff');
+  const staffJson = sessionStorage.getItem('examination_portal_admin_staff');
   const staff = staffJson ? JSON.parse(staffJson) : null;
 
   const handleLogout = () => {
-    localStorage.removeItem('examination_portal_admin_token');
-    localStorage.removeItem('examination_portal_admin_staff');
+    sessionStorage.removeItem('examination_portal_admin_token');
+    sessionStorage.removeItem('examination_portal_admin_staff');
     navigate('/login', { replace: true });
   };
 

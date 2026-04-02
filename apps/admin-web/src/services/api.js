@@ -10,7 +10,7 @@ const api = axios.create({
 
 // Send Bearer token from dashboard login (preferred). X-Admin-Key still works for API/scripts.
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('examination_portal_admin_token');
+  const token = sessionStorage.getItem('examination_portal_admin_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   } else {
@@ -24,8 +24,8 @@ api.interceptors.response.use(
   (res) => res.data,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('examination_portal_admin_token');
-      localStorage.removeItem('examination_portal_admin_staff');
+      sessionStorage.removeItem('examination_portal_admin_token');
+      sessionStorage.removeItem('examination_portal_admin_staff');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
