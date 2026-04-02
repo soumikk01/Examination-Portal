@@ -22,6 +22,7 @@ import * as seatingController from './modules/seating/seating.controller.js';
 import * as optionsController from './modules/options/options.controller.js';
 import * as dashboardController from './modules/dashboard/dashboard.controller.js';
 import * as historyController from './modules/history/history.controller.js';
+import * as settingsController from './modules/settings/settings.controller.js';
 import multer from 'multer';
 
 const app = express();
@@ -217,16 +218,16 @@ v1Router.get('/student/seating', verifyToken, seatingController.getStudentSeatin
 // Student profile routes (keep wildcard last so it doesn't shadow other /student/* routes)
 v1Router.get('/student/*', verifyToken, authorizeStudent, studentController.getProfile);
 
-v1Router.get('/rooms', roomController.list);
+v1Router.get('/rooms', authorizeAdmin, roomController.list);
 v1Router.post('/rooms/generate-allotment', authorizeAdmin, roomController.generateAllotment);
 v1Router.get('/rooms/exam-groups', authorizeAdmin, roomController.listExamGroups);
 v1Router.get('/rooms/allotment/:examGroup', authorizeAdmin, roomController.getAllotment);
 v1Router.get('/rooms/student-counts', authorizeAdmin, roomController.getStudentCounts);
 v1Router.post('/rooms/allotments', authorizeAdmin, roomController.saveAllotment);
 v1Router.patch('/rooms/:roomNo/capacity', authorizeAdmin, roomController.updateCapacity);
-v1Router.get('/rooms/:id', roomController.getById);
+v1Router.get('/rooms/:id', authorizeAdmin, roomController.getById);
 
-v1Router.get('/seating', seatingController.list);
+v1Router.get('/seating', authorizeAdmin, seatingController.list);
 v1Router.post('/seating/generate', authorizeAdmin, seatingController.generate);
 v1Router.post('/seating', authorizeAdmin, seatingController.assign);
 v1Router.get('/seating/room/:roomNo', authorizeAdmin, seatingController.getRoomSeating);
@@ -235,8 +236,7 @@ v1Router.get('/seating/:examGroup', authorizeAdmin, seatingController.getSeating
 
 
 // Settings
-import * as settingsController from './modules/settings/settings.controller.js';
-v1Router.get('/settings', settingsController.getSettings);
+v1Router.get('/settings', authorizeAdmin, settingsController.getSettings);
 v1Router.put('/settings', authorizeAdmin, settingsController.updateSettings);
 
 app.use('/api/v1', v1Router);

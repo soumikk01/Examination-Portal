@@ -10,8 +10,33 @@ const logger = pino({
 
 const redisUrl = (config.REDIS_URL || '').trim();
 
-const redis = redisUrl
-  ? new Redis(redisUrl, {
+// Parse the REDIS_URL into explicit options (avoids ioredis URL-parsing edge cases
+// with the 'default' username). Matches the format Redis Cloud dashboard recommends.
+// Supports: redis://user:pass@host:port  AND  rediss://user:pass@host:port (TLS)
+function parseRedisUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return {
+      host: parsed.hostname,
+      port: Number(parsed.port) || 6379,
+      username: parsed.username || 'default',
+      password: decodeURIComponent(parsed.password || ''),
+      tls: url.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+const redisOpts = redisUrl ? parseRedisUrl(redisUrl) : null;
+
+const redis = redisOpts
+  ? new Redis({
+      host: redisOpts.host,
+      port: redisOpts.port,
+      username: redisOpts.username,
+      password: redisOpts.password,
+      ...(redisOpts.tls ? { tls: redisOpts.tls } : {}),
       maxRetriesPerRequest: 3,
       retryStrategy(times) {
         if (times > 3) {
@@ -26,13 +51,17 @@ const redis = redisUrl
       ping: () => Promise.resolve(),
     };
 
-if (redisUrl) {
+if (redisOpts) {
   redis.on('error', (err) => {
-    logger.error('Redis Error:', err.message);
+    logger.error(`Redis Error: [${err.code || err.name}] ${err.message}`);
   });
 
   redis.on('connect', () => {
     logger.info('Connected to Redis');
+  });
+
+  redis.on('ready', () => {
+    logger.info('Redis is ready [OK]');
   });
 }
 

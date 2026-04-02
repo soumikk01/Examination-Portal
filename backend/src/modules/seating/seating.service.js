@@ -1,8 +1,7 @@
 import prisma from '../../database/database.js';
-import { getRoomAllotment } from '../rooms/room.service.js';
+import { getRoomAllotment, SEATS_PER_COLUMN } from '../rooms/room.service.js';
 
-const SEATS_PER_COLUMN = 8;
-const ROWS = 8;
+const ROWS = SEATS_PER_COLUMN;
 
 // ──────────────────────────────────────────────
 // Core logic: generateSeatMatrix

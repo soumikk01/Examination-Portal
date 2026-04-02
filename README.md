@@ -319,10 +319,10 @@ Base path: `/api/v1`.
 | `POST` | `/student` | Admin JWT or X-Admin-Key | Register student |
 | `GET` | `/exams` | — | List exams |
 | `GET` | `/exams/:id` | — | Get exam by id |
-| `GET` | `/rooms` | — | List rooms |
-| `GET` | `/rooms/:id` | — | Get room by id |
-| `GET` | `/seating` | — | List seating |
-| `POST` | `/seating` | — | Assign seating |
+| `GET` | `/rooms` | Admin JWT | List rooms |
+| `GET` | `/rooms/:id` | Admin JWT | Get room by id |
+| `GET` | `/seating` | Admin JWT | List seating |
+| `POST` | `/seating` | Admin JWT | Assign seating |
 
 ---
 
