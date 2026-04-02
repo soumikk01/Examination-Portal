@@ -297,9 +297,11 @@ export async function getStudentCountsForSemester({ semester }) {
 // Update (upsert) a room's capacity
 // ──────────────────────────────────────────────
 export async function updateRoomCapacity(roomNo, capacity) {
+  // Determine correct venue from room number prefix
+  const venue = roomNo.startsWith('MB') ? 'Main Building' : 'C Block – CMS Building';
   return prisma.examRoom.upsert({
     where: { roomNo },
-    create: { roomNo, capacity: Number(capacity), venue: 'Main Building' },
+    create: { roomNo, capacity: Number(capacity), venue },
     update: { capacity: Number(capacity) },
   });
 }

@@ -16,24 +16,13 @@ export const studentSchema = z.object({
   semester: z.string().optional().nullable(),
 });
 
-// Legacy single-exam schema (kept for reference, no longer used)
-export const examSchema = z.object({
-  examId: z.string().min(1, 'Exam ID is required'),
-  subject: z.string().min(1, 'Subject is required'),
-  score: z.number().min(0, 'Score must be positive').optional().nullable(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
-  time: z.string().optional().nullable(),
-  room: z.string().optional().nullable(),
-  examType: z.enum(['Regular', 'Supply', 'Re-evaluation', 'Backlog', 'Test']).default('Regular'),
-  examCategory: z.enum(['ODD', 'EVEN']).default('ODD'),
-  studentId: z.number().int().positive().optional().nullable(),
-});
+
 
 // New bulk exam creation schema used by POST /exams
 // Branch and semester are required here to match the Prisma Exam model,
 // which defines both fields as non-nullable String columns.
 export const examFormSchema = z.object({
-  program: z.enum(['BTECH', 'MTECH', 'DIPLOMA', 'MCA', 'BCA', 'BBA']),
+  program: z.enum(['BTECH', 'MTECH', 'DIPLOMA', 'MCA', 'BCA', 'BBA', 'MBA']),
   branch: z.string().min(1, 'Branch is required'),
   semester: z.string().min(1, 'Semester is required'),
   examType: z.enum(['TEST_I', 'TEST_II', 'END_SEM']),
