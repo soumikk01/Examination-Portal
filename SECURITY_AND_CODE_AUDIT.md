@@ -19,6 +19,11 @@ This document summarizes findings from a review of the Examination Portal codeba
 | **Duplicate exams for student** | `backend/src/modules/exams/exam.service.js` | `listForStudent` deduplicates by exam key; prefers student-specific row when both schedule-only and assigned row exist. |
 | **Env files not ignored** | `.gitignore` | Added `**/.env.development` and `**/.env.production`. If already committed, run `git rm --cached` on those paths once. |
 | **Admin email in logs** | `backend/src/index.js` | Added `req.body.email` to Pino `redact` so admin login email is not logged. |
+| **Admin UI has no real auth** | `apps/admin-web/src/pages/Login.jsx` & `index.js` | Added full JWT authentication for admins, protecting all API and dashboard routes. |
+| **Seating and room endpoints exposed** | `backend/src/index.js` | Added `authorizeAdmin` middleware to all `/rooms`, `/seating`, and `/settings` modifying endpoints. |
+| **Seating / room implementation stubbed** | `room.service.js` & `seating.service.js` | Completely implemented algorithms for persistent auto-allotment of rooms and seating via database. |
+| **Hardcoded venues on capacity update** | `backend/src/modules/rooms/room.service.js` | Added logic to dynamically assign venue ('Main Building' vs 'C Block') based on room prefix during capacity updates. |
+| **MBA program missing in schemas** | `backend/src/utils/schemas.js` | Added `MBA` to the Zod `program` validations. |
 
 ---
 
@@ -44,16 +49,7 @@ This document summarizes findings from a review of the Examination Portal codeba
 
 ## Broken or Incomplete Logic
 
-1. **Admin UI has no real auth**  
-   `apps/admin-web/src/pages/Login.jsx` does not authenticate; it only links to the dashboard. Anyone who can open the admin app can open the dashboard. Only the backend `POST /student` is protected by `X-Admin-Key`. **Recommendation:** Add real admin login (e.g. username/password or SSO) and protect admin routes (e.g. require token/session).
-
-2. **Seating and room endpoints**  
-   `GET /seating`, `POST /seating`, `GET /rooms`, `GET /rooms/:id` have no auth. If `POST /seating` is meant to change data, it should be restricted (e.g. admin or internal only). Room/exam list may be intentionally public for students.
-
-3. **Seating / room implementation**  
-   `room.service.js` and `seating.service.js` return empty list / “not yet implemented”. Not a security bug but logic is stubbed.
-
-4. **Redis in health check**  
+1. **Redis in health check**  
    `backend/src/index.js` checks `redis.status === 'ready'`. For `ioredis`, this is correct. If Redis is down, health correctly reports DEGRADED.
 
 ---
