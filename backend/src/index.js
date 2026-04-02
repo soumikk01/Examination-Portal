@@ -227,7 +227,7 @@ v1Router.post('/rooms/allotments', authorizeAdmin, roomController.saveAllotment)
 v1Router.patch('/rooms/:roomNo/capacity', authorizeAdmin, roomController.updateCapacity);
 v1Router.get('/rooms/:id', authorizeAdmin, roomController.getById);
 
-v1Router.get('/seating', seatingController.list);
+v1Router.get('/seating', authorizeAdmin, seatingController.list);
 v1Router.post('/seating/generate', authorizeAdmin, seatingController.generate);
 v1Router.post('/seating', authorizeAdmin, seatingController.assign);
 v1Router.get('/seating/room/:roomNo', authorizeAdmin, seatingController.getRoomSeating);
