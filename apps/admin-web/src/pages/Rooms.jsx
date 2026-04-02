@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { useState, useCallback, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 
@@ -289,7 +290,6 @@ export default function RoomAllotment() {
         }
       })
       .catch(e => console.error("Could not fetch room capacities", e));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Fetch student counts ────────────────────────────────────────────────────
@@ -409,7 +409,7 @@ export default function RoomAllotment() {
     setEditingCell(null);
     setSelectedRunCells([]);
     setAutoRunMode(false);
-    try { localStorage.removeItem(LS_KEY); } catch {}
+    try { localStorage.removeItem(LS_KEY); } catch (e) { /* ignore */ }
   };
 
   // ── Auto-Run distribution logic ───────────────────────────────────────────
