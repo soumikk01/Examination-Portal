@@ -26,6 +26,30 @@ const Button = ({
       bgDisabled: '#fca5a5',
       shadow: 'rgba(239, 68, 68, 0.1)',
       shadowHover: 'rgba(239, 68, 68, 0.2)',
+      color: 'white',
+      border: 'none',
+    },
+    logout: {
+      bg: 'transparent',
+      bgHover: '#ef4444',
+      bgDisabled: '#f8fafc',
+      shadow: 'rgba(0, 0, 0, 0.05)',
+      shadowHover: 'rgba(239, 68, 68, 0.2)',
+      color: '#ef4444',
+      colorHover: '#ffffff',
+      border: '1px solid #fee2e2',
+      borderHover: '#ef4444',
+    },
+    secondary: {
+      bg: 'transparent',
+      bgHover: '#4f46e5',
+      bgDisabled: '#f8fafc',
+      shadow: 'rgba(0, 0, 0, 0.05)',
+      shadowHover: 'rgba(79, 70, 229, 0.2)',
+      color: '#4f46e5',
+      colorHover: '#ffffff',
+      border: '1px solid #e0e7ff',
+      borderHover: '#4f46e5',
     },
   };
 
@@ -41,12 +65,16 @@ const Button = ({
           e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
           e.currentTarget.style.boxShadow = `0 10px 20px ${v.shadowHover}`;
           e.currentTarget.style.backgroundColor = v.bgHover;
+          e.currentTarget.style.color = v.colorHover || v.color;
+          if (v.borderHover) e.currentTarget.style.borderColor = v.borderHover;
         }
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0) scale(1)';
         e.currentTarget.style.boxShadow = `0 4px 6px ${v.shadow}`;
         e.currentTarget.style.backgroundColor = disabled || loading ? v.bgDisabled : v.bg;
+        e.currentTarget.style.color = v.color;
+        if (v.border) e.currentTarget.style.borderColor = v.border.split(' ')[2] || 'transparent';
       }}
       onMouseDown={(e) => {
         if (!disabled && !loading) {
@@ -63,22 +91,22 @@ const Button = ({
       style={{
         width: fullWidth ? '100%' : 'auto',
         backgroundColor: disabled || loading ? v.bgDisabled : v.bg,
-        color: 'white',
-        padding: '14px 20px',
-        borderRadius: '8px',
+        color: v.color || 'white',
+        padding: (variant === 'logout' || variant === 'secondary') ? '6px 14px' : '14px 20px',
+        borderRadius: (variant === 'logout' || variant === 'secondary') ? '20px' : '8px',
         fontWeight: 600,
-        fontSize: '1rem',
-        border: 'none',
+        fontSize: (variant === 'logout' || variant === 'secondary') ? '12px' : '1rem',
+        border: v.border || 'none',
         cursor: disabled || loading ? 'not-allowed' : 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '8px',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: `0 4px 6px ${v.shadow}`,
+        boxShadow: (variant === 'logout' || variant === 'secondary') ? 'none' : `0 4px 6px ${v.shadow}`,
       }}
     >
-      {Icon && <Icon size={18} strokeWidth={2.5} />}
+      {Icon && <Icon size={(variant === 'logout' || variant === 'secondary') ? 14 : 18} strokeWidth={2.5} />}
       {loading ? 'Loading...' : children}
     </button>
   );

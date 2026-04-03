@@ -30,8 +30,36 @@ const Login = () => {
   };
 
   return (
-    <div className="admin-login-page">
-      <div className="admin-login-card">
+    <div className="admin-login-page" style={{ flexDirection: 'column', gap: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+      {/* Decorative Full-Page Dot Grid */}
+      <div 
+        style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.1) 1.2px, transparent 1.2px)', 
+          backgroundSize: '30px 30px', 
+          zIndex: 0,
+          pointerEvents: 'none'
+        }} 
+      />
+      
+      <div style={{ 
+        fontWeight: 900, 
+        textTransform: 'uppercase', 
+        letterSpacing: '0.12em', 
+        fontSize: '1.4rem',
+        textAlign: 'center',
+        color: '#ffffff',
+        filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))',
+        lineHeight: 1.2,
+        zIndex: 1
+      }}>
+        JIS Exam<br />Management System (EMS)
+      </div>
+      <div className="admin-login-card" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
           <img
             src={logo}
@@ -43,7 +71,7 @@ const Login = () => {
             }}
           />
         </div>
-        <h1>Admin Login</h1>
+        <h1 style={{ marginTop: '0.5rem' }}>Admin Login</h1>
         <p>Sign in with your college email and password.</p>
         <form onSubmit={handleSubmit} style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>

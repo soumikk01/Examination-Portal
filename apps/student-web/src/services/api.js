@@ -72,13 +72,7 @@ const cache = {
 
 export const api = {
     getHealth: () => apiClient.get('/health'),
-    getSettings: async () => {
-        const cached = cache.get('settings');
-        if (cached) return cached;
-        const data = await apiClient.get('/settings');
-        cache.set('settings', data);
-        return data;
-    },
+    getSettings: () => apiClient.get('/settings'),
 
     login: async (identifier, verification) => {
         const data = await apiClient.post('/auth/login', { 

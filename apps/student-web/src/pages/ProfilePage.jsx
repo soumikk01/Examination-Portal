@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { LogOut, CalendarDays } from 'lucide-react';
 import { api } from '../services/api';
 import { Modal } from '@exam-portal/ui';
 import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
@@ -83,19 +83,32 @@ const NoticeModal = ({ notice, onClose }) => {
                 {hasNotice ? (
                     <>
                         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                            <span style={{ fontSize: '2.5rem' }}>📌</span>
                         </div>
                         <h3 style={{
                             textAlign: 'center', fontSize: '1.15rem', fontWeight: 700,
                             color: '#374151', marginBottom: '1rem',
                             textDecoration: 'underline', textDecorationStyle: 'wavy',
                             textDecorationColor: '#e6e2c8',
-                        }}>Important Notice</h3>
-                        <p style={{
-                            color: '#374151', lineHeight: '1.7',
-                            whiteSpace: 'pre-wrap', textAlign: 'center',
-                            fontWeight: 500, fontSize: '0.97rem',
-                        }}>{notice}</p>
+                        }}>Examination Cell Notice</h3>
+                        <div style={{
+                            background: '#fff',
+                            border: '1px solid #f1f5f9',
+                            borderRadius: '8px',
+                            padding: '1.25rem',
+                            boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                            margin: '0.5rem 0',
+                            overflow: 'hidden'
+                        }}>
+                            <p style={{
+                                color: '#374151', lineHeight: '1.7',
+                                whiteSpace: 'pre-wrap', 
+                                textAlign: 'center',
+                                fontWeight: 500, fontSize: '0.97rem',
+                                margin: 0,
+                                overflowWrap: 'anywhere',
+                                wordBreak: 'break-word'
+                            }}>{notice}</p>
+                        </div>
                     </>
                 ) : (
                     <>
@@ -296,12 +309,25 @@ const ProfilePage = () => {
                     </div>
 
                     <div className="flex w-full md:w-auto justify-end">
-                        <Button variant="danger" onClick={() => navigate('/')} icon={ArrowLeft} className="w-full md:w-auto">Back</Button>
+                        <Button variant="logout" onClick={() => api.logout()} icon={LogOut} className="w-full md:w-auto">Logout</Button>
                     </div>
                 </div>
 
                 {/* Student Profile Card */}
-                <Card className="mb-8" padding="24px 20px" style={{ backgroundColor: '#f0f4f8' }}>
+                <Card className="mb-8 relative overflow-hidden" padding="24px 20px" style={{ backgroundColor: '#f0f4f8' }}>
+                    <div className="absolute top-1 right-4">
+                        <span className="text-[9px] sm:text-[10px] font-black tracking-[0.14em] uppercase bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-700 bg-clip-text text-transparent drop-shadow-sm opacity-90">
+                            {(() => {
+                                const sem = parseInt(student.examinationSem || student.semester || 0);
+                                const season = sem ? (sem % 2 !== 0 ? 'ODD' : 'EVEN') : 'SESSION';
+                                const pgKeywords = ['M.TECH', 'MBA', 'MCA', 'M.SC', 'PG'];
+                                const isPG = pgKeywords.some(k => 
+                                    (student.degree || student.program || '').toUpperCase().includes(k)
+                                );
+                                return `JISCE / ${season} / ${isPG ? 'PG' : 'UG'}`;
+                            })()}
+                        </span>
+                    </div>
                     <h3 className="text-2xl md:text-3xl font-bold text-[#2d368e] border-b pb-4 mb-6">{student.name}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-base">
                         <div className="flex gap-2 items-center">
@@ -327,7 +353,12 @@ const ProfilePage = () => {
 
                 {/* Exam Schedule Card */}
                 <Card style={{ backgroundColor: 'white' }}>
-                    <h3 className="text-2xl font-bold text-[#2d368e] border-b pb-4 mb-6">📅 Exam Schedule</h3>
+                    <h3 className="text-xl md:text-2xl font-black border-b pb-4 mb-6 text-center flex items-center justify-center gap-3 tracking-[0.1em] uppercase">
+                        <CalendarDays className="w-8 h-8 text-indigo-600 drop-shadow-sm" />
+                        <span className="bg-gradient-to-r from-[#2d368e] via-indigo-700 to-blue-800 bg-clip-text text-transparent">
+                            Exam Schedule
+                        </span>
+                    </h3>
                     {upcomingExams.length > 0 || goneExams.length > 0 ? (
                         <>
                             {upcomingExams.length === 0 && goneExams.length > 0 && (
@@ -361,8 +392,18 @@ const ProfilePage = () => {
                             )}
                         </>
                     ) : (
-                        <div className="bg-slate-50 py-12 rounded-xl text-center text-gray-400 italic">
-                            No exams scheduled for this student{examFilter !== 'Profile' && ` (filter: ${examFilter})`}
+                        <div className="bg-slate-50 py-12 rounded-xl text-center text-gray-400 italic font-medium">
+                            No exams scheduled for this student
+                            {examFilter !== 'Profile' && (
+                                <>
+                                    {' '}
+                                    (<span style={{ 
+                                        color: examFilter === 'Regular' ? '#059669' : examFilter === 'Backlog' ? '#ea580c' : 'inherit',
+                                    }}>
+                                        {examFilter}
+                                    </span>)
+                                </>
+                            )}
                         </div>
                     )}
                 </Card>
@@ -376,7 +417,7 @@ const ProfilePage = () => {
                         </div>
                         <div className="text-center">
                             <h4 className="flex items-center justify-center gap-2 font-bold text-gray-800 text-lg mb-2 underline decoration-wavy decoration-[#e6e2c8]">
-                                <span>📌</span> Important Notice
+                                Examination Cell Notice
                             </h4>
                             <p className="text-gray-700 font-medium leading-relaxed">
                                 Please report to your assigned room{' '}
