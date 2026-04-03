@@ -212,7 +212,7 @@ const ProfilePage = () => {
                 }
             } catch (err) {
                 if (!cached) setError(err.message || 'Error fetching student data');
-                if (err.response?.status === 401 || err.status === 401) navigate('/');
+                if ([401, 403].includes(err.response?.status || err.status)) navigate('/');
             } finally {
                 setLoading(false);
             }

@@ -209,8 +209,8 @@ v1Router.get('/exam/list', authorizeAdmin, examScheduleController.list);
 v1Router.post('/exam/publish', authorizeAdmin, examScheduleController.publish);
 // Student schedule: required by frontend spec
 v1Router.get('/student/exams', verifyToken, examScheduleController.listForStudent);
-// Public/student-safe filters for dropdowns
-v1Router.get('/student/exams/filters', examScheduleController.listPublishedFilters);
+// Public/student-safe filters for dropdowns (protected by token for system privacy)
+v1Router.get('/student/exams/filters', verifyToken, examScheduleController.listPublishedFilters);
 
 // Student Seating
 v1Router.get('/student/seating', verifyToken, seatingController.getStudentSeating);

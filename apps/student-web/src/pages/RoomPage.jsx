@@ -95,7 +95,7 @@ export default function SeatingChart3D() {
       const width = window.innerWidth;
       // On mobile, we aim for a scrollable experience if width is too small
       const targetWidth = columns.length * 134; // Each column + gap
-      if (width < 768) {
+      if (width < 768 && targetWidth > 0) {
          // Minor scaling allowed for mobile to fit a bit more, but not too much
          setScale(Math.max(0.75, (width - 40) / targetWidth));
       } else {
@@ -133,7 +133,7 @@ export default function SeatingChart3D() {
                       return (
                           <button
                               key={opt}
-                              onClick={() => navigate(collegeId ? `/student/${collegeId}` : -1, { state: { filter: opt } })}
+                              onClick={() => navigate(collegeId ? `/student/${collegeId}` : '/', { state: { filter: opt } })}
                               onMouseEnter={(e) => {
                                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
                                   e.currentTarget.style.boxShadow = `0 6px 16px ${activeShadow}`;
