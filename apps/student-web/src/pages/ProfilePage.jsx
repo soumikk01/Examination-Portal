@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, LogOut, CalendarDays } from 'lucide-react';
+import { LogOut, CalendarDays } from 'lucide-react';
 import { api } from '../services/api';
 import { Modal } from '@exam-portal/ui';
 import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
