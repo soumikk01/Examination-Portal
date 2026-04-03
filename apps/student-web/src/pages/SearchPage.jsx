@@ -66,7 +66,7 @@ const SearchPage = () => {
     }
 
     return (
-        <PageLayout centerContent>
+        <PageLayout centerContent showDots={true}>
             <DecorativeCircle
                 bottom="-50px"
                 right="-150px"
@@ -74,7 +74,7 @@ const SearchPage = () => {
                 height="300px"
                 gradient="linear-gradient(135deg, #10b981 0%, #059669 100%)"
                 shadow="0 10px 25px -5px rgba(16, 185, 129, 0.5)"
-                opacity={0.9}
+                opacity={1}
                 zIndex={5}
             />
 
@@ -85,7 +85,7 @@ const SearchPage = () => {
                 height="160px"
                 gradient="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
                 shadow="0 8px 16px -4px rgba(59, 130, 246, 0.4)"
-                opacity={0.8}
+                opacity={1}
                 zIndex={4}
             />
 
@@ -119,6 +119,8 @@ const SearchPage = () => {
                 <Card
                     padding="24px 20px" // More compact for mobile
                     style={{
+                        position: 'relative',
+                        zIndex: 1,
                         border: '1px solid rgba(226, 232, 240, 0.8)',
                         animation: shake ? 'shake 0.6s cubic-bezier(.36,.07,.19,.97) both' : 'none',
                     }}

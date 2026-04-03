@@ -40,9 +40,19 @@ const AdminLayout = () => {
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '1rem 1.5rem' }}>
-          <img src={logo} alt="JIS Logo" style={{ maxHeight: '35px', width: 'auto' }} />
-          <span style={{ fontSize: '1rem', lineHeight: 1.2, whiteSpace: 'pre-wrap' }}>JIS College of Engineering</span>
+        <div className="admin-sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '1.25rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <img src={logo} alt="JIS Logo" style={{ maxHeight: '36px', width: 'auto', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+          <span style={{ 
+            fontSize: '0.85rem', 
+            lineHeight: 1.2, 
+            fontWeight: 900,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: '#fff',
+            display: 'inline-block'
+          }}>
+            JIS College<br />Of Engineering
+          </span>
         </div>
         <nav className="admin-sidebar-nav" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ flex: 1 }}>
@@ -79,7 +89,7 @@ const AdminLayout = () => {
       </aside>
       <main className="admin-main">
         <header className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Examination Portal</span>
+          <span>JIS Exam Management System (EMS)</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {staff?.name && (
               <span style={{ fontSize: '0.9rem', color: 'var(--admin-text-muted)' }}>
@@ -89,14 +99,7 @@ const AdminLayout = () => {
             <button
               type="button"
               onClick={handleLogout}
-              className="admin-btn"
-              style={{
-                padding: '0.4rem 0.75rem',
-                fontSize: '0.875rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
+              className="admin-btn admin-btn-logout"
               title="Sign out"
             >
               <LogOut size={16} />

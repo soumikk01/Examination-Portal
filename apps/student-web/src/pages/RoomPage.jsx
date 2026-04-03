@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from '../services/api';
-import { ArrowLeft, User } from "lucide-react";
-import { PageLayout } from '../components';
+import { ArrowLeft, User, CalendarDays } from "lucide-react";
+import { PageLayout, Button } from '../components';
 
 const ROWS = 8;
 
@@ -243,35 +243,13 @@ export default function SeatingChart3D() {
 
               {/* Right Side: Back Button */}
               <div className="flex gap-3">
-                  <button
+                  <Button 
+                      variant="secondary" 
                       onClick={() => navigate(-1)}
-                      style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '10px 20px',
-                          backgroundColor: '#2d368e',
-                          color: '#ffffff',
-                          borderRadius: '8px',
-                          border: 'none',
-                          fontWeight: 700,
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(45, 54, 142, 0.25)',
-                          transition: 'all 0.2s ease',
-                      }}
-                      onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = '#1e2563';
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                      }}
-                      onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = '#2d368e';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                      }}
+                      icon={ArrowLeft}
                   >
-                      <ArrowLeft size={18} strokeWidth={3} />
                       Back
-                  </button>
+                  </Button>
               </div>
           </div>
       </div>
@@ -296,10 +274,62 @@ export default function SeatingChart3D() {
     return (
       <PageLayout>
         {renderTopNav()}
-        <div style={{marginTop:'100px', textAlign:'center', maxWidth:'400px'}}>
-           <h2 style={{fontSize:'1.5rem', fontWeight:700, color:'#1e293b', marginBottom:'1rem'}}>📅 Seating Not Available</h2>
-           <p style={{color:'#64748b', lineHeight:1.6}}>{error}</p>
-           <p style={{marginTop:'2rem', fontSize:'0.85rem', color:'#94a3b8'}}>Please check back later or contact the exam department.</p>
+        <div style={{ marginTop: '100px', textAlign: 'center', maxWidth: '500px', margin: '100px auto 0' }}>
+            {/* Header with Logo and Text side-by-side */}
+            <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '20px',
+                marginBottom: '1.5rem'
+            }}>
+                {/* Logo-like Icon Container (Glass design removed) */}
+                <div style={{ 
+                    width: '48px', 
+                    height: '48px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    flexShrink: 0
+                }}>
+                    <div style={{ position: 'relative' }}>
+                        <CalendarDays size={36} color="#4f46e5" strokeWidth={1.5} />
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '-1px',
+                            right: '-1px',
+                            width: '14px',
+                            height: '14px',
+                            backgroundColor: '#fff',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                            <div style={{ width: '8px', height: '1.5px', backgroundColor: '#94a3b8', borderRadius: '1px', transform: 'rotate(45deg)', position: 'absolute' }} />
+                            <div style={{ width: '8px', height: '1.5px', backgroundColor: '#94a3b8', borderRadius: '1px', transform: 'rotate(-45deg)', position: 'absolute' }} />
+                        </div>
+                    </div>
+                </div>
+
+                <h2 style={{ 
+                    fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', 
+                    fontWeight: 900, 
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: '#1e293b',
+                    margin: 0,
+                    textAlign: 'left'
+                }}>
+                    Seating Not Available
+                </h2>
+            </div>
+
+            <p style={{ color: '#64748b', lineHeight: 1.6, fontSize: '0.95rem' }}>{error}</p>
+            <p style={{ marginTop: '2.5rem', fontSize: '0.85rem', color: '#94a3b8', fontWeight: 500 }}>
+                Please check back later or contact the exam department.
+            </p>
         </div>
       </PageLayout>
     );
