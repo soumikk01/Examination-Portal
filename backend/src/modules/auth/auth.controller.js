@@ -13,10 +13,16 @@ export async function login(req, res, next) {
       return res.status(403).json({ error: 'Verification failed. Check your credentials.' });
     }
 
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 8 * 60 * 60 * 1000
+    });
+
     res.json({
       message: 'Login successful',
       requestId: req.id,
-      token: result.token,
       student: result.student,
     });
   } catch (err) {
@@ -34,10 +40,16 @@ export async function adminLogin(req, res, next) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 8 * 60 * 60 * 1000
+    });
+
     res.json({
       message: 'Admin login successful',
       requestId: req.id,
-      token: result.token,
       staff: result.staff,
     });
   } catch (err) {
@@ -71,4 +83,9 @@ export async function updateAdminPassword(req, res, next) {
   } catch (err) {
     next(err);
   }
+}
+
+export function logout(req, res) {
+  res.clearCookie('token');
+  res.json({ message: 'Logged out successfully' });
 }

@@ -6,7 +6,8 @@ import pino from 'pino';
 import pinoHttp from 'pino-http';
 import { v4 as uuidv4 } from 'uuid';
 import compression from 'compression';
-
+import cookieParser from 'cookie-parser';
+import jwt from 'jsonwebtoken';
 import prisma from './database/database.js';
 import redis from './utils/redis.js';
 import { config } from './config/config.js';
@@ -98,19 +99,61 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
-const limiter = rateLimit({
+const isDev = process.env.NODE_ENV === 'development';
+
+/**
+ * Smart key generator: rate-limit per USER (if authenticated) or per IP (if not).
+ * Uses jwt.verify() — validates the token signature with JWT_SECRET so attackers
+ * cannot craft fake tokens to exhaust another user's rate limit (DoS protection).
+ * Falls back to per-IP for unauthenticated or tampered requests.
+ */
+const { JWT_SECRET } = config;
+const smartKey = (req) => {
+  try {
+    const token = req.cookies?.token;
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded?.id) return `user:${decoded.id}`;
+    }
+  } catch (_) { /* expired/tampered token — fall through to IP */ }
+  return `ip:${req.ip}`;
+};
+
+// Tier 1: Auth limiter — ALWAYS per IP (user not authenticated yet at login)
+// 5 attempts per 15 minutes per IP — blocks brute-force attacks
+const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200, // generous limit — covers normal admin + student usage
+  max: isDev ? 1000 : 5,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (_req) => {
-    // Disable rate limiting in local development (Vite proxy causes false positives)
-    if (process.env.NODE_ENV === 'development') return true;
-    return false;
-  }
+  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  // keyGenerator defaults to req.ip — correct for login routes
 });
-app.use(limiter);
+
+// Tier 2: Upload limiter — per USER (admin only, heavy CPU/mem operation)
+// 10 uploads per hour per user
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: isDev ? 1000 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: smartKey,
+  message: { error: 'Upload limit reached. Please try again in an hour.' },
+});
+
+// Tier 3: General API limiter — per USER if logged in, per IP if not
+// 300 requests per 15 minutes — comfortable for your college load
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 10000 : 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: smartKey,
+  message: { error: 'Too many requests. Please slow down and try again shortly.' },
+});
+app.use(generalLimiter);
 
 const v1Router = express.Router();
 const upload = multer({
@@ -170,9 +213,11 @@ v1Router.get('/health', async (req, res) => {
   res.status(health.status === 'UP' ? 200 : 503).json(health);
 });
 
-v1Router.post('/auth/login', validate(verificationSchema), authController.login);
-v1Router.post('/auth/admin/login', validate(adminLoginSchema), authController.adminLogin);
+v1Router.post('/auth/login', authLimiter, validate(verificationSchema), authController.login);
+v1Router.post('/auth/admin/login', authLimiter, validate(adminLoginSchema), authController.adminLogin);
 v1Router.put('/auth/admin/password', authorizeAdmin, authController.updateAdminPassword);
+v1Router.post('/auth/logout', authController.logout);
+v1Router.post('/auth/admin/logout', authController.logout);
 
 // Dashboard
 v1Router.get('/dashboard/summary', authorizeAdmin, dashboardController.getDashboardSummary);
@@ -201,8 +246,8 @@ v1Router.patch('/exams/:id/status', authorizeAdmin, examController.updateStatus)
 v1Router.get('/student/my-exams', verifyToken, examController.listForStudent);
 
 // Exam schedule (PDF upload -> draft -> publish -> student-facing)
-v1Router.post('/exam/upload-pdf', authorizeAdmin, upload.single('file'), examScheduleController.uploadPdf);
-v1Router.post('/exam/parse-pdf', authorizeAdmin, upload.single('file'), examScheduleController.parsePdf);
+v1Router.post('/exam/upload-pdf', authorizeAdmin, uploadLimiter, upload.single('file'), examScheduleController.uploadPdf);
+v1Router.post('/exam/parse-pdf', authorizeAdmin, uploadLimiter, upload.single('file'), examScheduleController.parsePdf);
 v1Router.post('/exam/save-draft', authorizeAdmin, examScheduleController.saveDraft);
 v1Router.delete('/exam/batch/:uploadId', authorizeAdmin, examScheduleController.deleteBatch);
 v1Router.get('/exam/list', authorizeAdmin, examScheduleController.list);

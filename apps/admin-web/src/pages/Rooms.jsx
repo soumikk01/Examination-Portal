@@ -765,7 +765,7 @@ export default function RoomAllotment() {
             {fetchStatus === "loading" ? "Loading…" : "Generate"}
           </button>
 
-          <div style={{ width: 1, background: "#e2e8f0", alignSelf: "stretch", margin: "0 0.25rem" }} />
+          <div style={{ flex: 1 }} />
 
           {/* Venue */}
           <div className="ra-group">
@@ -808,7 +808,39 @@ export default function RoomAllotment() {
             {setBtnStatus === "saving" ? "Saving..." : "Set"}
           </button>
 
+          {/* Line Break to drop controls below Venue/Room/Capacity inputs */}
+          <div style={{ flexBasis: "100%", height: 0, margin: "0.25rem 0" }} />
+
+          {/* Auto Run Mode Toggle */}
+          <button
+            className={`ra-btn ${autoRunMode ? "ra-btn-purple" : "ra-btn-gray"}`}
+            onClick={() => { setAutoRunMode(!autoRunMode); setSelectedRunCells([]); }}
+            disabled={!studentCounts || fetchStatus !== "ok"}
+            title="Toggle Auto Run Mode: click cells in a room, then evenly distribute students"
+          >
+            {autoRunMode ? "Exit Auto Run" : "Auto Run Mode"}
+          </button>
+          
+          {autoRunMode && selectedRunCells.length > 0 && (
+            <button
+              className="ra-btn ra-btn-blue"
+              onClick={handleRunDistribution}
+            >
+              Run Distribution
+            </button>
+          )}
+
           <div style={{ flex: 1 }} />
+
+          {/* Download Excel */}
+          <button
+            className="ra-btn ra-btn-gray"
+            onClick={handleDownloadExcel}
+            disabled={!studentCounts || fetchStatus !== "ok"}
+            title="Download all 4 sections (UG Regular, UG Backlog, PG Regular, PG Backlog) in one Excel file"
+          >
+            Excel
+          </button>
 
           {/* Save */}
           <button
@@ -816,7 +848,7 @@ export default function RoomAllotment() {
             onClick={handleSave}
             disabled={saveStatus === "saving" || !rows.some(r => r.capacity)}
           >
-            {saveStatus === "saving" ? "Saving…" : "💾 Save"}
+            {saveStatus === "saving" ? "Saving…" : "Save"}
           </button>
 
           {/* Reload Students */}
@@ -826,7 +858,7 @@ export default function RoomAllotment() {
             disabled={!semester || fetchStatus === "loading"}
             title="Re-fetch student counts for current semester without clearing allocations"
           >
-            🔄 Reload Students
+            Reload Students
           </button>
 
           {/* Remove Data */}
@@ -835,39 +867,8 @@ export default function RoomAllotment() {
             onClick={handleRemoveData}
             title="Clear all allocation data and reset the table"
           >
-            🗑 Remove Data
+            Remove Data
           </button>
-
-          {/* Download Excel */}
-          <button
-            className="ra-btn ra-btn-gray"
-            onClick={handleDownloadExcel}
-            disabled={!studentCounts || fetchStatus !== "ok"}
-            title="Download all 4 sections (UG Regular, UG Backlog, PG Regular, PG Backlog) in one Excel file"
-          >
-            ⬇ Excel
-          </button>
-
-          <div style={{ width: 1, background: "#e2e8f0", alignSelf: "stretch", margin: "0 0.25rem" }} />
-
-          {/* Auto Run Mode Toggle */}
-          <button
-            className={`ra-btn ${autoRunMode ? "ra-btn-purple" : "ra-btn-gray"}`}
-            onClick={() => { setAutoRunMode(!autoRunMode); setSelectedRunCells([]); }}
-            disabled={!studentCounts || fetchStatus !== "ok"}
-            title="Toggle Auto Run Mode: click cells in a room, then evenly distribute students"
-          >
-            {autoRunMode ? "⚡ Exit Auto Run" : "⚡ Auto Run Mode"}
-          </button>
-          
-          {autoRunMode && selectedRunCells.length > 0 && (
-            <button
-              className="ra-btn ra-btn-blue"
-              onClick={handleRunDistribution}
-            >
-              ▶ Run Distribution
-            </button>
-          )}
         </div>
 
         {/* Status messages */}

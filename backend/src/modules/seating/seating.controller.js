@@ -18,10 +18,13 @@ export async function getStudentSeating(req, res, next) {
       return res.status(404).json({ error: 'No published seating arrangement found for you.' });
     }
 
-    // 2. Fetch the full room seating for context (optional, but good for the grid view)
+    // Safely extract semester from examGroup (e.g. "SEM3-2025" → "3")
+    const rawSem = allocation.allotment.examGroup?.split('-')[0]?.replace('SEM', '') ?? null;
+    const semester = rawSem && !isNaN(rawSem) ? rawSem : null;
+
     const result = await seatingService.getSeatingForRoom({
       roomNo: allocation.roomNo,
-      semester: allocation.allotment.examGroup.split('-')[0].replace('SEM','')
+      semester,
     });
 
     res.json({ ...result, mySeat: { columnNo: allocation.columnNo, seatNo: allocation.seatNo } });

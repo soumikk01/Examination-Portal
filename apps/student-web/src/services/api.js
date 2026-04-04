@@ -6,18 +6,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 // Create axios instance
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Request interceptor to add auth token
+// Request interceptor
 apiClient.interceptors.request.use(
     (config) => {
-        const token = sessionStorage.getItem('examination_portal_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
         return config;
     },
     (error) => Promise.reject(error)
@@ -31,7 +28,6 @@ apiClient.interceptors.response.use(
         
         // Handle session expiration
         if (response && response.status === 401 && !window.location.pathname.includes('/login')) {
-            sessionStorage.removeItem('examination_portal_token');
             sessionStorage.removeItem('examination_portal_student');
             window.location.href = '/';
         }
@@ -80,8 +76,7 @@ export const api = {
             verification 
         });
         
-        if (data.token) {
-            sessionStorage.setItem('examination_portal_token', data.token);
+        if (data.student) {
             sessionStorage.setItem('examination_portal_student', JSON.stringify(data.student));
             // Initialize cache
             cache.set('profile', data.student);
@@ -106,8 +101,10 @@ export const api = {
     getCachedSeating: () => cache.get('seating'),
     getCachedSettings: () => cache.get('settings'),
 
-    logout: () => {
-        sessionStorage.removeItem('examination_portal_token');
+    logout: async () => {
+        try {
+            await apiClient.post('/auth/logout');
+        } catch (e) { /* ignore */ }
         sessionStorage.removeItem('examination_portal_student');
         cache.clear();
         window.location.href = '/';
