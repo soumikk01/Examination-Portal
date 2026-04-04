@@ -21,7 +21,7 @@ const profileSelect = {
 export async function getByCollegeId(collegeId) {
   const cacheKey = `student:${collegeId}`;
   const cached = await cache.get(cacheKey);
-  if (cached) return { ...cached, _cached: true };
+  if (cached) return cached;
 
   const student = await prisma.student.findUnique({
     where: { collegeId },
@@ -61,7 +61,7 @@ export async function getByCollegeId(collegeId) {
       room: 'TBA',
       examType: s.mode === 'BACKLOG' ? 'Backlog' : 'Regular',
       examMode: s.mode,
-      examCategory: s.scheduleType.replace('_THEORY', '').replace('_', ' '),
+      examCategory: s.scheduleType.replace(/_THEORY|_PRACTICAL/g, '').replace('_', ' '),
       status: 'PUBLISHED'
     }));
 

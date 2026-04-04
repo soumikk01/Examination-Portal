@@ -293,7 +293,7 @@ const SearchPage = () => {
 
                     <div style={{ marginTop: '16px', textAlign: 'center' }}>
                         <a
-                            href="#"
+                            href="mailto:examcell@jisce.ac.in"
                             style={{
                                 fontSize: '0.85rem',
                                 color: '#6b7280',
@@ -304,7 +304,7 @@ const SearchPage = () => {
                             onMouseEnter={(e) => (e.target.style.color = '#2563eb')}
                             onMouseLeave={(e) => (e.target.style.color = '#6b7280')}
                         >
-                            Need Help?
+                            Need Help? Contact Exam Cell
                         </a>
                     </div>
                 </Card>

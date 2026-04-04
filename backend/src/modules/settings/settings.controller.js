@@ -1,18 +1,21 @@
 import prisma from '../../database/database.js';
 
+// Allowed setting keys — prevents arbitrary key injection into SystemSettings
+const ALLOWED_KEYS = ['academicYear', 'maintenanceMode', 'noticeBoard', 'contactEmail', 'portalTitle'];
+
+const toBoolean = (value) => {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+};
+
 export const getSettings = async (req, res, next) => {
   try {
     const settingsRows = await prisma.systemSetting.findMany();
     const settings = settingsRows.reduce((acc, row) => {
-      // Convert 'true'/'false' strings back to boolean for maintenanceMode
-      let value = row.value;
-      if (value === 'true') value = true;
-      if (value === 'false') value = false;
-      
-      acc[row.key] = value;
+      acc[row.key] = toBoolean(row.value);
       return acc;
     }, {});
-    
     res.json(settings);
   } catch (err) {
     next(err);
@@ -21,28 +24,30 @@ export const getSettings = async (req, res, next) => {
 
 export const updateSettings = async (req, res, next) => {
   try {
-    const updates = req.body; // e.g. { academicYear: '2024-2025', maintenanceMode: true }
-    
-    // We execute these sequentially or map them to promises
-    const updatePromises = Object.entries(updates).map(([key, value]) => {
-      const stringValue = typeof value === 'boolean' ? String(value) : String(value);
-      
+    const updates = req.body;
+
+    const safeUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([key]) => ALLOWED_KEYS.includes(key))
+    );
+
+    if (Object.keys(safeUpdates).length === 0) {
+      return res.status(400).json({ error: 'No valid settings keys provided.' });
+    }
+
+    const updatePromises = Object.entries(safeUpdates).map(([key, value]) => {
+      const stringValue = String(value);
       return prisma.systemSetting.upsert({
         where: { key },
         update: { value: stringValue },
-        create: { key, value: stringValue }
+        create: { key, value: stringValue },
       });
     });
 
     await Promise.all(updatePromises);
-    
-    // Fetch newly updated settings
+
     const settingsRows = await prisma.systemSetting.findMany();
     const settings = settingsRows.reduce((acc, row) => {
-      let val = row.value;
-      if (val === 'true') val = true;
-      if (val === 'false') val = false;
-      acc[row.key] = val;
+      acc[row.key] = toBoolean(row.value);
       return acc;
     }, {});
 
