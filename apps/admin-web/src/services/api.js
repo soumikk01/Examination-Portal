@@ -9,17 +9,18 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// X-Admin-Key still works for API/scripts.
-api.interceptors.request.use((config) => {
-  const adminKey = import.meta.env.VITE_ADMIN_API_KEY;
-  if (adminKey) config.headers['X-Admin-Key'] = adminKey;
-  return config;
-});
+// Browser auth is cookie-based ONLY (admin_token cookie set at login).
+// The X-Admin-Key / ADMIN_API_KEY bypass is strictly for server-side scripts.
+// NEVER put ADMIN_API_KEY in a VITE_ env var — it would be bundled into
+// the public JS and readable by anyone in DevTools.
 
 api.interceptors.response.use(
   (res) => res.data,
   (err) => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status;
+    // Only trigger logout if the server explicitly says this session is unauthorized.
+    // 403 means "wrong role" (not a session issue), so we don't auto-logout on 403.
+    if (status === 401) {
       sessionStorage.removeItem('examination_portal_admin_staff');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

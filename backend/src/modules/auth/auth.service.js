@@ -8,6 +8,17 @@ import { computeCurrentSemester } from '../../utils/semester.js';
 
 const { JWT_SECRET } = config;
 
+// Read sessionTimeout from system settings (default: 480 minutes = 8h)
+async function getSessionTimeoutSeconds() {
+  try {
+    const row = await prisma.systemSetting.findUnique({ where: { key: 'sessionTimeout' } });
+    const minutes = row ? parseInt(row.value, 10) : 480;
+    return (Number.isFinite(minutes) && minutes > 0 ? minutes : 480) * 60;
+  } catch {
+    return 480 * 60; // 8h fallback
+  }
+}
+
 export async function login(collegeId, verification) {
   const student = await prisma.student.findFirst({
     where: {
@@ -47,6 +58,7 @@ export async function login(collegeId, verification) {
   }
 
   const sessionId = uuidv4();
+  const timeoutSeconds = await getSessionTimeoutSeconds();
 
   const updatedStudent = await prisma.student.update({
     where: { id: student.id },
@@ -59,11 +71,12 @@ export async function login(collegeId, verification) {
   const token = jwt.sign(
     { id: student.id, collegeId: student.collegeId, sessionId },
     JWT_SECRET,
-    { expiresIn: '8h' }
+    { expiresIn: timeoutSeconds }
   );
 
   return {
     token,
+    tokenMaxAge: timeoutSeconds * 1000,
     student: {
       name: student.name,
       collegeId: student.collegeId,
@@ -94,14 +107,24 @@ export async function adminLogin(email, password) {
     return { error: 'INVALID_CREDENTIALS', status: 401 };
   }
 
+  const sessionId = uuidv4();
+  const timeoutSeconds = await getSessionTimeoutSeconds();
+
+  // Store sessionId so old admin sessions are invalidated on new login
+  await prisma.staff.update({
+    where: { id: staff.id },
+    data: { sessionId, lastLogin: new Date() },
+  });
+
   const token = jwt.sign(
-    { id: staff.id, email: staff.email, role: 'admin' },
+    { id: staff.id, email: staff.email, role: 'admin', sessionId },
     JWT_SECRET,
-    { expiresIn: '8h' }
+    { expiresIn: timeoutSeconds }
   );
 
   return {
     token,
+    tokenMaxAge: timeoutSeconds * 1000,
     staff: {
       id: staff.id,
       email: staff.email,
@@ -118,9 +141,10 @@ export async function updateAdminPassword(adminId, currentPassword, newPassword)
   if (!valid) return { error: 'INVALID_CREDENTIALS', status: 401 };
 
   const hashedPassword = await bcrypt.hash(newPassword, 10);
+  // Changing password also invalidates all existing sessions
   await prisma.staff.update({
     where: { id: adminId },
-    data: { passwordHash: hashedPassword }
+    data: { passwordHash: hashedPassword, sessionId: null },
   });
 
   return { success: true };

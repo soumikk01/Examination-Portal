@@ -112,7 +112,7 @@ const isDev = process.env.NODE_ENV === 'development';
 const { JWT_SECRET } = config;
 const smartKey = (req) => {
   try {
-    const token = req.cookies?.token;
+    const token = req.cookies?.student_token || req.cookies?.admin_token || req.cookies?.token;
     if (token) {
       const decoded = jwt.verify(token, JWT_SECRET);
       if (decoded?.id) return `user:${decoded.id}`;
