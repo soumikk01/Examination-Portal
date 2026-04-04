@@ -3,11 +3,12 @@ import SearchPage from './pages/SearchPage';
 import ProfilePage from './pages/ProfilePage';
 import RoomPage from './pages/RoomPage';
 
-// Auth guard: redirect to login if no token in localStorage
+// Auth guard: with cookie-based auth, the token is in an httpOnly cookie (not accessible to JS).
+// We use the presence of the student profile in sessionStorage as the login indicator.
 const ProtectedRoute = ({ children }) => {
-  const token = sessionStorage.getItem('examination_portal_token');
+  const student = sessionStorage.getItem('examination_portal_student');
   const location = useLocation();
-  if (!token) {
+  if (!student) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
   return children;

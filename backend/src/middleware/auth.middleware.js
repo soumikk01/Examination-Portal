@@ -6,7 +6,7 @@ const { JWT_SECRET, ADMIN_API_KEY } = config;
 
 export const verifyToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = req.cookies?.token || (authHeader && authHeader.split(' ')[1]);
 
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
@@ -54,7 +54,7 @@ export const authorizeStudent = (req, res, next) => {
 /** Verifies JWT and sets req.user when token has role 'admin'. Does not accept X-Admin-Key. */
 export const verifyAdminToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = req.cookies?.token || (authHeader && authHeader.split(' ')[1]);
 
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
@@ -81,10 +81,10 @@ export const verifyAdminToken = async (req, res, next) => {
   }
 };
 
-/** Accepts either Bearer admin JWT (from dashboard) or X-Admin-Key (for API/scripts). */
+/** Accepts cookie JWT, Bearer admin JWT (from dashboard), or X-Admin-Key (for API/scripts). */
 export const authorizeAdmin = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = req.cookies?.token || (authHeader && authHeader.split(' ')[1]);
   const adminKey = req.headers['x-admin-key'];
 
   if (token) {

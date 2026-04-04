@@ -1,4 +1,5 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
+import api from '../services/api';
 import {
   LayoutDashboard,
   DoorOpen,
@@ -26,15 +27,11 @@ const navItems = [
 ];
 
 const AdminLayout = () => {
-  const navigate = useNavigate();
-
   const staffJson = sessionStorage.getItem('examination_portal_admin_staff');
   const staff = staffJson ? JSON.parse(staffJson) : null;
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('examination_portal_admin_token');
-    sessionStorage.removeItem('examination_portal_admin_staff');
-    navigate('/login', { replace: true });
+  const handleLogout = async () => {
+    await api.logout();
   };
 
   return (
