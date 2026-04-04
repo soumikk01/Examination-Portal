@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import logo from '../assets/logo.png';
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────
@@ -160,19 +160,39 @@ const styles = `
   }
 `;
 
+// ─── PERSISTENCE KEY ─────────────────────────────────────────────────────────
+const LS_KEY = 'sa2_seating_state';
+
+function loadPersistedState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
 // ─── COMPONENT ────────────────────────────────────────────────────────────
 export default function Seating() {
-  const [venue, setVenue]       = useState('');
-  const [room, setRoom]         = useState('');
-  const [semester, setSemester] = useState('2');
-  const [examType, setExamType] = useState('Class Test - I');
-  const [year, setYear]         = useState(String(new Date().getFullYear()));
+  const persisted = loadPersistedState();
 
-  const [seating, setSeating]   = useState(null); // fetched data
-  const [status, setStatus]     = useState('idle'); // idle|loading|ok|err
+  const [venue, setVenue]       = useState(persisted?.venue || '');
+  const [room, setRoom]         = useState(persisted?.room || '');
+  const [semester, setSemester] = useState(persisted?.semester || '2');
+  const [examType, setExamType] = useState(persisted?.examType || 'Class Test - I');
+  const [year, setYear]         = useState(persisted?.year || String(new Date().getFullYear()));
+
+  const [seating, setSeating]   = useState(persisted?.seating || null); // fetched data
+  const [status, setStatus]     = useState(persisted?.seating ? 'ok' : 'idle'); // idle|loading|ok|err
   const [errMsg, setErrMsg]     = useState('');
 
   const printRef = useRef(null);
+
+  // ── Persist state to localStorage on every change ────────────────────────
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({ venue, room, semester, examType, year, seating }));
+    } catch { /* ignore */ }
+  }, [venue, room, semester, examType, year, seating]);
 
   // ── Fetch seating for selected room ───────────────────────────────────
   const handleGenerate = async () => {
@@ -242,7 +262,7 @@ export default function Seating() {
     <>
       <style>{styles}</style>
       <div className="sa2-wrap">
-        <h1 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0 0 1rem' }}>📋 Seating Arrangement</h1>
+        <h1 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0 0 1rem' }}>Seating Arrangement</h1>
 
         {/* Controls */}
         <div className="sa2-controls">
