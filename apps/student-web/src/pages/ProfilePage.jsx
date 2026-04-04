@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { LogOut, CalendarDays } from 'lucide-react';
 import { api } from '../services/api';
 import { Modal } from '@exam-portal/ui';
-import { Button, Card, Skeleton, ExamCard, PageLayout } from '../components';
+import { Button, Card, Skeleton, ExamCard, PageLayout, NoticeModal } from '../components';
 import { parseExamDateTime } from '../utils/dateUtils';
 
 const ProfileSkeleton = () => (
@@ -45,104 +45,6 @@ const ProfileSkeleton = () => (
     </PageLayout>
 );
 
-/* ─── Notice Popup Modal ─── */
-const NoticeModal = ({ notice, onClose }) => {
-    const hasNotice = notice && notice.trim() !== '';
-    return (
-        <div
-            onClick={onClose}
-            style={{
-                position: 'fixed', inset: 0, zIndex: 9999,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
-                animation: 'fadeInOverlay 0.2s ease',
-            }}
-        >
-            <div
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                    background: hasNotice ? '#fffdf0' : '#f0f9ff',
-                    border: hasNotice ? '2px solid #e6e2c8' : '2px solid #bae6fd',
-                    borderRadius: '12px', padding: '2rem',
-                    maxWidth: '480px', width: '90%',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-                    position: 'relative',
-                    animation: 'popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)',
-                }}
-            >
-                <button
-                    onClick={onClose}
-                    style={{
-                        position: 'absolute', top: '0.75rem', right: '0.75rem',
-                        background: 'none', border: 'none', fontSize: '1.4rem',
-                        cursor: 'pointer', color: '#888', lineHeight: 1,
-                        padding: '2px 6px', borderRadius: '4px',
-                    }}
-                >×</button>
-
-                {hasNotice ? (
-                    <>
-                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                        </div>
-                        <h3 style={{
-                            textAlign: 'center', fontSize: '1.15rem', fontWeight: 700,
-                            color: '#374151', marginBottom: '1rem',
-                            textDecoration: 'underline', textDecorationStyle: 'wavy',
-                            textDecorationColor: '#e6e2c8',
-                        }}>Examination Cell Notice</h3>
-                        <div style={{
-                            background: '#fff',
-                            border: '1px solid #f1f5f9',
-                            borderRadius: '8px',
-                            padding: '1.25rem',
-                            boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-                            margin: '0.5rem 0',
-                            overflow: 'hidden'
-                        }}>
-                            <p style={{
-                                color: '#374151', lineHeight: '1.7',
-                                whiteSpace: 'pre-wrap', 
-                                textAlign: 'center',
-                                fontWeight: 500, fontSize: '0.97rem',
-                                margin: 0,
-                                overflowWrap: 'anywhere',
-                                wordBreak: 'break-word'
-                            }}>{notice}</p>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                        </div>
-                        <p style={{ textAlign: 'center', color: '#64748b', fontWeight: 500 }}>
-                            No active notices at this time.
-                        </p>
-                    </>
-                )}
-
-                <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                    <button
-                        onClick={onClose}
-                        style={{
-                            padding: '8px 24px', borderRadius: '20px',
-                            border: 'none', background: '#4f46e5',
-                            color: '#fff', fontWeight: 600,
-                            fontSize: '0.9rem', cursor: 'pointer',
-                        }}
-                    >Close</button>
-                </div>
-            </div>
-            <style>{`
-                @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes popIn {
-                    from { transform: scale(0.8); opacity: 0; }
-                    to   { transform: scale(1);   opacity: 1; }
-                }
-            `}</style>
-        </div>
-    );
-};
-
 /* ─── Main Profile Page ─── */
 const ProfilePage = () => {
     const { '*': splat, collegeId: paramId } = useParams();
@@ -153,13 +55,13 @@ const ProfilePage = () => {
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [examFilter, setExamFilter] = useState(location.state?.filter || 'Profile');
+    const [examFilter, setExamFilter] = useState(location.state?.filter || 'Regular');
     const [showNoticeModal, setShowNoticeModal] = useState(false);
     
     const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
     const showAlert = (message, onConfirm) => setModalState({ isOpen: true, title: 'Alert', message, type: 'alert', onConfirm });
 
-    const examFilterOptions = ['Profile', 'Regular', 'Backlog'];
+    const examFilterOptions = ['Regular', 'Backlog'];
 
     const { upcomingExams, goneExams } = React.useMemo(() => {
         if (!student?.exams) return { upcomingExams: [], goneExams: [] };
@@ -168,7 +70,7 @@ const ProfilePage = () => {
             const dateTime = parseExamDateTime(exam.date, exam.time);
             return { ...exam, dateTime, isPassed: dateTime < now };
         });
-        if (examFilter !== 'Profile') {
+        if (examFilter) {
             const isCategory = ['ODD', 'EVEN'].includes(examFilter);
             exams = exams.filter((e) =>
                 isCategory ? e.examCategory === examFilter : (e.examType || 'Regular') === examFilter
@@ -261,7 +163,6 @@ const ProfilePage = () => {
                         {examFilterOptions.map((opt) => {
                             const isSelected = examFilter === opt;
                             const colors = {
-                                Profile: { base: '#e0e7ff', text: '#4f46e5', activeBg: '#4f46e5', shadow: 'rgba(79,70,229,0.35)' },
                                 Regular: { base: '#d1fae5', text: '#059669', activeBg: '#059669', shadow: 'rgba(16,185,129,0.35)' },
                                 Backlog: { base: '#ffedd5', text: '#ea580c', activeBg: '#ea580c', shadow: 'rgba(249,115,22,0.35)' },
                             }[opt];
@@ -270,7 +171,7 @@ const ProfilePage = () => {
                                     key={opt}
                                     onClick={() => setExamFilter(opt)}
                                     className="active:scale-95 transition-transform"
-                                    style={{ ...btnBase, backgroundColor: isSelected ? colors.activeBg : colors.base, color: isSelected ? 'white' : colors.text, boxShadow: isSelected ? `0 4px 12px ${colors.shadow}` : 'none', flexShrink: 0 }}
+                                    style={{ ...btnBase, backgroundColor: isSelected ? colors.activeBg : colors.base, color: isSelected ? 'white' : colors.text, boxShadow: 'none', flexShrink: 0 }}
                                 >
                                     {opt}
                                 </button>
@@ -366,7 +267,7 @@ const ProfilePage = () => {
                                     <span className="text-4xl mb-2 block">🎉</span>
                                     <h4 className="text-xl font-bold text-green-700 mb-2">All exams completed!</h4>
                                     <p className="text-green-600">
-                                        {examFilter === 'Profile' ? 'Congratulations! You have completed all your scheduled exams.' : `All ${examFilter} exams are done.`}
+                                        Congratulations! You have completed all your scheduled exams.
                                     </p>
                                 </div>
                             )}
@@ -394,16 +295,12 @@ const ProfilePage = () => {
                     ) : (
                         <div className="bg-slate-50 py-12 rounded-xl text-center text-gray-400 italic font-medium">
                             No exams scheduled for this student
-                            {examFilter !== 'Profile' && (
-                                <>
-                                    {' '}
-                                    (<span style={{ 
-                                        color: examFilter === 'Regular' ? '#059669' : examFilter === 'Backlog' ? '#ea580c' : 'inherit',
-                                    }}>
-                                        {examFilter}
-                                    </span>)
-                                </>
-                            )}
+                            {' '}
+                            (<span style={{ 
+                                color: examFilter === 'Regular' ? '#059669' : examFilter === 'Backlog' ? '#ea580c' : 'inherit',
+                            }}>
+                                {examFilter}
+                            </span>)
                         </div>
                     )}
                 </Card>

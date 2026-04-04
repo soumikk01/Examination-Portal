@@ -5,3 +5,4 @@ export { default as Skeleton } from './Skeleton';
 export { default as ExamCard } from './ExamCard';
 export { default as PageLayout } from './PageLayout';
 export { default as DecorativeCircle } from './DecorativeCircle';
+export { default as NoticeModal } from './NoticeModal';

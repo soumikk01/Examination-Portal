@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from '../services/api';
 import { ArrowLeft, User, CalendarDays } from "lucide-react";
-import { PageLayout, Button } from '../components';
+import { PageLayout, Button, NoticeModal } from '../components';
 
 const ROWS = 8;
 
@@ -58,11 +58,15 @@ export default function SeatingChart3D() {
   const [scale, setScale] = useState(1);
   const [loading, setLoading] = useState(true);
   const [seating, setSeating] = useState(null);
+  const [settings, setSettings] = useState(null);
   const [error, setError] = useState(null);
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
 
   const columns = seating?.columns || [];
 
   useEffect(() => {
+    let isMounted = true;
+
     // Instant Load from Cache
     const cached = api.getCachedSeating();
     if (cached) {
@@ -73,18 +77,23 @@ export default function SeatingChart3D() {
     const fetchSeating = async () => {
       try {
         if (!cached) setLoading(true);
+        // Load settings independently so a seating error doesn't block the notice
+        api.getSettings()
+          .then((s) => { if (isMounted) setSettings(s); })
+          .catch(() => null);
         const data = await api.getSeating();
-        setSeating(data);
+        if (isMounted) setSeating(data);
       } catch (e) {
-        if (!cached) setError(e.message || 'Failed to load seating information.');
+        if (isMounted && !cached) setError(e.message || 'Failed to load seating information.');
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     fetchSeating();
 
     // Fallback: If still loading after 8 seconds, show an error.
     const timer = setTimeout(() => {
+      if (!isMounted) return;
       setLoading(current => {
         if (current && !cached) setError("Taking longer than expected. Please refresh the page or check your connection.");
         return false;
@@ -105,148 +114,87 @@ export default function SeatingChart3D() {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => {
+      isMounted = false;
       window.removeEventListener("resize", handleResize);
       clearTimeout(timer);
     };
   }, [columns.length]);
 
+  const btnBase = {
+      padding: '6px 14px', borderRadius: '20px',
+      fontSize: '12px', fontWeight: 600, border: 'none',
+      cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: 'none',
+  };
+
+  const hasActiveNotice = settings?.noticeBoardMessage && settings.noticeBoardMessage.trim() !== '';
+
   const renderTopNav = () => (
       <div style={{ width: '100%', maxWidth: '1152px', marginTop: '16px', marginBottom: '32px' }}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4">
-              {/* Left Side: Filters and Room Search/Notice */}
-              <div className="flex gap-2 flex-wrap items-center">
-                  {['ALL', 'Regular', 'Backlog'].map((opt) => {
-                      let baseColor = '#e0e7ff';
-                      let textColor = '#4f46e5';
-                      let activeShadow = 'rgba(79, 70, 229, 0.35)';
+              {/* Scrollable Container for Mobile Buttons */}
+              <div 
+                  className="flex gap-2 items-center overflow-x-auto pb-2 w-full md:w-auto no-scrollbar"
+                  style={{ 
+                      msOverflowStyle: 'none', 
+                      scrollbarWidth: 'none',
+                      WebkitOverflowScrolling: 'touch'
+                  }}
+              >
+                  <div className="flex gap-2 flex-nowrap items-center min-w-max">
+                      {['Regular', 'Backlog'].map((opt) => {
+                          const colors = {
+                              Regular: { base: '#d1fae5', text: '#059669' },
+                              Backlog: { base: '#ffedd5', text: '#ea580c' },
+                          }[opt];
+                          return (
+                              <button
+                                  key={opt}
+                                  onClick={() => navigate(collegeId ? `/student/${collegeId}` : '/', { state: { filter: opt } })}
+                                  className="active:scale-95 transition-transform"
+                                  style={{ ...btnBase, backgroundColor: colors.base, color: colors.text, flexShrink: 0 }}
+                              >
+                                  {opt}
+                              </button>
+                          );
+                      })}
 
-                      if (opt === 'Regular') {
-                          baseColor = '#d1fae5';
-                          textColor = '#059669';
-                          activeShadow = 'rgba(16, 185, 129, 0.35)';
-                      } else if (opt === 'Backlog') {
-                          baseColor = '#ffedd5';
-                          textColor = '#ea580c';
-                          activeShadow = 'rgba(249, 115, 22, 0.35)';
-                      }
+                      <div className="w-px h-6 bg-indigo-200 mx-1"></div>
 
-                      return (
-                          <button
-                              key={opt}
-                              onClick={() => navigate(collegeId ? `/student/${collegeId}` : '/', { state: { filter: opt } })}
-                              onMouseEnter={(e) => {
-                                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                                  e.currentTarget.style.boxShadow = `0 6px 16px ${activeShadow}`;
-                              }}
-                              onMouseLeave={(e) => {
-                                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                                  e.currentTarget.style.boxShadow = 'none';
-                              }}
-                              onMouseDown={(e) => {
-                                  e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
-                                  e.currentTarget.style.boxShadow = 'none';
-                              }}
-                              onMouseUp={(e) => {
-                                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                                  e.currentTarget.style.boxShadow = `0 6px 16px ${activeShadow}`;
-                              }}
-                              style={{
-                                  padding: '6px 14px',
-                                  borderRadius: '20px',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                  backgroundColor: baseColor,
-                                  color: textColor,
-                                  boxShadow: 'none',
-                              }}
-                          >
-                              {opt}
-                          </button>
-                      );
-                  })}
+                      <button
+                          onClick={() => {}}
+                          className="active:scale-95 transition-transform"
+                          style={{ ...btnBase, backgroundColor: '#4f46e5', color: 'white', flexShrink: 0 }}
+                      >
+                          Room
+                      </button>
 
-                  <div className="w-px h-6 bg-indigo-200 mx-1"></div>
+                      <div className="w-px h-6 bg-indigo-200 mx-1"></div>
 
-                  <button
-                      onClick={() => navigate(collegeId ? `/student/${collegeId}/room` : '/room', { state: { roomName: seating?.roomNo, collegeId } })}
-                      onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
-                      }}
-                      onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                          e.currentTarget.style.boxShadow = 'none';
-                      }}
-                      onMouseDown={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
-                          e.currentTarget.style.boxShadow = 'none';
-                      }}
-                      onMouseUp={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.35)';
-                      }}
-                      style={{
-                          padding: '6px 14px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          backgroundColor: '#4f46e5',
-                          color: 'white',
-                          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)',
-                      }}
-                  >
-                      Room Search
-                  </button>
-
-                  <div className="w-px h-6 bg-indigo-200 mx-1"></div>
-
-                  <button
-                      onClick={() => {}}
-                      onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(217, 119, 6, 0.35)';
-                      }}
-                      onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                          e.currentTarget.style.boxShadow = 'none';
-                      }}
-                      onMouseDown={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
-                          e.currentTarget.style.boxShadow = 'none';
-                      }}
-                      onMouseUp={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(217, 119, 6, 0.35)';
-                      }}
-                      style={{
-                          padding: '6px 14px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          backgroundColor: '#fef3c7',
-                          color: '#d97706',
-                          boxShadow: 'none',
-                      }}
-                  >
-                      Notice
-                  </button>
+                      <button
+                          onClick={() => setShowNoticeModal(true)}
+                          className="active:scale-95 transition-transform"
+                          style={{ ...btnBase, backgroundColor: '#fef3c7', color: '#d97706', position: 'relative', flexShrink: 0 }}
+                      >
+                          Notice
+                          {hasActiveNotice && (
+                              <span style={{
+                                  position: 'absolute', top: '-3px', right: '-3px',
+                                  width: '8px', height: '8px', borderRadius: '50%',
+                                  background: '#ef4444', border: '1.5px solid white',
+                              }} />
+                          )}
+                      </button>
+                  </div>
               </div>
 
               {/* Right Side: Back Button */}
-              <div className="flex gap-3">
+              <div className="flex w-full md:w-auto justify-end">
                   <Button 
                       variant="secondary" 
                       onClick={() => navigate(-1)}
                       icon={ArrowLeft}
+                      className="w-full md:w-auto"
                   >
                       Back
                   </Button>
@@ -273,6 +221,9 @@ export default function SeatingChart3D() {
   if (error) {
     return (
       <PageLayout>
+        {showNoticeModal && (
+            <NoticeModal notice={settings?.noticeBoardMessage} onClose={() => setShowNoticeModal(false)} />
+        )}
         {renderTopNav()}
         <div style={{ marginTop: '100px', textAlign: 'center', maxWidth: '500px', margin: '100px auto 0' }}>
             {/* Header with Logo and Text side-by-side */}
@@ -339,6 +290,9 @@ export default function SeatingChart3D() {
   
   return (
     <PageLayout>
+      {showNoticeModal && (
+          <NoticeModal notice={settings?.noticeBoardMessage} onClose={() => setShowNoticeModal(false)} />
+      )}
       {renderTopNav()}
 
       <div style={{

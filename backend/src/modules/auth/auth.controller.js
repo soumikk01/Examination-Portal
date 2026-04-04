@@ -13,11 +13,11 @@ export async function login(req, res, next) {
       return res.status(403).json({ error: 'Verification failed. Check your credentials.' });
     }
 
-    res.cookie('token', result.token, {
+    res.cookie('student_token', result.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 8 * 60 * 60 * 1000
+      maxAge: result.tokenMaxAge || 8 * 60 * 60 * 1000
     });
 
     res.json({
@@ -40,11 +40,11 @@ export async function adminLogin(req, res, next) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    res.cookie('token', result.token, {
+    res.cookie('admin_token', result.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 8 * 60 * 60 * 1000
+      maxAge: result.tokenMaxAge || 8 * 60 * 60 * 1000
     });
 
     res.json({
@@ -86,6 +86,8 @@ export async function updateAdminPassword(req, res, next) {
 }
 
 export function logout(req, res) {
-  res.clearCookie('token');
+  res.clearCookie('student_token');
+  res.clearCookie('admin_token');
+  res.clearCookie('token'); // belt-and-suspenders: clear any lingering old cookie
   res.json({ message: 'Logged out successfully' });
 }

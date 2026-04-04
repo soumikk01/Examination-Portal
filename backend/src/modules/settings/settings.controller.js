@@ -1,7 +1,16 @@
 import prisma from '../../database/database.js';
 
 // Allowed setting keys — prevents arbitrary key injection into SystemSettings
-const ALLOWED_KEYS = ['academicYear', 'maintenanceMode', 'noticeBoard', 'contactEmail', 'portalTitle'];
+const ALLOWED_KEYS = [
+  'academicYear', 
+  'semester', 
+  'dateFormat',
+  'maintenanceMode', 
+  'noticeBoardMessage', 
+  'sessionTimeout',
+  'contactEmail', 
+  'portalTitle'
+];
 
 const toBoolean = (value) => {
   if (value === 'true') return true;

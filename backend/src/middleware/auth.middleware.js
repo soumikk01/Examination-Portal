@@ -6,7 +6,7 @@ const { JWT_SECRET, ADMIN_API_KEY } = config;
 
 export const verifyToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = req.cookies?.token || (authHeader && authHeader.split(' ')[1]);
+  const token = req.cookies?.student_token || (authHeader && authHeader.split(' ')[1]);
 
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
@@ -54,7 +54,7 @@ export const authorizeStudent = (req, res, next) => {
 /** Verifies JWT and sets req.user when token has role 'admin'. Does not accept X-Admin-Key. */
 export const verifyAdminToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = req.cookies?.token || (authHeader && authHeader.split(' ')[1]);
+  const token = req.cookies?.admin_token || (authHeader && authHeader.split(' ')[1]);
 
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
@@ -66,12 +66,23 @@ export const verifyAdminToken = async (req, res, next) => {
       return res.status(403).json({ error: 'Invalid token. Admin access required.' });
     }
 
+    // Validate sessionId against DB — new login invalidates old sessions
     const staff = await prisma.staff.findUnique({
       where: { id: decoded.id },
-      select: { id: true, email: true, name: true },
+      select: { id: true, email: true, name: true, sessionId: true },
     });
+
     if (!staff) {
       return res.status(401).json({ error: 'Staff account not found.' });
+    }
+
+    // If the staff has a sessionId set (new logins), it must match the token's sessionId.
+    // If sessionId is null (old accounts before this feature), we allow through gracefully.
+    if (staff.sessionId && decoded.sessionId && staff.sessionId !== decoded.sessionId) {
+      return res.status(401).json({
+        error: 'Session invalidated by another login.',
+        code: 'SESSION_INVALIDATED',
+      });
     }
 
     req.user = { ...decoded, ...staff };
@@ -84,7 +95,7 @@ export const verifyAdminToken = async (req, res, next) => {
 /** Accepts cookie JWT, Bearer admin JWT (from dashboard), or X-Admin-Key (for API/scripts). */
 export const authorizeAdmin = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = req.cookies?.token || (authHeader && authHeader.split(' ')[1]);
+  const token = req.cookies?.admin_token || (authHeader && authHeader.split(' ')[1]);
   const adminKey = req.headers['x-admin-key'];
 
   if (token) {
