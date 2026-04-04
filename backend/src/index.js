@@ -235,8 +235,8 @@ v1Router.post('/seating/publish', authorizeAdmin, seatingController.publish);
 v1Router.get('/seating/:examGroup', authorizeAdmin, seatingController.getSeating);
 
 
-// Settings (Accessible to all logged-in users to see notices/maintenance)
-v1Router.get('/settings', verifyToken, settingsController.getSettings);
+// Settings (Accessible to all users to see notices/maintenance)
+v1Router.get('/settings', settingsController.getSettings);
 v1Router.put('/settings', authorizeAdmin, settingsController.updateSettings);
 
 app.use('/api/v1', v1Router);
