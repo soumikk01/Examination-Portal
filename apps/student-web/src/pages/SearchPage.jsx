@@ -50,15 +50,27 @@ const SearchPage = () => {
         return (
             <PageLayout centerContent>
                 <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '400px' }}>
-                    <header style={{ textAlign: 'center', marginBottom: '30px' }}>
-                        <Skeleton height="3rem" width="16rem" className="mx-auto" />
+                    <header style={{ textAlign: 'center', margin: '0 auto 30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Skeleton height="2.5rem" width="18rem" className="mb-3" />
+                        <Skeleton height="1.5rem" width="14rem" />
                     </header>
-                    <Card padding="32px 24px">
-                        <Skeleton height="2rem" width="10rem" className="mb-4" />
-                        <Skeleton height="1rem" width="14rem" className="mb-6" />
-                        <Skeleton height="3rem" width="100%" className="mb-4 rounded-lg" />
-                        <Skeleton height="3rem" width="100%" className="mb-4 rounded-lg" />
-                        <Skeleton height="3rem" width="100%" className="bg-blue-100 rounded-lg" />
+                    <Card padding="24px 20px">
+                        <div className="flex justify-center mb-5">
+                             <Skeleton width="80px" height="80px" rounded="50%" />
+                        </div>
+                        <Skeleton height="1.75rem" width="10rem" className="mb-5" />
+                        
+                        <Skeleton height="0.8rem" width="14rem" className="mb-2" />
+                        <Skeleton height="3.2rem" width="100%" rounded="8px" className="mb-4" />
+                        
+                        <Skeleton height="0.8rem" width="14rem" className="mb-2" />
+                        <Skeleton height="3.2rem" width="100%" rounded="8px" className="mb-4" />
+                        
+                        <Skeleton height="3.2rem" width="100%" rounded="8px" className="mb-4" />
+                        
+                        <div className="flex justify-center mt-4">
+                           <Skeleton height="1rem" width="12rem" />
+                        </div>
                     </Card>
                 </div>
             </PageLayout>

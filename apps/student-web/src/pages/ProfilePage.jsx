@@ -10,37 +10,51 @@ const ProfileSkeleton = () => (
     <PageLayout>
         <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
             <div className="flex justify-end mb-8">
-                <Skeleton width="4rem" height="2rem" className="bg-blue-100" />
+                <Skeleton width="4rem" height="2rem" />
             </div>
             <Card className="mb-8" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-                <Skeleton height="2rem" width="33%" className="mb-6 bg-blue-100" />
+                <Skeleton height="2rem" width="33%" className="mb-6" />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3, 4, 5].map((i) => (
                         <div key={i} className="flex gap-2 items-center">
-                            <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                            <Skeleton width="8rem" height="1rem" className="bg-gray-200" />
+                            <Skeleton width="6rem" height="1rem" />
+                            <Skeleton width="8rem" height="1rem" />
                         </div>
                     ))}
                 </div>
             </Card>
             <Card style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
-                <Skeleton height="2rem" width="25%" className="mb-6 bg-blue-100" />
+                <Skeleton height="2rem" width="25%" className="mb-6" />
                 <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="bg-slate-50 p-6 rounded-xl border border-slate-100">
                             <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                                <Skeleton width="33%" height="1.5rem" className="bg-indigo-100" />
-                                <Skeleton width="4rem" height="1.5rem" rounded="999px" className="bg-green-100" />
+                                <Skeleton width="33%" height="1.5rem" />
+                                <Skeleton width="4rem" height="1.5rem" rounded="999px" />
                             </div>
                             <div className="flex justify-between gap-4 flex-wrap">
-                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
+                                <Skeleton width="6rem" height="1rem" />
+                                <Skeleton width="6rem" height="1rem" />
+                                <Skeleton width="6rem" height="1rem" />
                             </div>
                         </div>
                     ))}
                 </div>
             </Card>
+
+            {/* Pinned Notice Skeleton */}
+            <div className="mt-8 relative mx-auto max-w-2xl transform transition-transform duration-300" style={{ transform: 'rotate(-1deg)' }}>
+                <div className="bg-[#fefce8] border border-[#fef08a] p-6 rounded-lg shadow-sm relative skeleton" style={{ animation: 'shimmer 2s infinite linear', backgroundSize: '1000px 100%' }}>
+                    <div className="text-center w-full flex flex-col items-center">
+                        <Skeleton height="1.5rem" width="40%" className="mb-4" />
+                        <div className="space-y-3 w-full flex flex-col items-center">
+                            <Skeleton height="1rem" width="90%" />
+                            <Skeleton height="1rem" width="95%" />
+                            <Skeleton height="1rem" width="80%" />
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </PageLayout>
 );

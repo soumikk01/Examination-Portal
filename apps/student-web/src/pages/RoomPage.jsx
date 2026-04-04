@@ -2,8 +2,54 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from '../services/api';
 import { ArrowLeft, User, CalendarDays } from "lucide-react";
-import { PageLayout, Button, NoticeModal } from '../components';
+import { PageLayout, Button, NoticeModal, Skeleton } from '../components';
 
+const RoomSkeletonGrid = () => {
+  const dummyColumns = [1, 2, 3, 4, 5, 6, 7, 8];
+
+  return (
+      <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: "10px" }}>
+        
+        <div style={{ width: "100%", padding: "10px", pointerEvents: 'none' }}>
+          <div style={styles.scene}>
+            <div style={styles.teacherArea}>
+              <span style={styles.teacherLabel}>Front of Room (Teacher&apos;s Desk)</span>
+              <div style={{ width: "220px", height: "44px", borderRadius: "6px", border: "2px solid #eef2ff", background: "#ffffff" }}></div>
+            </div>
+
+            <div style={{ width: '100%', overflow: 'hidden', paddingBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ transformOrigin: "top left", minWidth: 'max-content', padding: '10px' }}>
+                <div style={styles.grid}>
+                   {/* Top Row Skeleton */}
+                   <div style={{...styles.deskRow, marginBottom: '15px', alignItems: 'center'}}>
+                     <div style={{...styles.desk(false, true), border: '1.5px dashed #e2e8f0'}}></div>
+                     {dummyColumns.slice(1, -1).map((col, i) => (
+                       <div key={i} style={{ width: "110px", display: 'flex', justifyContent: 'center' }}>
+                          <div style={{ width: "3rem", height: "1rem", borderRadius: "4px", background: "#cbd5e1" }}></div>
+                       </div>
+                     ))}
+                     <div style={{...styles.desk(false, false), background: '#94a3b8', border: 'none'}}></div>
+                   </div>
+
+                   {/* Desks Skeleton */}
+                   {Array.from({ length: 8 }).map((_, r) => (
+                     <div key={r} style={styles.deskRow}>
+                       {dummyColumns.map((_, cIdx) => (
+                         <div key={cIdx} style={{...styles.desk(false, false), display: 'flex', flexDirection: 'column', gap: '6px', background: '#ffffff', border: '1.5px solid #f1f5f9'}}>
+                            <Skeleton width="70%" height="0.6rem" />
+                            <Skeleton width="40%" height="0.5rem" />
+                         </div>
+                       ))}
+                     </div>
+                   ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  );
+};
 const ROWS = 8;
 
 const styles = {
@@ -203,20 +249,17 @@ export default function SeatingChart3D() {
       </div>
   );
 
-  if (loading) return (
-    <PageLayout style={{ justifyContent: 'center' }}>
-      <div style={{
-        padding: '2rem 3rem', background: 'white', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-        textAlign: 'center', zIndex: 100, position: 'relative'
-      }}>
-         <div className="flex justify-center mb-4">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-         </div>
-         <p style={{color: '#334155', fontWeight: 600}}>Initializing Seat Arrangement...</p>
-         <p style={{color: '#64748b', fontSize: '0.85rem', marginTop: '0.5rem'}}>Fetching your room allocation context</p>
-      </div>
-    </PageLayout>
-  );
+  if (loading) {
+     return (
+       <PageLayout>
+         {showNoticeModal && (
+             <NoticeModal notice={settings?.noticeBoardMessage} onClose={() => setShowNoticeModal(false)} />
+         )}
+         {renderTopNav()}
+         <RoomSkeletonGrid />
+       </PageLayout>
+     );
+  }
 
   if (error) {
     return (
