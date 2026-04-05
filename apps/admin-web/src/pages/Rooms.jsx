@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { useState, useCallback, useEffect, useRef, Fragment } from "react";
+import { Undo2, Redo2 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
@@ -284,6 +285,60 @@ export default function RoomAllotment() {
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef(null);
 
+  // ── Undo / Redo history ───────────────────────────────────────────────────
+  const historyStack = useRef([]); // past rows snapshots
+  const redoStack    = useRef([]); // future rows snapshots (after undo)
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  /** Call this BEFORE any mutating setRows to capture a checkpoint. */
+  const pushHistory = useCallback((snapshot) => {
+    historyStack.current = [...historyStack.current.slice(-49), snapshot];
+    redoStack.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (historyStack.current.length === 0) return;
+    const prev = historyStack.current[historyStack.current.length - 1];
+    historyStack.current = historyStack.current.slice(0, -1);
+    setRows(current => {
+      redoStack.current = [...redoStack.current, current];
+      setCanUndo(historyStack.current.length > 0);
+      setCanRedo(true);
+      return prev;
+    });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.current.length === 0) return;
+    const next = redoStack.current[redoStack.current.length - 1];
+    redoStack.current = redoStack.current.slice(0, -1);
+    setRows(current => {
+      historyStack.current = [...historyStack.current, current];
+      setCanUndo(true);
+      setCanRedo(redoStack.current.length > 0);
+      return next;
+    });
+  }, []);
+
+  // Keyboard shortcuts: Ctrl+Z = Undo, Ctrl+Y = Redo
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleUndo, handleRedo]);
+
   // ── Persist state to localStorage on every change ────────────────────────
   useEffect(() => {
     try {
@@ -351,8 +406,11 @@ export default function RoomAllotment() {
       setDbCapacities(prev => ({ ...prev, [selRoom]: cap }));
     } catch (e) { console.error(e); }
     setSetBtnStatus("idle");
-    setRows(prev => prev.map(r => r.roomNo === selRoom ? { ...r, capacity: cap } : r));
-  }, [selRoom, capInput]);
+    setRows(prev => {
+      pushHistory(prev);
+      return prev.map(r => r.roomNo === selRoom ? { ...r, capacity: cap } : r);
+    });
+  }, [selRoom, capInput, pushHistory]);
 
   // ── Save allotment ─────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
@@ -433,6 +491,7 @@ export default function RoomAllotment() {
     if (selectedRunCells.length === 0 || !studentCounts) return;
 
     setRows(prevRows => {
+      pushHistory(prevRows);
       // Create deep copy to avoid mutating state directly
       const newRows = prevRows.map(r => ({
         ...r, UG_REGULAR: { ...r.UG_REGULAR }, UG_BACKLOG: { ...r.UG_BACKLOG },
@@ -483,9 +542,9 @@ export default function RoomAllotment() {
       return newRows;
     });
 
-    // Clear selection after completion
-    setSelectedRunCells([]);
-  }, [selectedRunCells, studentCounts]);
+    // Keep selection intact so the button stays visible and user can re-run
+  }, [selectedRunCells, studentCounts, pushHistory]);
+
 
   // ── Cell click: handling both Auto-run and Inline editor ──────────────────
   const handleCellClick = (roomNo, secKey, branch) => {
@@ -518,12 +577,15 @@ export default function RoomAllotment() {
     if (!editingCell) return;
     const { roomNo, secKey, branch } = editingCell;
     const num = Math.max(0, parseInt(val, 10) || 0);
-    setRows(prev => prev.map(r =>
-      r.roomNo !== roomNo ? r : { ...r, [secKey]: { ...r[secKey], [branch]: num } }
-    ));
+    setRows(prev => {
+      pushHistory(prev);
+      return prev.map(r =>
+        r.roomNo !== roomNo ? r : { ...r, [secKey]: { ...r[secKey], [branch]: num } }
+      );
+    });
     setEditingCell(null);
     setEditValue("");
-  }, [editingCell]);
+  }, [editingCell, pushHistory]);
 
   // ── Auto-fill a specific branch top-to-bottom ──────────────────────────────
   const handleAutoFill = (secKey, branch) => {
@@ -533,6 +595,7 @@ export default function RoomAllotment() {
     let studentsToPlace = remaining;
     
     setRows(prevRows => {
+      pushHistory(prevRows);
       // Create deep copy to avoid mutating state directly
       const newRows = prevRows.map(r => ({
         ...r,
@@ -961,6 +1024,26 @@ export default function RoomAllotment() {
               Run Distribution
             </button>
           )}
+
+          {/* Undo / Redo */}
+          <button
+            className="ra-btn ra-btn-gray"
+            onClick={handleUndo}
+            disabled={!canUndo}
+            title="Undo last change (Ctrl+Z)"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.65rem', opacity: canUndo ? 1 : 0.4 }}
+          >
+            <Undo2 size={15} />
+          </button>
+          <button
+            className="ra-btn ra-btn-gray"
+            onClick={handleRedo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Y)"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.65rem', opacity: canRedo ? 1 : 0.4 }}
+          >
+            <Redo2 size={15} />
+          </button>
 
           <div style={{ flex: 1 }} />
 
