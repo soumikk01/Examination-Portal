@@ -335,7 +335,7 @@ export default function SeatingChart3D() {
           {/* Scrollable Grid */}
           <div
             style={{
-              width: '100%', overflowX: 'auto', paddingBottom: '20px',
+              width: '100%', display: 'flex', justifyContent: 'center', overflowX: 'auto', paddingBottom: '20px',
               WebkitOverflowScrolling: 'touch',
             }}
             className="no-scrollbar"

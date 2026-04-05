@@ -169,49 +169,7 @@ const upload = multer({
   },
 });
 
-v1Router.get('/health', async (req, res) => {
-  const health = {
-    status: 'UP',
-    version: 'v1',
-    timestamp: new Date(),
-    uptime: process.uptime(), // seconds
-    checks: {
-      database: { status: 'DOWN', latency: null, error: null },
-      redis: { status: 'DOWN', latency: null, error: null }
-    },
-  };
-
-  // Check DB
-  try {
-    const dbStart = performance.now();
-    await prisma.$queryRaw`SELECT 1`;
-    health.checks.database.latency = Math.round(performance.now() - dbStart);
-    health.checks.database.status = 'UP';
-  } catch (err) {
-    health.status = 'DEGRADED';
-    health.checks.database.error = err.code || 'ECONNREFUSED';
-    logger.error('Health Check - Database Error:', err.message);
-  }
-
-  // Check Redis
-  try {
-    if (redis.status === 'ready') {
-      const rdStart = performance.now();
-      await redis.ping();
-      health.checks.redis.latency = Math.round(performance.now() - rdStart);
-      health.checks.redis.status = 'UP';
-    } else {
-      health.status = 'DEGRADED';
-      health.checks.redis.error = 'DISCONNECTED';
-    }
-  } catch (err) {
-    health.status = 'DEGRADED';
-    health.checks.redis.error = err.code || 'ECONNREFUSED';
-    logger.error('Health Check - Redis Error:', err.message);
-  }
-
-  res.status(health.status === 'UP' ? 200 : 503).json(health);
-});
+/* Health endpoint removed per requirement */
 
 v1Router.post('/auth/login', authLimiter, validate(verificationSchema), authController.login);
 v1Router.post('/auth/admin/login', authLimiter, validate(adminLoginSchema), authController.adminLogin);
@@ -291,7 +249,6 @@ app.get('/', (req, res) => {
     message: 'Professional Examination Portal API',
     status: 'UP',
     endpoints: {
-      health: '/api/v1/health',
       auth: '/api/v1/auth/login',
     },
   });

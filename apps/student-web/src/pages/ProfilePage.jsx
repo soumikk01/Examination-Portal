@@ -346,7 +346,7 @@ const ProfilePage = () => {
                         <>
                             {upcomingExams.length === 0 && goneExams.length > 0 && (
                                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-6 rounded-xl mb-6 text-center">
-                                    <span className="text-4xl mb-2 block">ðŸŽ‰</span>
+                                    <span className="text-4xl mb-2 block">🎉</span>
                                     <h4 className="text-xl font-bold text-green-700 mb-2">All exams completed!</h4>
                                     <p className="text-green-600">
                                         Congratulations! You have completed all your scheduled exams.

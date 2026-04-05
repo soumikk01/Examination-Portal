@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   History as HistoryIcon,
-  FileText,
-  Grid3X3,
+  CalendarCheck,
+  Armchair,
   Trash2,
   RefreshCw,
   Clock,
@@ -86,7 +86,7 @@ function ScheduleCard({ item, onDelete }) {
               background: isPublished ? '#d1fae5' : '#fef3c7',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <FileText size={20} color={isPublished ? '#065f46' : '#92400e'} />
+              <CalendarCheck size={20} color={isPublished ? '#065f46' : '#92400e'} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--admin-text, #111827)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '260px' }}>
@@ -196,7 +196,7 @@ function SeatingCard({ item, onDelete }) {
               background: item.isPublished ? '#ede9fe' : '#f1f5f9',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Grid3X3 size={20} color={item.isPublished ? '#5b21b6' : '#475569'} />
+              <Armchair size={20} color={item.isPublished ? '#5b21b6' : '#475569'} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--admin-text, #111827)', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -387,7 +387,7 @@ const History = () => {
         <div style={{ marginBottom: '2rem' }}>
           {activeTab === 'all' && (
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-text, #374151)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={16} color="#3b82f6" /> Exam Schedules
+              <CalendarCheck size={16} color="#3b82f6" /> Exam Schedules
             </h2>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1rem' }}>
@@ -403,7 +403,7 @@ const History = () => {
         <div>
           {activeTab === 'all' && (
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-text, #374151)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Grid3X3 size={16} color="#6366f1" /> Seating Allocations
+              <Armchair size={16} color="#6366f1" /> Seating Allocations
             </h2>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1rem' }}>

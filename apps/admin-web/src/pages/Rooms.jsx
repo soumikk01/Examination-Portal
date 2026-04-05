@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import { useState, useCallback, useEffect, useRef } from "react";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const API = "/api/v1";
@@ -201,6 +201,21 @@ const styles = `
     padding: 0.4rem 0.75rem;
     margin-bottom: 0.75rem;
   }
+
+  .ra-modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center; z-index: 9999;
+  }
+  .ra-modal-content {
+    background: white; padding: 1.5rem; border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    max-width: 400px; width: 90%; animation: raModalIn 0.2s ease-out;
+  }
+  @keyframes raModalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  .ra-modal-title { margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a; }
+  .ra-modal-body { margin-bottom: 1.5rem; color: #475569; font-size: 0.92rem; line-height: 1.5; }
+  .ra-modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
 `;
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -258,6 +273,7 @@ export default function RoomAllotment() {
   const [showPgRegular, setShowPgRegular] = useState(false);
   const [showPgBacklog, setShowPgBacklog] = useState(false);
   const [dbCapacities, setDbCapacities] = useState({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // ── Auto-Run mode state ───────────────────────────────────────────────────
   const [autoRunMode, setAutoRunMode] = useState(false);
@@ -396,8 +412,7 @@ export default function RoomAllotment() {
   }, [semester]);
 
   // ── Remove All Data – clears allocations + persisted state ────────────────
-  const handleRemoveData = () => {
-    if (!window.confirm("Remove all allocation data? This cannot be undone.")) return;
+  const confirmRemoveData = () => {
     const cleared = buildInitialRows().map(r => dbCapacities[r.roomNo] ? { ...r, capacity: dbCapacities[r.roomNo] } : r);
     setRows(cleared);
     setStudentCounts(null);
@@ -410,6 +425,7 @@ export default function RoomAllotment() {
     setSelectedRunCells([]);
     setAutoRunMode(false);
     try { localStorage.removeItem(LS_KEY); } catch (e) { /* ignore */ }
+    setShowConfirmModal(false);
   };
 
   // ── Auto-Run distribution logic ───────────────────────────────────────────
@@ -628,6 +644,101 @@ export default function RoomAllotment() {
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
 
+    // Define border style
+    const borderAll = {
+      top: { style: "thin", color: { rgb: "FF9E9E9E" } },
+      bottom: { style: "thin", color: { rgb: "FF9E9E9E" } },
+      left: { style: "thin", color: { rgb: "FF9E9E9E" } },
+      right: { style: "thin", color: { rgb: "FF9E9E9E" } }
+    };
+
+    // Calculate which columns are "Total" columns
+    let totalCols = [];
+    let _c = 1;
+    SECTIONS.forEach(sec => {
+      totalCols.push(_c + sec.branches.length);
+      _c += sec.branches.length + 1;
+    });
+
+    // Apply styles to all cells in the sheet
+    for (const key in ws) {
+      if (key[0] === '!') continue;
+      const cell = ws[key];
+      const { r, c } = XLSX.utils.decode_cell(key);
+
+      let fillColor = { rgb: "FFFFFFFF" };
+      let fontColor = { rgb: "FF000000" };
+      let bold = false;
+      let italic = false;
+      let alignment = { horizontal: "center", vertical: "center" };
+
+      // Room No header (top-left 3x1 block)
+      if (c === 0 && r <= 2) {
+        fillColor = { rgb: "FFF2F2F2" };
+        bold = true;
+      }
+      // Section headers (Row 0)
+      else if (r === 0) {
+        fillColor = { rgb: "FF4472C4" };
+        fontColor = { rgb: "FFFFFFFF" };
+        bold = true;
+      }
+      // Venue sub-header (Row 1)
+      else if (r === 1) {
+        fillColor = { rgb: "FFDCE6F1" };
+        fontColor = { rgb: "FF1F3864" };
+        italic = true;
+        bold = true;
+      }
+      // Branch columns headers (Row 2)
+      else if (r === 2) {
+        if (totalCols.includes(c)) {
+          fillColor = { rgb: "FFC6EFCE" };
+          fontColor = { rgb: "FF375623" };
+        } else {
+          fillColor = { rgb: "FFBDD7EE" };
+          fontColor = { rgb: "FF1F3864" };
+        }
+        bold = true;
+      }
+      // Student counts (Row 3)
+      else if (r === 3) {
+        fillColor = { rgb: "FFF4B942" };
+        bold = true;
+      }
+      // Available counts (Row 4)
+      else if (r === 4) {
+        fillColor = { rgb: "FF70AD47" };
+        fontColor = { rgb: "FFFFFFFF" };
+        bold = true;
+      }
+      // Main Building venue divider
+      else if (r === 5 + cBlockRows.length) {
+        fillColor = { rgb: "FFD9E1F2" };
+        fontColor = { rgb: "FF1F3864" };
+        italic = true;
+        bold = true;
+      }
+      // Standard data rows (Rooms)
+      else {
+        if (c === 0) {
+          alignment.horizontal = "left";
+          bold = true;
+        } else if (totalCols.includes(c)) {
+          fillColor = { rgb: "FFE2EFDA" };
+          fontColor = { rgb: "FF375623" };
+          bold = true;
+        }
+      }
+
+      cell.s = {
+        fill: { fgColor: fillColor },
+        font: { color: fontColor, bold: bold, italic: italic, sz: 10, name: "Calibri" },
+        border: borderAll,
+        alignment: alignment
+      };
+    }
+
     // Merges: section header row + venue row + mbSep row
     const merges = [{ s: { r: 0, c: 0 }, e: { r: 2, c: 0 } }]; // "Room No" span 3 rows
     let colIdx = 1;
@@ -734,6 +845,20 @@ export default function RoomAllotment() {
   return (
     <>
       <style>{styles}</style>
+
+      {showConfirmModal && (
+        <div className="ra-modal-overlay">
+          <div className="ra-modal-content">
+            <h3 className="ra-modal-title">Remove Data</h3>
+            <p className="ra-modal-body">Remove all allocation data? This cannot be undone.</p>
+            <div className="ra-modal-actions">
+              <button className="ra-btn ra-btn-gray" onClick={() => setShowConfirmModal(false)}>Cancel</button>
+              <button className="ra-btn ra-btn-red" onClick={confirmRemoveData}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="admin-card ra-page" style={{ padding: "1rem" }}>
 
         {/* Title */}
@@ -864,7 +989,7 @@ export default function RoomAllotment() {
           {/* Remove Data */}
           <button
             className="ra-btn ra-btn-red"
-            onClick={handleRemoveData}
+            onClick={() => setShowConfirmModal(true)}
             title="Clear all allocation data and reset the table"
           >
             Remove Data
@@ -1031,9 +1156,9 @@ export default function RoomAllotment() {
               {/* Main Building venue divider */}
               <tr className="ra-row-venue ra-divider">
                 <td className="ra-td-room" />
-                {visibleSections.map((sec, si) => (
+                {visibleSections.map((sec) => (
                   <td key={sec.key} colSpan={sec.branches.length + 1} style={{ textAlign: "center" }}>
-                    {si === 0 ? "(Venue: Main Building)" : ""}
+                    (Venue: Main Building)
                   </td>
                 ))}
               </tr>

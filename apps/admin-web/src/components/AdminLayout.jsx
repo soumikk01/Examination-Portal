@@ -4,12 +4,12 @@ import {
   LayoutDashboard,
   DoorOpen,
   Users,
-  Grid3X3,
+  Armchair,
   LogOut,
   CalendarDays,
   Upload,
   Megaphone,
-  Settings,
+  ServerCog,
   History,
 } from 'lucide-react';
 import logo from '../assets/logo.png';
@@ -17,13 +17,13 @@ import logo from '../assets/logo.png';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/students', label: 'Students', icon: Users },
-  { to: '/rooms', label: 'Rooms', icon: DoorOpen },
-  { to: '/seating', label: 'Room Allocation', icon: Grid3X3 },
+  { to: '/rooms', label: 'Room Allotment', icon: DoorOpen },
+  { to: '/seating', label: 'Seating Arrangement', icon: Armchair },
   { to: '/exam-schedule', label: 'Exam Schedule', icon: CalendarDays },
   { to: '/upload-schedule', label: 'Upload Schedule', icon: Upload },
   { to: '/publish-exams', label: 'Publish Exams', icon: Megaphone },
   { to: '/history', label: 'History', icon: History },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/settings', label: 'Settings', icon: ServerCog },
 ];
 
 const AdminLayout = () => {

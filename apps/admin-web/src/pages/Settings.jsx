@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Shield, Settings as SettingsIcon, Bell } from 'lucide-react';
+import { Save, Shield, ServerCog as SettingsIcon, Bell } from 'lucide-react';
 import { Modal } from '@exam-portal/ui';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
@@ -198,9 +198,10 @@ const Settings = () => {
                 style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fca5a5' }}
                 onClick={(e) => {
                   e.preventDefault();
-                  showConfirm('Are you sure you want to remove the notice from the student portal?', () => {
+                  showConfirm('Are you sure you want to remove the notice from the student portal?', async () => {
                     setFormData(prev => ({ ...prev, noticeBoardMessage: '' }));
-                    saveSettings({ noticeBoardMessage: '' }, 'Notice removed successfully!');
+                    await saveSettings({ noticeBoardMessage: '' }, 'Notice removed successfully!');
+                    return false; // Let the alert stay open
                   });
                 }}
               >
