@@ -194,6 +194,7 @@ v1Router.get('/options/exam-options', authorizeAdmin, optionsController.getExamO
 
 v1Router.get('/students', authorizeAdmin, studentController.list);
 v1Router.post('/student', authorizeAdmin, validate(studentSchema), studentController.register);
+v1Router.post('/students/bulk', authorizeAdmin, studentController.registerBulk);
 
 // Exams - admin + student
 v1Router.get('/exams', authorizeAdmin, examController.list);

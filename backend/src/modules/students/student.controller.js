@@ -42,3 +42,23 @@ export async function register(req, res, next) {
     next(error);
   }
 }
+export async function registerBulk(req, res, next) {
+  try {
+    const { students } = req.body;
+    if (!Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({ error: 'students must be a non-empty array.' });
+    }
+    if (students.length > 1000) {
+      return res.status(400).json({ error: 'Maximum 1000 students per upload.' });
+    }
+    const result = await studentService.createMany(students);
+    res.status(201).json({
+      message: `Bulk import complete.`,
+      created: result.count,
+      submitted: students.length,
+      skipped: students.length - result.count,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
