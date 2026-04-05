@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Fragment } from "react";
 import * as XLSX from "xlsx-js-style";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
@@ -599,9 +599,12 @@ export default function RoomAllotment() {
 
     // Row 4: Student totals (original counts)
     const r4 = ["Student"];
+    let cumStudentTotal = 0;
     SECTIONS.forEach(sec => {
       sec.branches.forEach(b => r4.push(studentCounts[sec.key]?.[b] || ""));
-      r4.push(sec.branches.reduce((s, b) => s + (studentCounts[sec.key]?.[b] || 0), 0) || "");
+      const secTotal = sec.branches.reduce((s, b) => s + (studentCounts[sec.key]?.[b] || 0), 0);
+      cumStudentTotal += secTotal;
+      r4.push(cumStudentTotal || "");
     });
     aoa.push(r4);
 
@@ -617,9 +620,11 @@ export default function RoomAllotment() {
     // C Block data rows
     cBlockRows.forEach(r => {
       const row = [r.roomNo];
+      let cumRoomTotal = 0;
       SECTIONS.forEach(sec => {
         sec.branches.forEach(b => row.push(r[sec.key]?.[b] || ""));
-        row.push(sec.branches.reduce((s, b) => s + (r[sec.key]?.[b] || 0), 0) || "");
+        cumRoomTotal += sec.branches.reduce((s, b) => s + (r[sec.key]?.[b] || 0), 0);
+        row.push(cumRoomTotal || "");
       });
       aoa.push(row);
     });
@@ -635,9 +640,11 @@ export default function RoomAllotment() {
     // MB data rows
     mbRows.forEach(r => {
       const row = [r.roomNo];
+      let cumRoomTotal = 0;
       SECTIONS.forEach(sec => {
         sec.branches.forEach(b => row.push(r[sec.key]?.[b] || ""));
-        row.push(sec.branches.reduce((s, b) => s + (r[sec.key]?.[b] || 0), 0) || "");
+        cumRoomTotal += sec.branches.reduce((s, b) => s + (r[sec.key]?.[b] || 0), 0);
+        row.push(cumRoomTotal || "");
       });
       aoa.push(row);
     });
@@ -1081,10 +1088,10 @@ export default function RoomAllotment() {
               {/* Row 3: Branch columns */}
               <tr>
                 {visibleSections.map(sec => (
-                  <>
+                  <Fragment key={sec.key}>
                     {sec.branches.map(b => <th key={sec.key + b} className="ra-th-col">{b}</th>)}
                     <th key={sec.key + "T"} className="ra-th-total">Total</th>
-                  </>
+                  </Fragment>
                 ))}
               </tr>
             </thead>
@@ -1093,10 +1100,10 @@ export default function RoomAllotment() {
               {/* Student row: shows REMAINING unassigned students per branch */}
               <tr className="ra-row-student">
                 <td className="ra-td-room">Student</td>
-                {visibleSections.map(sec => {
+                {visibleSections.map((sec, si) => {
                   const totals = getStudentRowTotal(sec.key);
                   return (
-                    <>
+                    <Fragment key={sec.key}>
                       {sec.branches.map(b => {
                         const rem = getStudentRowVal(sec.key, b);
                         const { total } = getRemaining(sec.key, b) || { total: 0 };
@@ -1118,9 +1125,20 @@ export default function RoomAllotment() {
                         );
                       })}
                       <td key={sec.key + "T"} className="ra-td-total">
-                        {totals ? (totals.remaining > 0 ? pad(totals.remaining) : (totals.total > 0 ? "✓" : "")) : ""}
+                        {(() => {
+                           let cumulativeRemaining = 0;
+                           let cumulativeTotal = 0;
+                           for (let i = 0; i <= si; i++) {
+                             const t = getStudentRowTotal(visibleSections[i].key);
+                             if (t) {
+                               cumulativeRemaining += Math.max(0, t.remaining);
+                               cumulativeTotal += t.total;
+                             }
+                           }
+                           return cumulativeTotal > 0 ? (cumulativeRemaining > 0 ? pad(cumulativeRemaining) : "✓") : "";
+                        })()}
                       </td>
-                    </>
+                    </Fragment>
                   );
                 })}
               </tr>
@@ -1129,12 +1147,12 @@ export default function RoomAllotment() {
               <tr className="ra-row-avail">
                 <td className="ra-td-room" style={{ color: "#fff" }}>Available</td>
                 {visibleSections.map(sec => (
-                  <>
+                  <Fragment key={sec.key}>
                     {sec.branches.map(b => <td key={sec.key + b}></td>)}
                     <td key={sec.key + "T"} style={{ background: "#4ea72c", color: "#fff", fontWeight: 700 }}>
                       {totalCapacityAssigned > 0 ? totalCapacityAssigned : ""}
                     </td>
-                  </>
+                  </Fragment>
                 ))}
               </tr>
 
@@ -1142,13 +1160,19 @@ export default function RoomAllotment() {
               {rows.filter(r => !r.isMB).map(row => (
                 <tr key={row.roomNo} className="ra-row-data" style={row.roomNo === selRoom ? { outline: "2px solid #3b82f6" } : {}}>
                   <td className="ra-td-room">{row.roomNo}</td>
-                  {visibleSections.map(sec => (
-                    <>
+                  {visibleSections.map((sec, si) => (
+                    <Fragment key={sec.key}>
                       {sec.branches.map(b => renderDataCell(row, sec, b))}
                       <td key={sec.key + "T"} className="ra-td-total">
-                        {(() => { const t = getRoomTotal(row, sec.key); return t ? pad(t) : ""; })()}
+                        {(() => { 
+                           let cumulativeTotal = 0;
+                           for (let i = 0; i <= si; i++) {
+                             cumulativeTotal += getRoomTotal(row, visibleSections[i].key) || 0;
+                           }
+                           return cumulativeTotal > 0 ? pad(cumulativeTotal) : "";
+                        })()}
                       </td>
-                    </>
+                    </Fragment>
                   ))}
                 </tr>
               ))}
@@ -1167,13 +1191,19 @@ export default function RoomAllotment() {
               {rows.filter(r => r.isMB).map(row => (
                 <tr key={row.roomNo} className="ra-row-mb" style={row.roomNo === selRoom ? { outline: "2px solid #3b82f6" } : {}}>
                   <td className="ra-td-room">{row.roomNo}</td>
-                  {visibleSections.map(sec => (
-                    <>
+                  {visibleSections.map((sec, si) => (
+                    <Fragment key={sec.key}>
                       {sec.branches.map(b => renderDataCell(row, sec, b))}
                       <td key={sec.key + "T"} className="ra-td-total">
-                        {(() => { const t = getRoomTotal(row, sec.key); return t ? pad(t) : ""; })()}
+                        {(() => { 
+                           let cumulativeTotal = 0;
+                           for (let i = 0; i <= si; i++) {
+                             cumulativeTotal += getRoomTotal(row, visibleSections[i].key) || 0;
+                           }
+                           return cumulativeTotal > 0 ? pad(cumulativeTotal) : "";
+                        })()}
                       </td>
-                    </>
+                    </Fragment>
                   ))}
                 </tr>
               ))}
