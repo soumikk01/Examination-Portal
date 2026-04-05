@@ -9,7 +9,6 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import prisma from './database/database.js';
-import redis from './utils/redis.js';
 import { config } from './config/config.js';
 import { verifyToken, authorizeStudent, authorizeAdmin, validate } from './middleware/auth.middleware.js';
 import { verificationSchema, adminLoginSchema } from './utils/schemas.js';
