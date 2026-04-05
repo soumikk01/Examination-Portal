@@ -3,19 +3,22 @@ import { Settings, Calendar, Users, Trash2 } from 'lucide-react';
 import { Modal } from '@exam-portal/ui';
 import api from '../services/api';
 
+let cachedDashboardData = null;
+
 const Dashboard = () => {
-  const [health, setHealth] = useState(null);
-  const [exams, setExams] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [health, setHealth] = useState(() => cachedDashboardData?.health || null);
+  const [exams, setExams] = useState(() => cachedDashboardData?.exams || []);
+  const [summary, setSummary] = useState(() => cachedDashboardData?.summary || null);
+  const [loading, setLoading] = useState(() => !cachedDashboardData);
   const [error, setError] = useState(null);
   const [unreachable, setUnreachable] = useState(false);
   const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
 
   const showAlert = (message) => setModalState({ isOpen: true, title: 'Alert', message, type: 'alert', onConfirm: null });
 
-  const fetchData = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+  const fetchData = useCallback(async () => {
+    // Only show loading if we have absolutely no cache
+    if (!cachedDashboardData) setLoading(true);
     try {
       setError(null);
       setUnreachable(false);
@@ -25,9 +28,18 @@ const Dashboard = () => {
         api.get('/dashboard/summary').catch(() => null),
       ]);
       
+      const newExams = Array.isArray(examsData) ? examsData : [];
+      
       if (healthData) setHealth(healthData);
-      setExams(Array.isArray(examsData) ? examsData : []);
+      setExams(newExams);
       if (summaryData) setSummary(summaryData);
+      
+      // Update memory cache for instant-load on next visit
+      cachedDashboardData = {
+          health: healthData || cachedDashboardData?.health,
+          exams: newExams,
+          summary: summaryData || cachedDashboardData?.summary
+      };
       
     } catch (err) {
       const status = err.response?.status;
@@ -46,7 +58,7 @@ const Dashboard = () => {
           : err.response?.data?.error || err.message || 'Failed to load dashboard'
       );
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   }, []);
 
@@ -63,7 +75,7 @@ const Dashboard = () => {
       onConfirm: async () => {
         try {
           await api.delete('/dashboard/schedules', { data: { semester: schedule.semester, mode: schedule.mode, scheduleType: schedule.type } });
-          fetchData(false);
+          fetchData();
         } catch (err) {
           showAlert(err.response?.data?.error || 'Failed to delete schedule.');
         }
@@ -80,7 +92,7 @@ const Dashboard = () => {
       onConfirm: async () => {
         try {
           await api.delete(`/dashboard/seating/${encodeURIComponent(examGroup)}`);
-          fetchData(false);
+          fetchData();
         } catch (err) {
           showAlert(err.response?.data?.error || 'Failed to delete seating assignment.');
         }
@@ -90,9 +102,49 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="admin-card">
-        <p>Loading dashboard…</p>
-      </div>
+        <div style={{ paddingBottom: '2rem' }}>
+            <style>{`
+                .sk-box {
+                    background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+                    border-radius: 6px;
+                    background-size: 200% 100%;
+                    animation: 1.5s adminWave linear infinite;
+                }
+                @keyframes adminWave {
+                    to {
+                        background-position-x: -200%;
+                    }
+                }
+            `}</style>
+            <h1 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', color: '#1f2937' }}>Dashboard Overview</h1>
+            
+            {/* Top Stats Skeleton */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                {[0, 1, 2].map((i) => (
+                    <div key={i} style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                        <div className="sk-box" style={{ width: '48px', height: '2.5rem', marginBottom: '0.75rem' }} />
+                        <div className="sk-box" style={{ width: '130px', height: '1.25rem' }} />
+                    </div>
+                ))}
+            </div>
+
+            {/* Bottom Panels Skeleton */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {[0, 1, 2].map((i) => (
+                    <div key={i} style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', minHeight: '300px' }}>
+                        <div style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '0.75rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div className="sk-box" style={{ width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0 }} />
+                            <div className="sk-box" style={{ width: '60%', height: '1.75rem' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {[0, 1, 2].map((j) => (
+                                <div key={j} className="sk-box" style={{ width: '100%', height: '4rem', borderRadius: '6px' }} />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
   }
 
