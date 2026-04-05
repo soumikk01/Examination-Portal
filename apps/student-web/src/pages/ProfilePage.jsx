@@ -1,59 +1,101 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { LogOut, CalendarDays } from 'lucide-react';
+import { LogOut, CalendarDays, User, Pin } from 'lucide-react';
 import { api } from '../services/api';
 import { Modal } from '@exam-portal/ui';
 import { Button, Card, Skeleton, ExamCard, PageLayout, NoticeModal } from '../components';
 import { parseExamDateTime } from '../utils/dateUtils';
 
-const ProfileSkeleton = () => (
-    <PageLayout>
-        <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
-            <div className="flex justify-end mb-8">
-                <Skeleton width="4rem" height="2rem" className="bg-blue-100" />
+
+
+const ProfileCardSkeleton = () => (
+        <Card
+            className="mb-8 relative overflow-hidden skeleton-card"
+            padding="24px 20px"
+            style={{ backgroundColor: '#f0f4f8' }}
+        >
+            <div className="absolute top-3 right-4" style={{ animationDelay: '0.05s' }}>
+                <Skeleton width="108px" height="10px" rounded="5px" />
             </div>
-            <Card className="mb-8" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-                <Skeleton height="2rem" width="33%" className="mb-6 bg-blue-100" />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex gap-2 items-center">
-                            <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                            <Skeleton width="8rem" height="1rem" className="bg-gray-200" />
-                        </div>
-                    ))}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem', marginBottom: '1.5rem', marginTop: '0.5rem' }}>
+                 <Skeleton width="60px" height="60px" rounded="50%" />
+                 <Skeleton height="1.85rem" width="52%" rounded="8px" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-base">
+                <div className="flex gap-2 items-center">
+                    <span className="text-gray-500 font-medium text-sm whitespace-nowrap">Student Code :</span>
+                    <Skeleton width="7.5rem" height="1.05rem" />
                 </div>
-            </Card>
-            <Card style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
-                <Skeleton height="2rem" width="25%" className="mb-6 bg-blue-100" />
-                <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-                            <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                                <Skeleton width="33%" height="1.5rem" className="bg-indigo-100" />
-                                <Skeleton width="4rem" height="1.5rem" rounded="999px" className="bg-green-100" />
-                            </div>
-                            <div className="flex justify-between gap-4 flex-wrap">
-                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                                <Skeleton width="6rem" height="1rem" className="bg-gray-100" />
-                            </div>
-                        </div>
-                    ))}
+                <div className="flex gap-2 items-center">
+                    <span className="text-gray-500 font-medium text-sm whitespace-nowrap">Student Reg :</span>
+                    <Skeleton width="7rem" height="1.05rem" />
                 </div>
-            </Card>
-        </div>
-    </PageLayout>
+                <div className="flex gap-2 items-center">
+                    <span className="text-gray-500 font-medium text-sm whitespace-nowrap">Examination Sem :</span>
+                    <Skeleton width="3rem" height="1.05rem" />
+                </div>
+                <div className="flex gap-2 items-center">
+                    <span className="text-gray-500 font-medium text-sm whitespace-nowrap">Batch :</span>
+                    <Skeleton width="10rem" height="1.05rem" />
+                </div>
+            </div>
+        </Card>
+);
+
+const ExamScheduleSkeleton = () => (
+        <Card style={{ backgroundColor: 'white' }}>
+            <h3 className="text-xl md:text-2xl font-black border-b pb-4 mb-6 text-center flex items-center justify-center gap-3 tracking-[0.1em] uppercase">
+                <CalendarDays className="w-8 h-8 text-indigo-600 drop-shadow-sm" />
+                <span className="bg-gradient-to-r from-[#2d368e] via-indigo-700 to-blue-800 bg-clip-text text-transparent">
+                    Exam Schedule
+                </span>
+            </h3>
+
+            <div className="space-y-4">
+                {[0, 1, 2].map((i) => (
+                    <div
+                        key={i}
+                        className="skeleton-card bg-slate-50 rounded-xl border border-slate-100 p-5"
+                        style={{ animationDelay: `${i * 0.15}s` }}
+                    >
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
+                            <Skeleton width={i === 0 ? '48%' : i === 1 ? '42%' : '52%'} height="1.2rem" rounded="6px" />
+                            <Skeleton width="3.5rem" height="1.5rem" rounded="999px" />
+                        </div>
+                        <div className="flex gap-5 flex-wrap mt-2">
+                            <Skeleton width="5.5rem" height="0.8rem" rounded="4px" />
+                            <Skeleton width="4rem"  height="0.8rem" rounded="4px" />
+                            <Skeleton width="3.5rem" height="0.8rem" rounded="4px" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </Card>
 );
 
 /* ─── Main Profile Page ─── */
+let hasVisitedProfileInSession = false;
+
 const ProfilePage = () => {
     const { '*': splat, collegeId: paramId } = useParams();
     const collegeId = paramId ? paramId + (splat ? '/' + splat : '') : splat;
     const navigate = useNavigate();
     const location = useLocation();
-    const [student, setStudent] = useState(null);
+
+    // Skip skeleton ONLY if we have cache AND we've already visited this page in the current JS session
+    const shouldSkipSkeleton = () => {
+        const cached = api.getCachedProfile();
+        // A complete profile usually has a semester, so we only skip if we are SURE it's the full profile
+        const hasFullData = cached && (cached.examinationSem || cached.semester);
+        return !!hasFullData && hasVisitedProfileInSession;
+    };
+
+    const [student, setStudent] = useState(() => api.getCachedProfile());
     const [settings, setSettings] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(() => !shouldSkipSkeleton());
+    const [skeletonDone, setSkeletonDone] = useState(() => shouldSkipSkeleton());
     const [error, setError] = useState(null);
     const [examFilter, setExamFilter] = useState(location.state?.filter || 'Regular');
     const [showNoticeModal, setShowNoticeModal] = useState(false);
@@ -82,16 +124,17 @@ const ProfilePage = () => {
     }, [student, examFilter]);
 
     useEffect(() => {
-        // Instant Load from Cache
         const cached = api.getCachedProfile();
-        if (cached) {
-            setStudent(cached);
-            setLoading(false);
+        
+        let skTimer;
+        // Enforce the skeleton display time if we don't have cached data OR if this is the first visit this session
+        if (!cached || !hasVisitedProfileInSession) {
+            skTimer = setTimeout(() => setSkeletonDone(true), 600);
         }
 
         const fetchStudent = async () => {
             try {
-                if (!cached) setLoading(true);
+                if (!cached || !hasVisitedProfileInSession) setLoading(true);
                 const [studentData, settingsData] = await Promise.all([
                     api.getStudentProfile(collegeId),
                     api.getSettings().catch(() => null),
@@ -117,9 +160,12 @@ const ProfilePage = () => {
                 if ([401, 403].includes(err.response?.status || err.status)) navigate('/');
             } finally {
                 setLoading(false);
+                hasVisitedProfileInSession = true;
             }
         };
         fetchStudent();
+
+        return () => { if (skTimer) clearTimeout(skTimer); };
     }, [collegeId, navigate]);
 
     useEffect(() => {
@@ -129,8 +175,6 @@ const ProfilePage = () => {
         }
     }, [loading, error, student, navigate]);
 
-    if (loading) return <ProfileSkeleton />;
-    if (!student) return null;
 
     const btnBase = {
         padding: '6px 14px', borderRadius: '20px',
@@ -141,86 +185,109 @@ const ProfilePage = () => {
 
     const hasActiveNotice = settings?.noticeBoardMessage && settings.noticeBoardMessage.trim() !== '';
 
+    const renderTopNav = () => (
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4 mb-8">
+            {/* Scrollable Container for Mobile Buttons */}
+            <div 
+                className="flex gap-2 items-center overflow-x-auto pb-2 w-full md:w-auto no-scrollbar"
+                style={{ 
+                    msOverflowStyle: 'none', 
+                    scrollbarWidth: 'none',
+                    WebkitOverflowScrolling: 'touch'
+                }}
+            >
+                <div className="flex gap-2 flex-nowrap items-center min-w-max">
+                {/* Exam filter buttons */}
+                {examFilterOptions.map((opt) => {
+                    const isSelected = examFilter === opt;
+                    const colors = {
+                        Regular: { base: '#d1fae5', text: '#059669', activeBg: '#059669', shadow: 'rgba(16,185,129,0.35)' },
+                        Backlog: { base: '#ffedd5', text: '#ea580c', activeBg: '#ea580c', shadow: 'rgba(249,115,22,0.35)' },
+                    }[opt];
+                    return (
+                        <button
+                            key={opt}
+                            onClick={() => setExamFilter(opt)}
+                            className="active:scale-95 transition-transform"
+                            style={{ ...btnBase, backgroundColor: isSelected ? colors.activeBg : colors.base, color: isSelected ? 'white' : colors.text, boxShadow: 'none', flexShrink: 0 }}
+                        >
+                            {opt}
+                        </button>
+                    );
+                })}
+
+                <div className="w-px h-6 bg-indigo-200 mx-1"></div>
+
+                {/* Room Search button */}
+                <button
+                    onClick={() => {
+                       const nextRoom = upcomingExams?.[0]?.room || '';
+                       navigate(`/student/${collegeId}/room`, { state: { roomName: nextRoom, collegeId } });
+                    }}
+                    className="active:scale-95 transition-transform"
+                    style={{ ...btnBase, backgroundColor: '#e0e7ff', color: '#4f46e5', flexShrink: 0 }}
+                >
+                    Room
+                </button>
+
+                <div className="w-px h-6 bg-indigo-200 mx-1"></div>
+
+                {/* Notice button */}
+                <button
+                    onClick={() => setShowNoticeModal(true)}
+                    className="active:scale-95 transition-transform"
+                    style={{ ...btnBase, backgroundColor: '#fef3c7', color: '#d97706', position: 'relative', flexShrink: 0 }}
+                >
+                    Notice
+                    {hasActiveNotice && (
+                        <span style={{
+                            position: 'absolute', top: '-3px', right: '-3px',
+                            width: '8px', height: '8px', borderRadius: '50%',
+                            background: '#ef4444', border: '1.5px solid white',
+                        }} />
+                    )}
+                </button>
+                </div>
+            </div>
+
+            <div className="flex w-full md:w-auto justify-end">
+                <Button variant="logout" onClick={() => api.logout()} icon={LogOut} className="w-full md:w-auto">Logout</Button>
+            </div>
+        </div>
+    );
+
+    // Decouple loading logic
+    const isPageLoading = loading || !skeletonDone;
+    const profileHasData = student && !!(student.examinationSem || student.semester);
+    
+    // Only show profile skeleton on first load (no cache data). Refreshes skip profile skeleton.
+    const showProfileSkeleton = isPageLoading && !profileHasData;
+    // Always show exam skeleton while fetching the latest schedule.
+    const showExamSkeleton = isPageLoading;
+
+    if (!isPageLoading && !student) return null;
+
+
+
+
     return (
         <PageLayout>
             {showNoticeModal && (
                 <NoticeModal notice={settings?.noticeBoardMessage} onClose={() => setShowNoticeModal(false)} />
             )}
 
-            <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4 mb-8">
-                    {/* Scrollable Container for Mobile Buttons */}
-                    <div 
-                        className="flex gap-2 items-center overflow-x-auto pb-2 w-full md:w-auto no-scrollbar"
-                        style={{ 
-                            msOverflowStyle: 'none', 
-                            scrollbarWidth: 'none',
-                            WebkitOverflowScrolling: 'touch'
-                        }}
-                    >
-                        <div className="flex gap-2 flex-nowrap items-center min-w-max">
-                        {/* Exam filter buttons */}
-                        {examFilterOptions.map((opt) => {
-                            const isSelected = examFilter === opt;
-                            const colors = {
-                                Regular: { base: '#d1fae5', text: '#059669', activeBg: '#059669', shadow: 'rgba(16,185,129,0.35)' },
-                                Backlog: { base: '#ffedd5', text: '#ea580c', activeBg: '#ea580c', shadow: 'rgba(249,115,22,0.35)' },
-                            }[opt];
-                            return (
-                                <button
-                                    key={opt}
-                                    onClick={() => setExamFilter(opt)}
-                                    className="active:scale-95 transition-transform"
-                                    style={{ ...btnBase, backgroundColor: isSelected ? colors.activeBg : colors.base, color: isSelected ? 'white' : colors.text, boxShadow: 'none', flexShrink: 0 }}
-                                >
-                                    {opt}
-                                </button>
-                            );
-                        })}
+            <div className="skeleton-fade-in" style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '1152px' }}>
+                {renderTopNav()}
 
-                        <div className="w-px h-6 bg-indigo-200 mx-1"></div>
-
-                        {/* Room Search button */}
-                        <button
-                            onClick={() => navigate(`/student/${collegeId}/room`, { state: { roomName: upcomingExams[0]?.room, collegeId } })}
-                            className="active:scale-95 transition-transform"
-                            style={{ ...btnBase, backgroundColor: '#e0e7ff', color: '#4f46e5', flexShrink: 0 }}
-                        >
-                            Room
-                        </button>
-
-                        <div className="w-px h-6 bg-indigo-200 mx-1"></div>
-
-                        {/* Notice button */}
-                        <button
-                            onClick={() => setShowNoticeModal(true)}
-                            className="active:scale-95 transition-transform"
-                            style={{ ...btnBase, backgroundColor: '#fef3c7', color: '#d97706', position: 'relative', flexShrink: 0 }}
-                        >
-                            Notice
-                            {hasActiveNotice && (
-                                <span style={{
-                                    position: 'absolute', top: '-3px', right: '-3px',
-                                    width: '8px', height: '8px', borderRadius: '50%',
-                                    background: '#ef4444', border: '1.5px solid white',
-                                }} />
-                            )}
-                        </button>
-                        </div>
-                    </div>
-
-                    <div className="flex w-full md:w-auto justify-end">
-                        <Button variant="logout" onClick={() => api.logout()} icon={LogOut} className="w-full md:w-auto">Logout</Button>
-                    </div>
-                </div>
-
-                {/* Student Profile Card */}
+                {/* Student Profile Card conditionally rendering */}
+                {showProfileSkeleton ? <ProfileCardSkeleton /> : (
                 <Card className="mb-8 relative overflow-hidden" padding="24px 20px" style={{ backgroundColor: '#f0f4f8' }}>
                     <div className="absolute top-1 right-4">
                         <span className="text-[9px] sm:text-[10px] font-black tracking-[0.14em] uppercase bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-700 bg-clip-text text-transparent drop-shadow-sm opacity-90">
                             {(() => {
                                 const sem = parseInt(student.examinationSem || student.semester || 0);
-                                const season = sem ? (sem % 2 !== 0 ? 'ODD' : 'EVEN') : 'SESSION';
+                                if (!sem) return ''; // Do not show 'SESSION' fallback during loading or missing data
+                                const season = (sem % 2 !== 0 ? 'ODD' : 'EVEN');
                                 const pgKeywords = ['M.TECH', 'MBA', 'MCA', 'M.SC', 'PG'];
                                 const isPG = pgKeywords.some(k => 
                                     (student.degree || student.program || '').toUpperCase().includes(k)
@@ -229,7 +296,20 @@ const ProfilePage = () => {
                             })()}
                         </span>
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-[#2d368e] border-b pb-4 mb-6">{student.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+                        <div style={{ 
+                            width: '64px', height: '64px', borderRadius: '50%', 
+                            background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.4))', 
+                            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                            flexShrink: 0, 
+                            border: '1px solid rgba(255,255,255,0.9)', 
+                            boxShadow: '0 8px 16px -4px rgba(31, 38, 135, 0.1), inset 0 2px 4px rgba(255,255,255,0.8)'
+                        }}>
+                            <User size={30} strokeWidth={2.5} color="#2d368e" style={{ opacity: 0.85 }} />
+                        </div>
+                        <h3 className="text-2xl md:text-3xl font-bold text-[#2d368e] m-0 leading-tight tracking-tight">{student.name}</h3>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-base">
                         <div className="flex gap-2 items-center">
                             <span className="text-gray-500 font-medium text-sm">Student Code :</span>
@@ -251,8 +331,10 @@ const ProfilePage = () => {
                         </div>
                     </div>
                 </Card>
+                )}
 
-                {/* Exam Schedule Card */}
+                {/* Exam Schedule Card conditionally rendering */}
+                {showExamSkeleton ? <ExamScheduleSkeleton /> : (
                 <Card style={{ backgroundColor: 'white' }}>
                     <h3 className="text-xl md:text-2xl font-black border-b pb-4 mb-6 text-center flex items-center justify-center gap-3 tracking-[0.1em] uppercase">
                         <CalendarDays className="w-8 h-8 text-indigo-600 drop-shadow-sm" />
@@ -304,6 +386,7 @@ const ProfilePage = () => {
                         </div>
                     )}
                 </Card>
+                )}
 
                 {/* Pinned Note Section (Recovered) */}
                 <div className="mt-8 relative mx-auto max-w-2xl transform hover:rotate-0 transition-transform duration-300" 
@@ -312,9 +395,12 @@ const ProfilePage = () => {
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-red-400 rounded-full shadow-inner flex items-center justify-center opacity-80 mix-blend-multiply">
                             <div className="w-3 h-3 bg-red-900 rounded-full opacity-40"></div>
                         </div>
-                        <div className="text-center">
-                            <h4 className="flex items-center justify-center gap-2 font-bold text-gray-800 text-lg mb-2 underline decoration-wavy decoration-[#e6e2c8]">
-                                Examination Cell Notice
+                <div className="text-center">
+                            <h4 className="flex items-center justify-center gap-2 font-black text-xl mb-3 tracking-wider" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                <Pin className="w-5 h-5 text-red-500 drop-shadow-sm -rotate-45" strokeWidth={2.5} />
+                                <span className="bg-gradient-to-r from-red-600 via-orange-600 to-red-500 bg-clip-text text-transparent">
+                                    Remember Notice
+                                </span>
                             </h4>
                             <p className="text-gray-700 font-medium leading-relaxed">
                                 Please report to your assigned room{' '}
