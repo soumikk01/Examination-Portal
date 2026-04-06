@@ -53,7 +53,8 @@ const redis = redisOpts
 
 if (redisOpts) {
   redis.on('error', (err) => {
-    logger.error(`Redis Error: [${err.code || err.name}] ${err.message}`);
+    // Sanitize: don't log err.message directly as it may contain the Redis URL/password
+    logger.error(`Redis Error: [${err.code || err.name}]`);
   });
 
   redis.on('connect', () => {
@@ -89,8 +90,25 @@ export const cache = {
     try {
       if (redis.status !== 'ready') return;
       await redis.del(key);
-    } catch (err) {
+    } catch (_) {
       // Failed to delete cache
+    }
+  },
+
+  // Delete all keys matching a pattern using SCAN (O(N) safe, non-blocking unlike KEYS)
+  async delPattern(pattern) {
+    try {
+      if (redis.status !== 'ready') return;
+      let cursor = '0';
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        cursor = nextCursor;
+        if (keys.length > 0) {
+          await redis.del(...keys);
+        }
+      } while (cursor !== '0');
+    } catch (_) {
+      // Failed to delete pattern
     }
   },
 };

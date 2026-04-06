@@ -18,7 +18,9 @@ const PROGRAM_OPTIONS = [
 const DEFAULT_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@local.test';
 const DEFAULT_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
 if (!DEFAULT_ADMIN_PASSWORD) {
-  throw new Error('SEED_ADMIN_PASSWORD is required to seed an admin user.');
+  console.error('❌ SEED_ADMIN_PASSWORD is required.');
+  console.error('   Add it to your .env file: SEED_ADMIN_PASSWORD=YourPassword123');
+  process.exit(1);
 }
 
 const SEED_STUDENT_COLLEGE_ID = process.env.SEED_STUDENT_COLLEGE_ID;

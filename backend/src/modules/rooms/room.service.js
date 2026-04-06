@@ -222,11 +222,12 @@ export async function getRoomAllotment(examGroup) {
 // ──────────────────────────────────────────────
 export async function listExamGroups() {
   const rows = await prisma.roomAllotment.findMany({
-    distinct: ['examGroup'],
     select: { examGroup: true },
     orderBy: { examGroup: 'asc' },
   });
-  return rows.map(r => r.examGroup);
+  // Dedup in JS (MongoDB distinct has edge cases with Prisma)
+  const seen = new Set();
+  return rows.map(r => r.examGroup).filter(g => seen.has(g) ? false : seen.add(g));
 }
 
 // ──────────────────────────────────────────────

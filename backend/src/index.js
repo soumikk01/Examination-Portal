@@ -117,8 +117,9 @@ const smartKey = (req) => {
       if (decoded?.id) return `user:${decoded.id}`;
     }
   } catch (_) { /* expired/tampered token — fall through to IP */ }
-  // Replace colons so express-rate-limit doesn't flag it as an unhandled IPv6 address during initialization
-  return req.ip ? req.ip.replace(/:/g, '_') : '127.0.0.1';
+  // Sanitize IP for rate limiting key (no raw IPv6 colons)
+  const ip = (req.ip || '127.0.0.1').replace(/:/g, '_');
+  return `ip:${ip}`;
 };
 
 // Tier 1: Auth limiter — ALWAYS per IP (user not authenticated yet at login)
@@ -269,8 +270,8 @@ app.use((err, req, res, _next) => {
   if (err.code?.startsWith('P')) {
     return res.status(503).json({
       error: 'Service temporarily unavailable. We are experiencing high traffic, please try again momentarily.',
-      code: err.code,
       requestId: req.id,
+      // NOTE: err.code is intentionally NOT sent to client to prevent schema leakage
     });
   }
 

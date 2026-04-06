@@ -41,7 +41,7 @@ export const examFormSchema = z.object({
       }),
     )
     .min(1, 'At least one subject is required'),
-  assignedStudents: z.array(z.number().int().positive()).optional().default([]),
+  assignedStudents: z.array(z.string().min(1)).optional().default([]),
   includeScheduleOnly: z.boolean().optional().default(true),
 });
 

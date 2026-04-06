@@ -5,14 +5,22 @@ const logger = pino();
 
 export const getDashboardSummary = async (req, res) => {
   try {
-    // 1. Fetch Open Exam Schedules grouped by semester & type
-    const activeSchedules = await prisma.examSchedule.groupBy({
-      by: ['semester', 'scheduleType', 'mode'],
+    // Fetch all published schedules and group in JS (MongoDB doesn't support groupBy reliably)
+    const publishedSchedules = await prisma.examSchedule.findMany({
       where: { status: 'PUBLISHED' },
-      _count: {
-        _all: true
-      }
+      select: { semester: true, scheduleType: true, mode: true },
     });
+
+    // Group by semester + scheduleType + mode in memory
+    const groupMap = {};
+    for (const row of publishedSchedules) {
+      const key = `${row.semester}|${row.scheduleType}|${row.mode}`;
+      if (!groupMap[key]) {
+        groupMap[key] = { semester: row.semester, scheduleType: row.scheduleType, mode: row.mode, count: 0 };
+      }
+      groupMap[key].count++;
+    }
+    const activeSchedules = Object.values(groupMap);
 
     // 2. Fetch Active Seat Allotments (published)
     const activeSeatingRaw = await prisma.roomAllotment.findMany({
@@ -46,7 +54,7 @@ export const getDashboardSummary = async (req, res) => {
         semester: s.semester,
         type: s.scheduleType,
         mode: s.mode,
-        count: s._count._all
+        count: s.count
       })),
       activeSeating,
       settings
