@@ -3,13 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model Student {
-  id             Int       @id @default(autoincrement())
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
   collegeId      String    @unique @map("collegeId")
   name           String
   degree         String?
@@ -32,7 +31,7 @@ model Student {
 }
 
 model Exam {
-  id           Int          @id @default(autoincrement())
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
   examId       String
   subject      String
   date         DateTime?
@@ -48,7 +47,7 @@ model Exam {
   visibleFrom  DateTime?
   visibleTo    DateTime?
 
-  studentId Int?
+  studentId String?  @db.ObjectId
   student   Student? @relation(fields: [studentId], references: [id])
 
   createdAt DateTime @default(now())
@@ -110,7 +109,7 @@ enum ExamScheduleType {
 }
 
 model ExamSchedule {
-  id           Int              @id @default(autoincrement())
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
   uploadId     String
   scheduleType ExamScheduleType @default(UNKNOWN)
   mode         ExamScheduleMode @default(REGULAR)
@@ -143,7 +142,7 @@ model ExamSchedule {
 }
 
 model Staff {
-  id           Int       @id @default(autoincrement())
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
   email        String    @unique @map("email")
   passwordHash String    @map("passwordHash")
   name         String?   @map("name")
@@ -157,7 +156,7 @@ model Staff {
 
 // Dropdown options – all data from DB, no hardcoded lists in codebase
 model ProgramOption {
-  id        Int              @id @default(autoincrement())
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
   code      String           @unique // e.g. BTECH – must match Program enum / student.exam usage
   name      String // e.g. B.Tech
   branches  BranchOption[]
@@ -167,7 +166,7 @@ model ProgramOption {
 }
 
 model BranchOption {
-  id          Int           @id @default(autoincrement())
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
   programCode String
   name        String
   program     ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
@@ -177,7 +176,7 @@ model BranchOption {
 }
 
 model SemesterOption {
-  id          Int           @id @default(autoincrement())
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
   programCode String
   number      String // "1", "2", …
   program     ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
@@ -186,9 +185,9 @@ model SemesterOption {
   @@map("SemesterOptions")
 }
 
-// Exam dropdown options – stored in Supabase only (value must match Prisma enums)
+// Exam dropdown options
 model AppOption {
-  id        Int    @id @default(autoincrement())
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
   category  String // examType | examMode | examCategory
   value     String // TEST_I, REGULAR, ODD
   label     String // Test I, Regular, ODD
@@ -200,7 +199,7 @@ model AppOption {
 }
 
 model ExamRoom {
-  id       Int    @id @default(autoincrement())
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
   roomNo   String @unique
   capacity Int    @default(40)
   venue    String @default("Main Building")
@@ -209,13 +208,13 @@ model ExamRoom {
 }
 
 model RoomAllotment {
-  id          Int      @id @default(autoincrement())
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
   examGroup   String
   roomNo      String
   deptCounts  Json
   total       Int
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  isPublished Boolean          @default(false)
+  createdAt   DateTime         @default(now())
   allocations SeatAllocation[]
 
   @@unique([examGroup, roomNo])
@@ -225,17 +224,18 @@ model RoomAllotment {
 }
 
 model SeatAllocation {
-  id          Int      @id @default(autoincrement())
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
   examGroup   String
   roomNo      String
   columnNo    Int
   seatNo      Int
-  studentId   Int?
+  studentId   String?        @db.ObjectId
   dept        String
   studentName String?
   rollNo      String?
-  isExtra     Boolean  @default(false)
-  allotment   RoomAllotment @relation(fields: [examGroup, roomNo], references: [examGroup, roomNo], onDelete: Cascade)
+  isExtra     Boolean        @default(false)
+  allotmentId String?        @db.ObjectId
+  allotment   RoomAllotment? @relation(fields: [allotmentId], references: [id], onDelete: Cascade)
 
   @@unique([examGroup, roomNo, columnNo, seatNo])
   @@index([examGroup, roomNo])
@@ -243,7 +243,7 @@ model SeatAllocation {
 }
 
 model SystemSetting {
-  key       String   @id
+  key       String   @id @map("_id")
   value     String
   updatedAt DateTime @updatedAt
 

@@ -34,12 +34,14 @@ async function seedDefaultRooms() {
     })),
   ];
 
-  await prisma.examRoom.createMany({ data: defaults, skipDuplicates: true });
+  for (const room of defaults) {
+    try { await prisma.examRoom.create({ data: room }); } catch (_) { /* skip if exists */ }
+  }
   return prisma.examRoom.findMany({ orderBy: { roomNo: 'asc' } });
 }
 
 export async function getById(id) {
-  return prisma.examRoom.findUnique({ where: { id: Number(id) } });
+  return prisma.examRoom.findUnique({ where: { id } });
 }
 
 // ──────────────────────────────────────────────

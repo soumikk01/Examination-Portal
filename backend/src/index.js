@@ -117,7 +117,8 @@ const smartKey = (req) => {
       if (decoded?.id) return `user:${decoded.id}`;
     }
   } catch (_) { /* expired/tampered token — fall through to IP */ }
-  return `ip:${req.ip}`;
+  // Replace colons so express-rate-limit doesn't flag it as an unhandled IPv6 address during initialization
+  return req.ip ? req.ip.replace(/:/g, '_') : '127.0.0.1';
 };
 
 // Tier 1: Auth limiter — ALWAYS per IP (user not authenticated yet at login)
@@ -308,7 +309,7 @@ const server = app.listen(PORT, async () => {
   
   // Test database connection on startup
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$runCommandRaw({ ping: 1 });
     logger.info('[SUCCESS] Database connected successfully');
   } catch (error) {
     logger.error('[ERROR] Database connection failed: ' + error.message);
