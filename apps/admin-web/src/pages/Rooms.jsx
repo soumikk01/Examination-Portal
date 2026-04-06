@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Fragment } from "react";
+import { Undo2, Redo2 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
@@ -284,6 +285,60 @@ export default function RoomAllotment() {
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef(null);
 
+  // ── Undo / Redo history ───────────────────────────────────────────────────
+  const historyStack = useRef([]); // past rows snapshots
+  const redoStack    = useRef([]); // future rows snapshots (after undo)
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  /** Call this BEFORE any mutating setRows to capture a checkpoint. */
+  const pushHistory = useCallback((snapshot) => {
+    historyStack.current = [...historyStack.current.slice(-49), snapshot];
+    redoStack.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (historyStack.current.length === 0) return;
+    const prev = historyStack.current[historyStack.current.length - 1];
+    historyStack.current = historyStack.current.slice(0, -1);
+    setRows(current => {
+      redoStack.current = [...redoStack.current, current];
+      setCanUndo(historyStack.current.length > 0);
+      setCanRedo(true);
+      return prev;
+    });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.current.length === 0) return;
+    const next = redoStack.current[redoStack.current.length - 1];
+    redoStack.current = redoStack.current.slice(0, -1);
+    setRows(current => {
+      historyStack.current = [...historyStack.current, current];
+      setCanUndo(true);
+      setCanRedo(redoStack.current.length > 0);
+      return next;
+    });
+  }, []);
+
+  // Keyboard shortcuts: Ctrl+Z = Undo, Ctrl+Y = Redo
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleUndo, handleRedo]);
+
   // ── Persist state to localStorage on every change ────────────────────────
   useEffect(() => {
     try {
@@ -351,8 +406,11 @@ export default function RoomAllotment() {
       setDbCapacities(prev => ({ ...prev, [selRoom]: cap }));
     } catch (e) { console.error(e); }
     setSetBtnStatus("idle");
-    setRows(prev => prev.map(r => r.roomNo === selRoom ? { ...r, capacity: cap } : r));
-  }, [selRoom, capInput]);
+    setRows(prev => {
+      pushHistory(prev);
+      return prev.map(r => r.roomNo === selRoom ? { ...r, capacity: cap } : r);
+    });
+  }, [selRoom, capInput, pushHistory]);
 
   // ── Save allotment ─────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
@@ -433,6 +491,7 @@ export default function RoomAllotment() {
     if (selectedRunCells.length === 0 || !studentCounts) return;
 
     setRows(prevRows => {
+      pushHistory(prevRows);
       // Create deep copy to avoid mutating state directly
       const newRows = prevRows.map(r => ({
         ...r, UG_REGULAR: { ...r.UG_REGULAR }, UG_BACKLOG: { ...r.UG_BACKLOG },
@@ -483,9 +542,9 @@ export default function RoomAllotment() {
       return newRows;
     });
 
-    // Clear selection after completion
-    setSelectedRunCells([]);
-  }, [selectedRunCells, studentCounts]);
+    // Keep selection intact so the button stays visible and user can re-run
+  }, [selectedRunCells, studentCounts, pushHistory]);
+
 
   // ── Cell click: handling both Auto-run and Inline editor ──────────────────
   const handleCellClick = (roomNo, secKey, branch) => {
@@ -518,12 +577,15 @@ export default function RoomAllotment() {
     if (!editingCell) return;
     const { roomNo, secKey, branch } = editingCell;
     const num = Math.max(0, parseInt(val, 10) || 0);
-    setRows(prev => prev.map(r =>
-      r.roomNo !== roomNo ? r : { ...r, [secKey]: { ...r[secKey], [branch]: num } }
-    ));
+    setRows(prev => {
+      pushHistory(prev);
+      return prev.map(r =>
+        r.roomNo !== roomNo ? r : { ...r, [secKey]: { ...r[secKey], [branch]: num } }
+      );
+    });
     setEditingCell(null);
     setEditValue("");
-  }, [editingCell]);
+  }, [editingCell, pushHistory]);
 
   // ── Auto-fill a specific branch top-to-bottom ──────────────────────────────
   const handleAutoFill = (secKey, branch) => {
@@ -533,6 +595,7 @@ export default function RoomAllotment() {
     let studentsToPlace = remaining;
     
     setRows(prevRows => {
+      pushHistory(prevRows);
       // Create deep copy to avoid mutating state directly
       const newRows = prevRows.map(r => ({
         ...r,
@@ -599,9 +662,12 @@ export default function RoomAllotment() {
 
     // Row 4: Student totals (original counts)
     const r4 = ["Student"];
+    let cumStudentTotal = 0;
     SECTIONS.forEach(sec => {
       sec.branches.forEach(b => r4.push(studentCounts[sec.key]?.[b] || ""));
-      r4.push(sec.branches.reduce((s, b) => s + (studentCounts[sec.key]?.[b] || 0), 0) || "");
+      const secTotal = sec.branches.reduce((s, b) => s + (studentCounts[sec.key]?.[b] || 0), 0);
+      cumStudentTotal += secTotal;
+      r4.push(cumStudentTotal || "");
     });
     aoa.push(r4);
 
@@ -617,9 +683,11 @@ export default function RoomAllotment() {
     // C Block data rows
     cBlockRows.forEach(r => {
       const row = [r.roomNo];
+      let cumRoomTotal = 0;
       SECTIONS.forEach(sec => {
         sec.branches.forEach(b => row.push(r[sec.key]?.[b] || ""));
-        row.push(sec.branches.reduce((s, b) => s + (r[sec.key]?.[b] || 0), 0) || "");
+        cumRoomTotal += sec.branches.reduce((s, b) => s + (r[sec.key]?.[b] || 0), 0);
+        row.push(cumRoomTotal || "");
       });
       aoa.push(row);
     });
@@ -635,9 +703,11 @@ export default function RoomAllotment() {
     // MB data rows
     mbRows.forEach(r => {
       const row = [r.roomNo];
+      let cumRoomTotal = 0;
       SECTIONS.forEach(sec => {
         sec.branches.forEach(b => row.push(r[sec.key]?.[b] || ""));
-        row.push(sec.branches.reduce((s, b) => s + (r[sec.key]?.[b] || 0), 0) || "");
+        cumRoomTotal += sec.branches.reduce((s, b) => s + (r[sec.key]?.[b] || 0), 0);
+        row.push(cumRoomTotal || "");
       });
       aoa.push(row);
     });
@@ -955,6 +1025,26 @@ export default function RoomAllotment() {
             </button>
           )}
 
+          {/* Undo / Redo */}
+          <button
+            className="ra-btn ra-btn-gray"
+            onClick={handleUndo}
+            disabled={!canUndo}
+            title="Undo last change (Ctrl+Z)"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.65rem', opacity: canUndo ? 1 : 0.4 }}
+          >
+            <Undo2 size={15} />
+          </button>
+          <button
+            className="ra-btn ra-btn-gray"
+            onClick={handleRedo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Y)"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.65rem', opacity: canRedo ? 1 : 0.4 }}
+          >
+            <Redo2 size={15} />
+          </button>
+
           <div style={{ flex: 1 }} />
 
           {/* Download Excel */}
@@ -1081,10 +1171,10 @@ export default function RoomAllotment() {
               {/* Row 3: Branch columns */}
               <tr>
                 {visibleSections.map(sec => (
-                  <>
+                  <Fragment key={sec.key}>
                     {sec.branches.map(b => <th key={sec.key + b} className="ra-th-col">{b}</th>)}
                     <th key={sec.key + "T"} className="ra-th-total">Total</th>
-                  </>
+                  </Fragment>
                 ))}
               </tr>
             </thead>
@@ -1093,10 +1183,9 @@ export default function RoomAllotment() {
               {/* Student row: shows REMAINING unassigned students per branch */}
               <tr className="ra-row-student">
                 <td className="ra-td-room">Student</td>
-                {visibleSections.map(sec => {
-                  const totals = getStudentRowTotal(sec.key);
+                {visibleSections.map((sec, si) => {
                   return (
-                    <>
+                    <Fragment key={sec.key}>
                       {sec.branches.map(b => {
                         const rem = getStudentRowVal(sec.key, b);
                         const { total } = getRemaining(sec.key, b) || { total: 0 };
@@ -1118,9 +1207,20 @@ export default function RoomAllotment() {
                         );
                       })}
                       <td key={sec.key + "T"} className="ra-td-total">
-                        {totals ? (totals.remaining > 0 ? pad(totals.remaining) : (totals.total > 0 ? "✓" : "")) : ""}
+                        {(() => {
+                           let cumulativeRemaining = 0;
+                           let cumulativeTotal = 0;
+                           for (let i = 0; i <= si; i++) {
+                             const t = getStudentRowTotal(visibleSections[i].key);
+                             if (t) {
+                               cumulativeRemaining += Math.max(0, t.remaining);
+                               cumulativeTotal += t.total;
+                             }
+                           }
+                           return cumulativeTotal > 0 ? (cumulativeRemaining > 0 ? pad(cumulativeRemaining) : "✓") : "";
+                        })()}
                       </td>
-                    </>
+                    </Fragment>
                   );
                 })}
               </tr>
@@ -1129,12 +1229,12 @@ export default function RoomAllotment() {
               <tr className="ra-row-avail">
                 <td className="ra-td-room" style={{ color: "#fff" }}>Available</td>
                 {visibleSections.map(sec => (
-                  <>
+                  <Fragment key={sec.key}>
                     {sec.branches.map(b => <td key={sec.key + b}></td>)}
                     <td key={sec.key + "T"} style={{ background: "#4ea72c", color: "#fff", fontWeight: 700 }}>
                       {totalCapacityAssigned > 0 ? totalCapacityAssigned : ""}
                     </td>
-                  </>
+                  </Fragment>
                 ))}
               </tr>
 
@@ -1142,13 +1242,19 @@ export default function RoomAllotment() {
               {rows.filter(r => !r.isMB).map(row => (
                 <tr key={row.roomNo} className="ra-row-data" style={row.roomNo === selRoom ? { outline: "2px solid #3b82f6" } : {}}>
                   <td className="ra-td-room">{row.roomNo}</td>
-                  {visibleSections.map(sec => (
-                    <>
+                  {visibleSections.map((sec, si) => (
+                    <Fragment key={sec.key}>
                       {sec.branches.map(b => renderDataCell(row, sec, b))}
                       <td key={sec.key + "T"} className="ra-td-total">
-                        {(() => { const t = getRoomTotal(row, sec.key); return t ? pad(t) : ""; })()}
+                        {(() => { 
+                           let cumulativeTotal = 0;
+                           for (let i = 0; i <= si; i++) {
+                             cumulativeTotal += getRoomTotal(row, visibleSections[i].key) || 0;
+                           }
+                           return cumulativeTotal > 0 ? pad(cumulativeTotal) : "";
+                        })()}
                       </td>
-                    </>
+                    </Fragment>
                   ))}
                 </tr>
               ))}
@@ -1167,13 +1273,19 @@ export default function RoomAllotment() {
               {rows.filter(r => r.isMB).map(row => (
                 <tr key={row.roomNo} className="ra-row-mb" style={row.roomNo === selRoom ? { outline: "2px solid #3b82f6" } : {}}>
                   <td className="ra-td-room">{row.roomNo}</td>
-                  {visibleSections.map(sec => (
-                    <>
+                  {visibleSections.map((sec, si) => (
+                    <Fragment key={sec.key}>
                       {sec.branches.map(b => renderDataCell(row, sec, b))}
                       <td key={sec.key + "T"} className="ra-td-total">
-                        {(() => { const t = getRoomTotal(row, sec.key); return t ? pad(t) : ""; })()}
+                        {(() => { 
+                           let cumulativeTotal = 0;
+                           for (let i = 0; i <= si; i++) {
+                             cumulativeTotal += getRoomTotal(row, visibleSections[i].key) || 0;
+                           }
+                           return cumulativeTotal > 0 ? pad(cumulativeTotal) : "";
+                        })()}
                       </td>
-                    </>
+                    </Fragment>
                   ))}
                 </tr>
               ))}

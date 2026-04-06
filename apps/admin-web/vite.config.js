@@ -1,13 +1,24 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    nodePolyfills({
+      // Polyfill the exact modules xlsx-js-style needs
+      include: ['buffer', 'events', 'util', 'stream'],
+      globals: { Buffer: true, global: true, process: true },
+    }),
+  ],
   resolve: {
     alias: {
       '@exam-portal/ui': path.resolve(__dirname, '../../packages/ui/src/index.js'),
     },
+  },
+  optimizeDeps: {
+    include: ['xlsx-js-style'],
   },
   css: {
     preprocessorOptions: {
@@ -26,3 +37,4 @@ export default defineConfig({
     },
   },
 });
+

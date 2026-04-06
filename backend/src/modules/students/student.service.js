@@ -96,3 +96,9 @@ export async function list(filters = {}) {
     orderBy: { collegeId: 'asc' },
   });
 }
+export async function createMany(dataArray) {
+  return prisma.student.createMany({
+    data: dataArray,
+    skipDuplicates: true,
+  });
+}
