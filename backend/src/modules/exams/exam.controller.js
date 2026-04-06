@@ -28,8 +28,8 @@ export async function createManyFromForm(req, res, next) {
 
 export async function updateStatus(req, res, next) {
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid exam ID' });
+    const id = req.params.id; // MongoDB ObjectId is a string, not a number
+    if (!id) return res.status(400).json({ error: 'Invalid exam ID' });
 
     const { status, visibleFrom, visibleTo } = req.body;
     const exam = await examService.updateStatus(id, status, {

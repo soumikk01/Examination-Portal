@@ -117,7 +117,9 @@ const smartKey = (req) => {
       if (decoded?.id) return `user:${decoded.id}`;
     }
   } catch (_) { /* expired/tampered token — fall through to IP */ }
-  return `ip:${req.ip}`;
+  // Sanitize IP for rate limiting key (no raw IPv6 colons)
+  const ip = (req.ip || '127.0.0.1').replace(/:/g, '_');
+  return `ip:${ip}`;
 };
 
 // Tier 1: Auth limiter — ALWAYS per IP (user not authenticated yet at login)
@@ -268,8 +270,8 @@ app.use((err, req, res, _next) => {
   if (err.code?.startsWith('P')) {
     return res.status(503).json({
       error: 'Service temporarily unavailable. We are experiencing high traffic, please try again momentarily.',
-      code: err.code,
       requestId: req.id,
+      // NOTE: err.code is intentionally NOT sent to client to prevent schema leakage
     });
   }
 
@@ -308,7 +310,7 @@ const server = app.listen(PORT, async () => {
   
   // Test database connection on startup
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$runCommandRaw({ ping: 1 });
     logger.info('[SUCCESS] Database connected successfully');
   } catch (error) {
     logger.error('[ERROR] Database connection failed: ' + error.message);

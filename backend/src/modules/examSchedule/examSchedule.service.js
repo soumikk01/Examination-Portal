@@ -72,8 +72,16 @@ export async function saveDraftBatch({ meta, rows, mode, sourceFile } = {}) {
     sourceFile: sourceFile || null,
   }));
 
-  await prisma.examSchedule.createMany({ data });
-  return { uploadId, count: data.length };
+  const validData = data.filter(r => r.subject && r.examDate instanceof Date && !isNaN(r.examDate));
+  const skipped = data.length - validData.length;
+  if (validData.length === 0) {
+    const err = new Error('No valid exam rows to save — all rows have missing subject or invalid date.');
+    err.status = 400;
+    throw err;
+  }
+
+  await prisma.examSchedule.createMany({ data: validData });
+  return { uploadId, count: validData.length, skipped };
 }
 
 export async function deleteBatch({ uploadId } = {}) {
@@ -114,15 +122,10 @@ export async function publish({ uploadId } = {}) {
 
   // Invalidating all student caches so they see the new schedule immediately
   try {
-    const { default: redisClient } = await import('../../utils/redis.js');
-    if (redisClient && redisClient.status === 'ready') {
-      const keys = await redisClient.keys('student:*');
-      if (keys.length > 0) {
-        await redisClient.del(...keys);
-      }
-    }
+    const { cache } = await import('../../utils/redis.js');
+    await cache.delPattern('student:*');
   } catch (err) {
-    console.error('Failed to clear student cache on publish', err);
+    console.error('Failed to clear student cache on publish', err.message);
   }
 
   return { uploadId, published: result.count };

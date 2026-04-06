@@ -5,21 +5,32 @@ export async function getStudentSeating(req, res, next) {
   try {
     const studentId = req.user.id;
 
-    // 1. Find if student has any seat allocation in a published allotment
+    // Step 1: Get all published allotments for this student's rooms (MongoDB-safe two-step query)
+    const publishedAllotments = await prisma.roomAllotment.findMany({
+      where: { isPublished: true },
+      select: { examGroup: true, roomNo: true },
+    });
+
+    if (publishedAllotments.length === 0) {
+      return res.status(404).json({ error: 'No published seating arrangement found for you.' });
+    }
+
+    // Step 2: Find seat allocation that matches one of the published rooms
+    const publishedRooms = publishedAllotments.map(a => a.roomNo);
     const allocation = await prisma.seatAllocation.findFirst({
       where: {
         studentId,
-        allotment: { isPublished: true }
+        roomNo: { in: publishedRooms },
       },
-      include: { allotment: true }
+      include: { allotment: true },
     });
 
     if (!allocation) {
       return res.status(404).json({ error: 'No published seating arrangement found for you.' });
     }
 
-    // Safely extract semester from examGroup (e.g. "SEM3-2025" → "3")
-    const rawSem = allocation.allotment.examGroup?.split('-')[0]?.replace('SEM', '') ?? null;
+    // Safely extract semester from examGroup (e.g. "SEM3-BTECH-ALL" → "3")
+    const rawSem = allocation.allotment?.examGroup?.split('-')[0]?.replace('SEM', '') ?? null;
     const semester = rawSem && !isNaN(rawSem) ? rawSem : null;
 
     const result = await seatingService.getSeatingForRoom({
