@@ -1184,7 +1184,6 @@ export default function RoomAllotment() {
               <tr className="ra-row-student">
                 <td className="ra-td-room">Student</td>
                 {visibleSections.map((sec, si) => {
-                  const totals = getStudentRowTotal(sec.key);
                   return (
                     <Fragment key={sec.key}>
                       {sec.branches.map(b => {
