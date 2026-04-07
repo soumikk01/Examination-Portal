@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from '../services/api';
-import { ArrowLeft, User, CalendarDays, Pin } from "lucide-react";
+import { ArrowLeft, User, CalendarDays, Pin, Navigation } from "lucide-react";
 import { PageLayout, Button, NoticeModal, Skeleton } from '../components';
 
 /* ─── Skeleton Grid (shown during loading) ─── */
@@ -32,6 +32,7 @@ const RoomSkeletonGrid = () => {
 
             {/* Header Row */}
             <div style={{ ...styles.deskRow, marginBottom: '8px', alignItems: 'center' }}>
+              <div style={{ width: '25px', flexShrink: 0 }}></div>
               <div style={{ ...styles.desk(false, true), border: '1.5px dashed #e2e8f0' }}></div>
               {skeletonCols.slice(1, -1).map((_, i) => (
                 <div key={i} style={{ width: DESK_W, display: 'flex', justifyContent: 'center' }}>
@@ -39,11 +40,13 @@ const RoomSkeletonGrid = () => {
                 </div>
               ))}
               <div style={{ ...styles.desk(false, false), background: '#94a3b8', border: 'none' }}></div>
+              <div style={{ width: '25px', flexShrink: 0 }}></div>
             </div>
 
             {/* Desk Rows */}
             {Array.from({ length: 6 }).map((_, r) => (
               <div key={r} style={styles.deskRow}>
+                <div style={{ width: '25px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', fontSize: '9px', fontWeight: 800 }}>R{r + 1}</div>
                 {skeletonCols.map((_, cIdx) => (
                   <div key={cIdx} style={{
                     ...styles.desk(false, false),
@@ -54,6 +57,7 @@ const RoomSkeletonGrid = () => {
                     <Skeleton width="45%" height="0.45rem" />
                   </div>
                 ))}
+                <div style={{ width: '25px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', fontSize: '9px', fontWeight: 800 }}>R{r + 1}</div>
               </div>
             ))}
 
@@ -67,7 +71,8 @@ const RoomSkeletonGrid = () => {
 const ROWS = 8;
 const DESK_W = '90px';
 const DESK_H = '58px';
-const DESK_GAP = '10px';
+const ROW_GAP = '6px';
+const COL_GAP = '18px';
 
 const styles = {
   scene: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
@@ -75,8 +80,8 @@ const styles = {
   teacherLabel: { fontSize: '9px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b' },
   teacherText: { fontSize: '11px', fontWeight: 700, color: '#1e293b', zIndex: 1 },
 
-  grid: { display: 'flex', flexDirection: 'column', gap: DESK_GAP },
-  deskRow: { display: 'flex', gap: DESK_GAP },
+  grid: { display: 'flex', flexDirection: 'column', gap: ROW_GAP },
+  deskRow: { display: 'flex', gap: COL_GAP },
   desk: (isMySeat, isExtra) => ({
     width: DESK_W, height: DESK_H,
     background: isMySeat ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : '#ffffff',
@@ -345,6 +350,7 @@ export default function SeatingChart3D() {
 
                 {/* Header Row: EXTRA | dept columns | DOOR */}
                 <div style={{ ...styles.deskRow, marginBottom: '8px', alignItems: 'center' }}>
+                  <div style={{ width: '25px', flexShrink: 0 }}></div>
                   <div style={styles.desk(false, true)}>
                     <strong style={{ color: '#94a3b8', fontSize: '9px', letterSpacing: '0.05em' }}>EXTRA</strong>
                   </div>
@@ -363,11 +369,13 @@ export default function SeatingChart3D() {
                   <div style={{ ...styles.desk(false, false), background: '#1e293b', border: 'none' }}>
                     <strong style={{ color: '#ffffff', fontSize: '9px', letterSpacing: '0.05em' }}>DOOR</strong>
                   </div>
+                  <div style={{ width: '25px', flexShrink: 0 }}></div>
                 </div>
 
                 {/* Seat Rows */}
                 {Array.from({ length: ROWS }).map((_, r) => (
                   <div key={r} style={styles.deskRow}>
+                    <div style={{ width: '25px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '10px', fontWeight: 800 }}>R{r + 1}</div>
                     {columns.map((col, cIdx) => {
                       const seat = col.seats[r];
                       const isMySeat = mySeat && mySeat.columnNo === (cIdx + 1) && (seat?.seatNo === mySeat.seatNo);
@@ -380,32 +388,26 @@ export default function SeatingChart3D() {
                             animation: isMySeat ? 'mySeatPulse 2s ease-in-out infinite' : 'none',
                           }}
                         >
-                          {isMySeat && (
-                            <div style={styles.avatarContainer}>
-                              <User size={11} color="white" strokeWidth={3} />
-                            </div>
-                          )}
-                          {isMySeat && (
-                            <strong style={{ fontSize: '7px', color: '#fff', textTransform: 'uppercase', marginBottom: '1px', letterSpacing: '0.05em' }}>YOU</strong>
-                          )}
-
-                          <div style={styles.seatInfo(isMySeat)}>
+                          <div style={{ ...styles.seatInfo(isMySeat), display: 'flex', flexDirection: 'column', gap: '3px', padding: '0 4px', width: '100%', alignItems: 'center' }}>
                             {isMySeat ? (
                               <>
-                                <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }}>
+                                <div style={{ fontWeight: 800, fontSize: '9px', lineHeight: 1.1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', width: '100%', textAlign: 'center', letterSpacing: '0.02em', textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>
                                   {seat?.studentName}
                                 </div>
-                                <div style={{ opacity: 0.8, fontSize: '7px' }}>{seat?.rollNo}</div>
+                                <div style={{ opacity: 0.9, fontSize: '7.5px', letterSpacing: '0.04em', background: 'rgba(255,255,255,0.2)', padding: '2px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                                  {seat?.rollNo}
+                                </div>
                               </>
                             ) : seat?.isExtra ? (
                               <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '8px' }}>EXTRA</span>
                             ) : (
-                              <span style={{ color: '#cbd5e1', fontSize: '10px' }}>—</span>
+                              <User size={16} color="#cbd5e1" strokeWidth={2} style={{ marginTop: '2px' }} />
                             )}
                           </div>
                         </div>
                       );
                     })}
+                    <div style={{ width: '25px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '10px', fontWeight: 800 }}>R{r + 1}</div>
                   </div>
                 ))}
               </div>
@@ -436,6 +438,30 @@ export default function SeatingChart3D() {
               Bring your <span className="font-bold">college uniform</span> and{' '}
               <span className="text-[#2d368e] font-bold">college ID card</span>.
             </p>
+
+            {mySeat && columns.length > 0 && (() => {
+              const rowIndex = columns.find(c => c.columnNo === mySeat.columnNo)?.seats.findIndex(s => s.seatNo === mySeat.seatNo);
+              if (rowIndex === undefined || rowIndex === -1) return null;
+              
+              const colName = mySeat.dept || `Column ${mySeat.columnNo}`;
+              const rowNum = rowIndex + 1;
+              const colIndex = mySeat.columnNo; 
+              const totalCols = columns.length; 
+              const fromRight = totalCols - colIndex + 1; 
+
+              return (
+                <div style={{ marginTop: '16px', padding: '14px', backgroundColor: '#eff6ff', border: '1.5px dashed #bfdbfe', borderRadius: '8px', textAlign: 'left' }}>
+                  <h5 style={{ margin: '0 0 8px 0', color: '#1e40af', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Navigation size={14} /> Easy Navigation Guide
+                  </h5>
+                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#334155', fontSize: '11px', lineHeight: 1.6 }}>
+                    <li>Enter through the <strong style={{ color: '#1e293b' }}>DOOR</strong> (Far right side of the room).</li>
+                    <li>Walk left past the front desk, skipping {fromRight - 1} column{fromRight - 1 === 1 ? '' : 's'}.</li>
+                    <li>Turn into the <strong style={{ color: '#0369a1' }}>{colName}</strong> column & walk back to <strong style={{ color: '#1e40af' }}>Row {rowNum} (R{rowNum})</strong>.</li>
+                  </ul>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
