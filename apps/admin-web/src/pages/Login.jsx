@@ -36,7 +36,7 @@ const Login = () => {
     setEmptyAttempt(false);
     setLoading(true);
     try {
-      const data = await api.post('/auth/admin/login', { email, password });
+      const data = await api.post('/auth/admin/login', { email: email.trim(), password });
       sessionStorage.setItem('examination_portal_admin_staff', JSON.stringify(data.staff));
       navigate(from, { replace: true });
     } catch (err) {
