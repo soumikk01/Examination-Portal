@@ -34,12 +34,14 @@ async function seedDefaultRooms() {
     })),
   ];
 
-  await prisma.examRoom.createMany({ data: defaults, skipDuplicates: true });
+  for (const room of defaults) {
+    try { await prisma.examRoom.create({ data: room }); } catch (_) { /* skip if exists */ }
+  }
   return prisma.examRoom.findMany({ orderBy: { roomNo: 'asc' } });
 }
 
 export async function getById(id) {
-  return prisma.examRoom.findUnique({ where: { id: Number(id) } });
+  return prisma.examRoom.findUnique({ where: { id } });
 }
 
 // ──────────────────────────────────────────────
@@ -220,11 +222,12 @@ export async function getRoomAllotment(examGroup) {
 // ──────────────────────────────────────────────
 export async function listExamGroups() {
   const rows = await prisma.roomAllotment.findMany({
-    distinct: ['examGroup'],
     select: { examGroup: true },
     orderBy: { examGroup: 'asc' },
   });
-  return rows.map(r => r.examGroup);
+  // Dedup in JS (MongoDB distinct has edge cases with Prisma)
+  const seen = new Set();
+  return rows.map(r => r.examGroup).filter(g => seen.has(g) ? false : seen.add(g));
 }
 
 // ──────────────────────────────────────────────

@@ -16,5 +16,9 @@ export function getUserFriendlyApiError(err, fallback = 'Something went wrong. P
   if (isNetwork) {
     return 'Connection problem. Please try again.';
   }
-  return err.response?.data?.error || fallback;
+  const dataError = err.response?.data?.error;
+  if (dataError === 'Validation failed' && Array.isArray(err.response?.data?.details)) {
+    return err.response.data.details.map((d) => d.message).join('. ');
+  }
+  return dataError || fallback;
 }

@@ -18,7 +18,9 @@ const PROGRAM_OPTIONS = [
 const DEFAULT_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@local.test';
 const DEFAULT_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
 if (!DEFAULT_ADMIN_PASSWORD) {
-  throw new Error('SEED_ADMIN_PASSWORD is required to seed an admin user.');
+  console.error('❌ SEED_ADMIN_PASSWORD is required.');
+  console.error('   Add it to your .env file: SEED_ADMIN_PASSWORD=YourPassword123');
+  process.exit(1);
 }
 
 const SEED_STUDENT_COLLEGE_ID = process.env.SEED_STUDENT_COLLEGE_ID;
@@ -46,17 +48,17 @@ async function main() {
       update: { name: prog.name },
     });
     await prisma.branchOption.deleteMany({ where: { programCode: prog.code } });
-    if (prog.branches.length) {
-      await prisma.branchOption.createMany({
-        data: prog.branches.map((name) => ({ programCode: prog.code, name })),
-        skipDuplicates: true,
-      });
+    for (const name of prog.branches) {
+      try {
+        await prisma.branchOption.create({ data: { programCode: prog.code, name } });
+      } catch (_) { /* skip if duplicate */ }
     }
     await prisma.semesterOption.deleteMany({ where: { programCode: prog.code } });
-    await prisma.semesterOption.createMany({
-      data: prog.semesters.map((number) => ({ programCode: prog.code, number })),
-      skipDuplicates: true,
-    });
+    for (const number of prog.semesters) {
+      try {
+        await prisma.semesterOption.create({ data: { programCode: prog.code, number } });
+      } catch (_) { /* skip if duplicate */ }
+    }
   }
   console.log('Program / branch / semester options seeded.');
 
@@ -150,18 +152,21 @@ async function main() {
   }
 
   try {
-    const result = await prisma.student.createMany({
-      data: studentsToCreate,
-      skipDuplicates: true,
-    });
-    console.log(`Successfully created ${result.count} new students.`);
+    let created = 0;
+    for (const data of studentsToCreate) {
+      try {
+        await prisma.student.create({ data });
+        created++;
+      } catch (_) { /* skip duplicates */ }
+    }
+    console.log(`Successfully created ${created} new students.`);
   } catch (err) {
     console.error('Error inserting students:', err);
   }
   console.log(`Students seed complete. Seeded ${studentsToCreate.length} students across 5 batches.`);
 
   const sampleStudent = await prisma.student.findFirst({
-    orderBy: { id: 'asc' },
+    orderBy: { collegeId: 'asc' },
   });
   if (sampleStudent) {
     const baseYear = new Date().getFullYear();

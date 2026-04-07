@@ -6,42 +6,65 @@ import prisma from '../../database/database.js';
  */
 export async function getHistory(_req, res, next) {
   try {
-    // Fetch exam schedule batches grouped by uploadId
-    const scheduleGroups = await prisma.examSchedule.groupBy({
-      by: ['uploadId', 'sourceFile', 'scheduleType', 'mode', 'status', 'academicYear'],
-      _count: { id: true },
-      _min: { createdAt: true, examDate: true },
-      _max: { examDate: true },
-      orderBy: { _min: { createdAt: 'desc' } },
+    // Fetch all schedule records and group in JS (MongoDB doesn't support groupBy reliably)
+    const allSchedules = await prisma.examSchedule.findMany({
+      select: {
+        id: true,
+        uploadId: true,
+        sourceFile: true,
+        scheduleType: true,
+        mode: true,
+        status: true,
+        academicYear: true,
+        departmentCode: true,
+        createdAt: true,
+        examDate: true,
+      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    // Get distinct department codes per uploadId
-    const uploadIds = scheduleGroups.map((g) => g.uploadId);
-    const deptRows = await prisma.examSchedule.findMany({
-      where: { uploadId: { in: uploadIds } },
-      select: { uploadId: true, departmentCode: true },
-      distinct: ['uploadId', 'departmentCode'],
-    });
-    const deptMap = {};
-    for (const row of deptRows) {
-      if (!deptMap[row.uploadId]) deptMap[row.uploadId] = [];
-      if (row.departmentCode) deptMap[row.uploadId].push(row.departmentCode);
+    // Group by uploadId in memory
+    const uploadMap = {};
+    for (const row of allSchedules) {
+      if (!uploadMap[row.uploadId]) {
+        uploadMap[row.uploadId] = {
+          uploadId: row.uploadId,
+          sourceFile: row.sourceFile || 'Unnamed File',
+          scheduleType: row.scheduleType,
+          mode: row.mode,
+          status: row.status,
+          academicYear: row.academicYear,
+          count: 0,
+          departments: new Set(),
+          createdAt: row.createdAt,
+          examDateFrom: row.examDate,
+          examDateTo: row.examDate,
+        };
+      }
+      const g = uploadMap[row.uploadId];
+      g.count++;
+      if (row.departmentCode) g.departments.add(row.departmentCode);
+      if (row.examDate < g.examDateFrom) g.examDateFrom = row.examDate;
+      if (row.examDate > g.examDateTo) g.examDateTo = row.examDate;
     }
 
-    const schedules = scheduleGroups.map((g) => ({
-      type: 'schedule',
-      uploadId: g.uploadId,
-      sourceFile: g.sourceFile || 'Unnamed File',
-      scheduleType: g.scheduleType,
-      mode: g.mode,
-      status: g.status,
-      academicYear: g.academicYear,
-      subjectCount: g._count.id,
-      departments: deptMap[g.uploadId] || [],
-      createdAt: g._min.createdAt,
-      examDateFrom: g._min.examDate,
-      examDateTo: g._max.examDate,
-    }));
+    const schedules = Object.values(uploadMap)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(g => ({
+        type: 'schedule',
+        uploadId: g.uploadId,
+        sourceFile: g.sourceFile,
+        scheduleType: g.scheduleType,
+        mode: g.mode,
+        status: g.status,
+        academicYear: g.academicYear,
+        subjectCount: g.count,
+        departments: [...g.departments],
+        createdAt: g.createdAt,
+        examDateFrom: g.examDateFrom,
+        examDateTo: g.examDateTo,
+      }));
+
 
     // Fetch seating allotments
     const allotments = await prisma.roomAllotment.findMany({

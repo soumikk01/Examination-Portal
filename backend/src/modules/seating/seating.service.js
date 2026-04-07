@@ -1,6 +1,8 @@
 import prisma from '../../database/database.js';
+import pino from 'pino';
 import { getRoomAllotment, SEATS_PER_COLUMN } from '../rooms/room.service.js';
 
+const logger = pino({ transport: { target: 'pino-pretty', options: { colorize: true } } });
 const ROWS = SEATS_PER_COLUMN;
 
 // ──────────────────────────────────────────────
@@ -299,7 +301,7 @@ export async function getSeatingForRoom({ roomNo, semester }) {
         orderBy: [{ columnNo: 'asc' }, { seatNo: 'asc' }]
       });
     } catch (err) {
-      console.error('Failed to auto-generate seating', err);
+      logger.error({ msg: 'Failed to auto-generate seating', err: err.message });
     }
   }
 

@@ -12,13 +12,6 @@ const apiClient = axios.create({
     },
 });
 
-// Request interceptor
-apiClient.interceptors.request.use(
-    (config) => {
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
 
 // Response interceptor: never expose raw Axios messages (e.g. "Request failed with status code 429")
 apiClient.interceptors.response.use(
@@ -67,7 +60,6 @@ const cache = {
 };
 
 export const api = {
-    getHealth: () => apiClient.get('/health'),
     getSettings: () => apiClient.get('/settings'),
 
     login: async (identifier, verification) => {

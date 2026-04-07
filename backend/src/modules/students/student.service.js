@@ -97,8 +97,12 @@ export async function list(filters = {}) {
   });
 }
 export async function createMany(dataArray) {
-  return prisma.student.createMany({
-    data: dataArray,
-    skipDuplicates: true,
-  });
+  let count = 0;
+  for (const data of dataArray) {
+    try {
+      await prisma.student.create({ data });
+      count++;
+    } catch (_) { /* skip duplicates */ }
+  }
+  return { count };
 }

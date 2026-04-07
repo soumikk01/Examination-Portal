@@ -14,12 +14,20 @@ const COLUMN_MAP = {
   'student roll': 'studentRoll',
   'student_roll': 'studentRoll',
   'roll': 'studentRoll',
+  'roll number': 'studentRoll',
+  'roll_number': 'studentRoll',
+  'roll no': 'studentRoll',
   'department': 'department',
+  'depertment': 'department',
   'dept': 'department',
   'studentreg': 'studentReg',
   'student reg': 'studentReg',
   'student_reg': 'studentReg',
   'registration': 'studentReg',
+  'registration number': 'studentReg',
+  'registration numner': 'studentReg',
+  'reg number': 'studentReg',
+  'reg no': 'studentReg',
   'reg': 'studentReg',
   'examinationsem': 'examinationSem',
   'examination sem': 'examinationSem',
@@ -64,8 +72,10 @@ function parseFile(file) {
             const key = COLUMN_MAP[h.toLowerCase()];
             if (key) obj[key] = String(row[i] ?? '').trim();
           });
+          if (!obj.collegeId && obj.studentRoll) obj.collegeId = obj.studentRoll;
+          if (!obj.studentRoll && obj.collegeId) obj.studentRoll = obj.collegeId;
           return obj;
-        }).filter(r => r.collegeId || r.studentRoll);
+        }).filter(r => r.collegeId && r.studentRoll);
 
         resolve(mapped);
       } catch (err) {
