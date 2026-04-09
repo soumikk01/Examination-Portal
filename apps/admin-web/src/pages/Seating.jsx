@@ -103,7 +103,7 @@ const styles = `
   }
   .sa2-table th, .sa2-table td {
     border: 1px solid #555; padding: 0;
-    vertical-align: top; height: 18mm;
+    vertical-align: top; height: 17.5mm;
   }
   .sa2-table th { vertical-align: middle; padding: 3px 4px; font-size: 11px; font-weight: 700; text-align: center; height: auto; }
 
@@ -118,12 +118,12 @@ const styles = `
   .sa2-cell-seat {
     display: flex; flex-direction: column;
     justify-content: center; align-items: center;
-    height: 100%; padding: 2px 3px;
-    font-size: 8.5px; line-height: 1.25;
-    word-break: break-word; text-align: center;
+    height: 100%; padding: 4px;
+    line-height: 1.35;
+    word-break: break-word; overflow-wrap: break-word; text-align: center;
   }
-  .sa2-cell-seat strong { font-size: 9px; font-weight: 700; display: block; }
-  .sa2-cell-seat span { display: block; }
+  .sa2-cell-seat strong { font-size: 10.5px; font-weight: 700; display: block; margin-bottom: 2px; }
+  .sa2-cell-seat span { font-size: 9.5px; display: block; }
   .sa2-cell-seat.is-extra {
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 700; color: #555; font-style: italic;
@@ -142,11 +142,11 @@ const styles = `
   .sa2-label-aisle { color: #1a1a1a; font-style: italic; opacity: 0.7; }
 
   /* Footer */
-  .sa2-footer { margin-top: 8px; text-align: right; }
+  .sa2-footer { margin-top: 28px; padding-right: 10px; text-align: right; }
   .sa2-sig { display: inline-block; text-align: center; }
-  .sa2-sig-line { width: 120px; border-top: 1px solid #333; margin: 0 auto 2px; }
-  .sa2-sig strong { font-size: 9px; display: block; }
-  .sa2-sig span   { font-size: 8px; color: #555; }
+  .sa2-sig-line { width: 140px; border-top: 1px solid #333; margin: 0 auto 6px; }
+  .sa2-sig strong { font-size: 10px; display: block; }
+  .sa2-sig span   { font-size: 9px; color: #555; }
 
   .sa2-info-msg { font-size: .82rem; color: #64748b; margin-bottom: .75rem; }
 
@@ -154,7 +154,7 @@ const styles = `
     body * { visibility: hidden; }
     .sa2-a4-outer, .sa2-a4-outer * { visibility: visible; }
     .sa2-a4-outer { position: fixed; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: white !important; border: none; overflow: hidden; }
-    .sa2-a4 { box-shadow: none !important; margin: 0 auto; padding: 8mm 10mm !important; border: none; width: 297mm; height: 210mm; box-sizing: border-box; }
+    .sa2-a4 { box-shadow: none !important; margin: 0 auto; padding: 4mm 10mm !important; border: none; width: 297mm; height: 210mm; box-sizing: border-box; }
     .sa2-no-print, .sa2-no-print * { display: none !important; visibility: hidden !important; }
     @page { size: landscape; margin: 0mm; }
   }
@@ -395,10 +395,15 @@ export default function Seating() {
                         } else if (seat.isExtra) {
                            return <td key={`extra-seat-${ci}`}><div className="sa2-cell-seat is-extra">{seat.label === 'EXTRA' ? 'EXTRA' : seat.label}</div></td>;
                         } else {
+                          // Format as:
+                          // Line 1 (strong): DEPT_STUDENT NAME
+                          // Line 2 (span): ROLL NUMBER
+                          const nameStr = (seat.studentName || '').toUpperCase();
                           return (
                             <td key={ci}>
                               <div className="sa2-cell-seat">
-                                {seat.label}
+                                <strong>{seat.dept}_{nameStr}</strong>
+                                <span>{seat.rollNo}</span>
                               </div>
                             </td>
                           );

@@ -137,7 +137,6 @@ export async function parseExamSchedulePdf(buffer) {
     if (n.includes('BACHELOR OF COMPUTER') && n.includes('APPLICATION')) return 'BCA';
     if (n.includes('BUSINESS ADMINISTRATION')) return 'MBA';
     if (n.includes('COMPUTER APPLICATION')) return 'MCA';
-    if (n.includes('DIPLOMA')) return 'DIP';
     return null;
   };
 
@@ -281,7 +280,6 @@ export async function parseExamSchedulePdf(buffer) {
     'EDPS',
     'MME',
     'MCNT',
-    'DIP',
   ]);
   const COMMON_SUBJECT_CODES = new Set(['HU', 'M', 'PH', 'CH', 'AEC', 'GE', 'ESC', 'HSMC']);
 

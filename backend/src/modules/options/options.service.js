@@ -14,7 +14,7 @@ export async function listBranches(programCode) {
   return prisma.branchOption.findMany({
     where,
     orderBy: { name: 'asc' },
-    select: { name: true },
+    select: { name: true, degree: true },
   });
 }
 
@@ -29,7 +29,7 @@ export async function listSemesters(programCode) {
   return rows.map((r) => r.number);
 }
 
-/** List options by category (examType, examMode, examCategory) – all from Supabase. */
+/** List options by category (examType, examMode, examCategory) – all from database. */
 export async function listAppOptions(category) {
   const rows = await prisma.appOption.findMany({
     where: { category },
@@ -47,4 +47,27 @@ export async function getExamOptions() {
     listAppOptions('examCategory'),
   ]);
   return { examTypes, examModes, examCategories };
+}
+
+/**
+ * Returns all programs with their branches and human-readable degree name.
+ * Used by the bulk upload frontend to auto-detect program/degree from branch.
+ */
+export async function listAllProgramsWithBranches() {
+  const programs = await prisma.programOption.findMany({
+    orderBy: { name: 'asc' },
+    select: {
+      code: true,
+      name: true,
+      branches: { select: { name: true, degree: true }, orderBy: { name: 'asc' } },
+      semesters: { select: { number: true }, orderBy: { number: 'asc' } },
+    },
+  });
+  // Shape: [{ code:'UG', name:'Undergraduate', branches:[{name:'CSE', degree:'BTECH'}], semesters:['1','2',...] }]
+  return programs.map(p => ({
+    code: p.code,
+    name: p.name,
+    branches: p.branches.map(b => ({ name: b.name, degree: b.degree })),
+    semesters: p.semesters.map(s => s.number),
+  }));
 }

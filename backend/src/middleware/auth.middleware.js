@@ -6,7 +6,7 @@ const { JWT_SECRET, ADMIN_API_KEY } = config;
 
 export const verifyToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = req.cookies?.student_token || (authHeader && authHeader.split(' ')[1]);
+  const token = req.cookies?.student_token || req.cookies?.admin_token || (authHeader && authHeader.split(' ')[1]);
 
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });

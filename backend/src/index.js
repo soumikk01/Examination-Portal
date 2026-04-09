@@ -193,6 +193,7 @@ v1Router.get('/options/programs', authorizeAdmin, optionsController.getPrograms)
 v1Router.get('/options/branches', authorizeAdmin, optionsController.getBranches);
 v1Router.get('/options/semesters', authorizeAdmin, optionsController.getSemesters);
 v1Router.get('/options/exam-options', authorizeAdmin, optionsController.getExamOptions);
+v1Router.get('/options/all-programs', authorizeAdmin, optionsController.getAllProgramsWithBranches);
 
 v1Router.get('/students', authorizeAdmin, studentController.list);
 v1Router.post('/student', authorizeAdmin, validate(studentSchema), studentController.register);

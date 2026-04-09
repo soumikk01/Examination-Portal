@@ -61,7 +61,7 @@ export async function getByCollegeId(collegeId) {
       room: 'TBA',
       examType: s.mode === 'BACKLOG' ? 'Backlog' : 'Regular',
       examMode: s.mode,
-      examCategory: s.scheduleType.replace(/_THEORY|_PRACTICAL/g, '').replace('_', ' '),
+      examCategory: (s.scheduleType || 'UNKNOWN').replace(/_THEORY|_PRACTICAL/g, '').replace('_', ' '),
       status: 'PUBLISHED'
     }));
 
@@ -102,7 +102,9 @@ export async function createMany(dataArray) {
     try {
       await prisma.student.create({ data });
       count++;
-    } catch (_) { /* skip duplicates */ }
+    } catch (err) {
+      if (err.code !== 'P2002') throw err;
+    }
   }
   return { count };
 }

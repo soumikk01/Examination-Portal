@@ -75,13 +75,8 @@ enum ExamCategory {
 }
 
 enum Program {
-  BTECH
-  MTECH
-  DIPLOMA
-  MCA
-  BCA
-  BBA
-  MBA
+  UG
+  PG
 }
 
 enum ExamStatus {
@@ -169,6 +164,7 @@ model BranchOption {
   id          String        @id @default(auto()) @map("_id") @db.ObjectId
   programCode String
   name        String
+  degree      String?       // e.g. BTECH, BCA, MTECH
   program     ProgramOption @relation(fields: [programCode], references: [code], onDelete: Cascade)
 
   @@unique([programCode, name])

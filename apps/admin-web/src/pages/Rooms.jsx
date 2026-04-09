@@ -11,15 +11,15 @@ const getAuthHeaders = () => {
 };
 
 // UG and PG department columns
-const UG_BRANCHES = ["AGE", "BME", "CE", "CSE", "AIML", "CST", "EE", "ECE", "IT", "ME"];
-const PG_REGULAR_BRANCHES = ["BBA", "BBA-DM", "BBA-HM", "BCA", "MCSE", "EDPS", "MME", "MBA", "MCA"];
-const PG_BACKLOG_BRANCHES = ["BBA", "BBA-DM", "BBA-HM", "BCA", "MCSE", "EDPS", "MME", "MBA", "MCA"];
+const UG_BRANCHES = ["AGE", "BME", "CE", "CSE", "AIML", "CST", "EE", "ECE", "IT", "ME", "BBA", "BBA-DM", "BBA-HM", "BCA"];
+const PG_REGULAR_BRANCHES = ["MCSE", "EDPS", "MME", "MBA", "MCA"];
+const PG_BACKLOG_BRANCHES = ["MCSE", "EDPS", "MME", "MBA", "MCA"];
 
 const SECTIONS = [
-  { key: "UG_REGULAR", label: "UG REGULAR", branches: UG_BRANCHES },
-  { key: "UG_BACKLOG", label: "UG BACKLOG", branches: UG_BRANCHES },
-  { key: "PG_REGULAR", label: "BBA+BCA + PG REGULAR", branches: PG_REGULAR_BRANCHES },
-  { key: "PG_BACKLOG", label: "BBA+BCA + PG BACKLOG", branches: PG_BACKLOG_BRANCHES },
+  { key: "UG_REGULAR", label: "UG REGULAR (B.TECH, BBA, BCA)", branches: UG_BRANCHES },
+  { key: "UG_BACKLOG", label: "UG BACKLOG (B.TECH, BBA, BCA)", branches: UG_BRANCHES },
+  { key: "PG_REGULAR", label: "PG REGULAR (M.TECH, MBA, MCA)", branches: PG_REGULAR_BRANCHES },
+  { key: "PG_BACKLOG", label: "PG BACKLOG (M.TECH, MBA, MCA)", branches: PG_BACKLOG_BRANCHES },
 ];
 
 const VENUES = [

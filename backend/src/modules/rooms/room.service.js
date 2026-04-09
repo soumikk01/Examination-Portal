@@ -234,17 +234,17 @@ export async function listExamGroups() {
 // Student counts split by exam type for the allotment sheet
 // Returns: { UG_REGULAR: {BRANCH: count}, UG_BACKLOG: {...}, PG_REGULAR: {...}, PG_BACKLOG: {...} }
 // ──────────────────────────────────────────────
-// UG: B.Tech only (Diploma removed)
-const UG_PROGRAMS = new Set(['BTECH']);
+// UG: B.Tech, BCA, BBA
+const UG_PROGRAMS = new Set(['UG']);
 
-// PG / BBA+BCA: all non-UG programs grouped in the PG section
-const PG_PROGRAMS = new Set(['BBA', 'BBA-DM', 'BBA-HM', 'BCA', 'MTECH', 'MCA', 'MBA', 'MCSE', 'EDPS', 'MME']);
+// PG: M.Tech, MCA, MBA
+const PG_PROGRAMS = new Set(['PG']);
 
-// Branches shown in PG_REGULAR (BBA-DM and BBA-HM included – no backlog variant)
-const PG_REGULAR_BRANCHES = new Set(['BBA', 'BBA-DM', 'BBA-HM', 'BCA', 'MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
+// Branches shown in PG_REGULAR
+const PG_REGULAR_BRANCHES = new Set(['MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
 
-// Branches shown in PG_BACKLOG (now includes BBA-DM and BBA-HM)
-const PG_BACKLOG_BRANCHES = new Set(['BBA', 'BBA-DM', 'BBA-HM', 'BCA', 'MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
+// Branches shown in PG_BACKLOG
+const PG_BACKLOG_BRANCHES = new Set(['MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
 
 export async function getStudentCountsForSemester({ semester }) {
   let students = [];
@@ -268,15 +268,28 @@ export async function getStudentCountsForSemester({ semester }) {
 
   const result = { UG_REGULAR: {}, UG_BACKLOG: {}, PG_REGULAR: {}, PG_BACKLOG: {} };
 
+  // Legacy fallback maps for pre-migration records (in case migration script hasn't run yet)
+  const LEGACY_UG = new Set(['BTECH', 'BCA', 'BBA']);
+  const LEGACY_PG = new Set(['MTECH', 'MCA', 'MBA']);
+
   for (const student of students) {
     const prog   = (student.program || '').toUpperCase().trim();
     const branch = (student.branch  || 'UNKNOWN').toUpperCase().trim();
 
-    const isUG = UG_PROGRAMS.has(prog);
-    const isPG = PG_PROGRAMS.has(prog);
+    // Primary check: use migrated UG/PG values
+    let isUG = UG_PROGRAMS.has(prog);
+    let isPG = PG_PROGRAMS.has(prog);
 
-    // Skip DIPLOMA, unknown, or unmapped programs entirely
-    if (!isUG && !isPG) continue;
+    // Fallback: support legacy specific-degree values if migration hasn't run yet
+    if (!isUG && !isPG) {
+      if (LEGACY_UG.has(prog)) { isUG = true; }
+      else if (LEGACY_PG.has(prog)) { isPG = true; }
+      else {
+        // Truly unknown — skip and log once (avoid log flooding)
+        console.warn(`[room.service] Unknown program '${prog}' for student branch '${branch}' — skipped. Run migrate-programs.js to fix.`);
+        continue;
+      }
+    }
 
     const hasBacklog = Array.isArray(student.exams) && student.exams.some(e => e.examMode === 'BACKLOG');
     const mode = hasBacklog ? 'BACKLOG' : 'REGULAR';

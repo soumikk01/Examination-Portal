@@ -8,7 +8,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const prisma = new PrismaClient();
 
-const TARGET_PROGRAM = 'BTECH';
+const TARGET_PROGRAM = 'UG';
 const TARGET_BRANCHES = ['AGE', 'BME', 'CE', 'CSE', 'AIML', 'CST', 'EE', 'ECE', 'IT', 'ME'];
 const SEMESTER = '2';
 

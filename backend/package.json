@@ -11,6 +11,7 @@
         "db:push": "prisma db push",
         "db:migrate": "prisma migrate dev",
         "db:deploy": "prisma migrate deploy",
+        "db:migrate-programs": "node scripts/migrate-programs.js",
         "postinstall": "prisma generate",
         "lint": "eslint src --ext .js --report-unused-disable-directives --max-warnings 0",
         "lint:fix": "eslint src --ext .js --fix",

@@ -242,10 +242,10 @@ const Exams = () => {
   const handleAddStudent = (e) => {
     e.preventDefault();
     if (!studentToAdd) return;
-    const numericId = Number(studentToAdd);
-    if (!Number.isFinite(numericId)) return;
-    if (assignedStudents.includes(numericId)) return;
-    setAssignedStudents((prev) => [...prev, numericId]);
+    const idToAdd = String(studentToAdd).trim();
+    if (!idToAdd) return;
+    if (assignedStudents.includes(idToAdd)) return;
+    setAssignedStudents((prev) => [...prev, idToAdd]);
     setStudentToAdd('');
   };
 
