@@ -474,9 +474,16 @@ const Students = () => {
               <div style={{ display: 'flex', gap: '0.65rem' }}>
                 <button
                   onClick={handleBulkSubmit}
-                  disabled={bulkStatus === 'loading'}
+                  disabled={bulkStatus === 'loading' || bulkStatus === 'success'}
                   className="admin-btn admin-btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: bulkStatus === 'loading' ? 0.7 : 1 }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    opacity: bulkStatus === 'loading' ? 0.7 : 1,
+                    background: bulkStatus === 'success' ? '#10b981' : '',
+                    borderColor: bulkStatus === 'success' ? '#059669' : '',
+                  }}
                 >
                   <style>
                     {`
@@ -488,10 +495,16 @@ const Students = () => {
                   </style>
                   {bulkStatus === 'loading' ? (
                     <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                  ) : bulkStatus === 'success' ? (
+                    <CheckCircle size={15} />
                   ) : (
                     <Upload size={15} />
                   )}
-                  {bulkStatus === 'loading' ? 'Importing…' : `Import ${bulkRows.length} Students`}
+                  {bulkStatus === 'loading'
+                    ? 'Importing…'
+                    : bulkStatus === 'success'
+                    ? 'Import Complete'
+                    : `Import ${bulkRows.length} Students`}
                 </button>
                 <button onClick={handleClearBulk} className="admin-btn" style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb' }}>
                   Clear
