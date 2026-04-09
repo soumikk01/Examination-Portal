@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx-js-style';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
-import { Upload, FileSpreadsheet, Download, Trash2, CheckCircle, AlertCircle, Users, UserPlus } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, Trash2, CheckCircle, AlertCircle, Users, UserPlus, Loader2 } from 'lucide-react';
 
 // ── Column mapping: Excel/CSV header → DB field ──────────────────────────────
 const COLUMN_MAP = {
@@ -478,7 +478,19 @@ const Students = () => {
                   className="admin-btn admin-btn-primary"
                   style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: bulkStatus === 'loading' ? 0.7 : 1 }}
                 >
-                  <Upload size={15} />
+                  <style>
+                    {`
+                      @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                      }
+                    `}
+                  </style>
+                  {bulkStatus === 'loading' ? (
+                    <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <Upload size={15} />
+                  )}
                   {bulkStatus === 'loading' ? 'Importing…' : `Import ${bulkRows.length} Students`}
                 </button>
                 <button onClick={handleClearBulk} className="admin-btn" style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb' }}>
