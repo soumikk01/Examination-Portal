@@ -150,7 +150,6 @@ const Students = () => {
   const [errors, setErrors] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [programs, setPrograms] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [branchLookup, setBranchLookup] = useState({});  // for auto-detection
 
@@ -175,12 +174,11 @@ const Students = () => {
   }, []);
 
   useEffect(() => {
-    if (!form.program) { setBranches([]); setSemesters([]); return; }
+    if (!form.program) { setSemesters([]); return; }
     const ctrl = new AbortController();
-    Promise.all([
-      api.get('/options/branches', { params: { program: form.program }, signal: ctrl.signal }).then(d => setBranches(Array.isArray(d) ? d : [])),
-      api.get('/options/semesters', { params: { program: form.program }, signal: ctrl.signal }).then(d => setSemesters(Array.isArray(d) ? d : [])),
-    ]).catch(err => { if (err?.code !== 'ERR_CANCELED') { setBranches([]); setSemesters([]); } });
+    api.get('/options/semesters', { params: { program: form.program }, signal: ctrl.signal })
+      .then(d => setSemesters(Array.isArray(d) ? d : []))
+      .catch(err => { if (err?.code !== 'ERR_CANCELED') { setSemesters([]); } });
     return () => ctrl.abort();
   }, [form.program]);
 

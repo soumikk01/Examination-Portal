@@ -49,7 +49,6 @@ const ProtectedRoute = ({ children }) => {
 
     validate();
     return () => { isMounted = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Validate once on mount — the API interceptor in api.js handles 401s on subsequent requests
 
   if (authState === 'loading') {
