@@ -4,14 +4,46 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 // All dropdown options stored in DB – no hardcoded lists in codebase
+// All dropdown options stored in DB – no hardcoded lists in codebase
 const PROGRAM_OPTIONS = [
-  { code: 'BTECH', name: 'B.Tech', branches: ['AE', 'BME', 'CE', 'CSE', 'CSE (AI ML)', 'CSE (CST)', 'EE', 'ECE', 'IT', 'ME'], semesters: ['1', '2', '3', '4', '5', '6', '7', '8'] },
-  { code: 'MTECH', name: 'M.Tech', branches: ['MCSE', 'EDPS', 'MME'], semesters: ['1', '2', '3', '4'] },
-  { code: 'DIPLOMA', name: 'Diploma', branches: ['EE', 'ME'], semesters: ['1', '2', '3', '4', '5', '6'] },
-  { code: 'MCA', name: 'MCA', branches: ['MCA'], semesters: ['1', '2', '3', '4'] },
-  { code: 'BCA', name: 'BCA', branches: ['BCA'], semesters: ['1', '2', '3', '4', '5', '6'] },
-  { code: 'BBA', name: 'BBA', branches: ['BBA', 'BBA (DM)', 'BBA (HM)'], semesters: ['1', '2', '3', '4', '5', '6'] },
-  { code: 'MBA', name: 'MBA', branches: ['MBA'], semesters: ['1', '2', '3', '4'] },
+  { 
+    code: 'UG', 
+    name: 'Undergraduate', 
+    branches: [
+      { name: 'AE', degree: 'BTECH' },
+      { name: 'AGE', degree: 'BTECH' },
+      { name: 'BME', degree: 'BTECH' },
+      { name: 'CE', degree: 'BTECH' },
+      { name: 'CSE', degree: 'BTECH' },
+      { name: 'CSE (AI ML)', degree: 'BTECH' },
+      { name: 'AIML', degree: 'BTECH' },
+      { name: 'CSE (CST)', degree: 'BTECH' },
+      { name: 'CST', degree: 'BTECH' },
+      { name: 'EE', degree: 'BTECH' },
+      { name: 'ECE', degree: 'BTECH' },
+      { name: 'IT', degree: 'BTECH' },
+      { name: 'ME', degree: 'BTECH' },
+      { name: 'BCA', degree: 'BCA' },
+      { name: 'BBA', degree: 'BBA' },
+      { name: 'BBA (DM)', degree: 'BBA' },
+      { name: 'BBA (HM)', degree: 'BBA' },
+      { name: 'BBA-DM', degree: 'BBA' },
+      { name: 'BBA-HM', degree: 'BBA' }
+    ], 
+    semesters: ['1', '2', '3', '4', '5', '6', '7', '8'] 
+  },
+  { 
+    code: 'PG', 
+    name: 'Postgraduate', 
+    branches: [
+      { name: 'MCSE', degree: 'MTECH' },
+      { name: 'EDPS', degree: 'MTECH' },
+      { name: 'MME', degree: 'MTECH' },
+      { name: 'MCA', degree: 'MCA' },
+      { name: 'MBA', degree: 'MBA' }
+    ], 
+    semesters: ['1', '2', '3', '4'] 
+  },
 ];
 
 // Keep seed credentials out of source code (set via .env for predictable logins)
@@ -40,7 +72,13 @@ function generateStudentRoll(year, n) {
 }
 
 async function main() {
-  // Seed program / branch / semester options (from DB only – no data in codebase)
+  // Clear all old options to ensure a clean transition to UG/PG
+  console.log('Clearing old program / branch / semester options...');
+  await prisma.semesterOption.deleteMany({});
+  await prisma.branchOption.deleteMany({});
+  await prisma.programOption.deleteMany({});
+
+  // Seed program / branch / semester options
   for (const prog of PROGRAM_OPTIONS) {
     await prisma.programOption.upsert({
       where: { code: prog.code },
@@ -48,9 +86,9 @@ async function main() {
       update: { name: prog.name },
     });
     await prisma.branchOption.deleteMany({ where: { programCode: prog.code } });
-    for (const name of prog.branches) {
+    for (const br of prog.branches) {
       try {
-        await prisma.branchOption.create({ data: { programCode: prog.code, name } });
+        await prisma.branchOption.create({ data: { programCode: prog.code, name: br.name, degree: br.degree } });
       } catch (_) { /* skip if duplicate */ }
     }
     await prisma.semesterOption.deleteMany({ where: { programCode: prog.code } });
@@ -171,12 +209,12 @@ async function main() {
   if (sampleStudent) {
     const baseYear = new Date().getFullYear();
     const exams = [
-      { examId: 'CSE101-ODD-R', subject: 'Data Structures', date: new Date(`${baseYear - 1}-12-01`), time: '10:00 AM', room: 'R-201', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'ODD', program: 'BTECH', branch: 'CSE', semester: '3', studentId: sampleStudent.id },
-      { examId: 'CSE102-ODD-R', subject: 'Discrete Mathematics', date: new Date(`${baseYear - 1}-12-05`), time: '10:00 AM', room: 'R-202', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'ODD', program: 'BTECH', branch: 'CSE', semester: '3', studentId: sampleStudent.id },
-      { examId: 'MATH101-BACKLOG', subject: 'Engineering Mathematics (Backlog)', date: new Date(`${baseYear - 1}-11-20`), time: '02:00 PM', room: 'R-105', examType: 'END_SEM', examMode: 'BACKLOG', examCategory: 'EVEN', program: 'BTECH', branch: 'CSE', semester: '2', studentId: sampleStudent.id },
-      { examId: 'CSE201-TEST', subject: 'Algorithms (Test)', date: new Date(`${baseYear}-04-10`), time: '09:00 AM', room: 'R-301', examType: 'TEST_I', examMode: 'REGULAR', examCategory: 'ODD', program: 'BTECH', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
-      { examId: 'CSE202-EVEN-R', subject: 'Database Systems', date: new Date(`${baseYear}-04-15`), time: '10:00 AM', room: 'R-302', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'EVEN', program: 'BTECH', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
-      { examId: 'CSE203-EVEN-R', subject: 'Operating Systems', date: new Date(`${baseYear}-04-20`), time: '10:00 AM', room: 'R-303', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'EVEN', program: 'BTECH', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
+      { examId: 'CSE101-ODD-R', subject: 'Data Structures', date: new Date(`${baseYear - 1}-12-01`), time: '10:00 AM', room: 'R-201', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'ODD', program: 'UG', branch: 'CSE', semester: '3', studentId: sampleStudent.id },
+      { examId: 'CSE102-ODD-R', subject: 'Discrete Mathematics', date: new Date(`${baseYear - 1}-12-05`), time: '10:00 AM', room: 'R-202', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'ODD', program: 'UG', branch: 'CSE', semester: '3', studentId: sampleStudent.id },
+      { examId: 'MATH101-BACKLOG', subject: 'Engineering Mathematics (Backlog)', date: new Date(`${baseYear - 1}-11-20`), time: '02:00 PM', room: 'R-105', examType: 'END_SEM', examMode: 'BACKLOG', examCategory: 'EVEN', program: 'UG', branch: 'CSE', semester: '2', studentId: sampleStudent.id },
+      { examId: 'CSE201-TEST', subject: 'Algorithms (Test)', date: new Date(`${baseYear}-04-10`), time: '09:00 AM', room: 'R-301', examType: 'TEST_I', examMode: 'REGULAR', examCategory: 'ODD', program: 'UG', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
+      { examId: 'CSE202-EVEN-R', subject: 'Database Systems', date: new Date(`${baseYear}-04-15`), time: '10:00 AM', room: 'R-302', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'EVEN', program: 'UG', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
+      { examId: 'CSE203-EVEN-R', subject: 'Operating Systems', date: new Date(`${baseYear}-04-20`), time: '10:00 AM', room: 'R-303', examType: 'END_SEM', examMode: 'REGULAR', examCategory: 'EVEN', program: 'UG', branch: 'CSE', semester: '4', studentId: sampleStudent.id },
     ];
     for (const exam of exams) {
       const exists = await prisma.exam.findFirst({ where: { examId: exam.examId } });

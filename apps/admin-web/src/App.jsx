@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AdminLayout, ProtectedRoute } from './components';
+import { BulkImportProvider } from './contexts/BulkImportContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Exams from './pages/Exams';
@@ -21,7 +22,9 @@ const App = () => {
         <Route
           element={
             <ProtectedRoute>
-              <AdminLayout />
+              <BulkImportProvider>
+                <AdminLayout />
+              </BulkImportProvider>
             </ProtectedRoute>
           }
         >

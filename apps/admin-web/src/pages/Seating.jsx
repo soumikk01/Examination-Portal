@@ -3,10 +3,9 @@ import logo from '../assets/logo.png';
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────
 const API = '/api/v1';
-const getAuthHeaders = () => {
-  const token = sessionStorage.getItem('examination_portal_admin_token');
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-};
+// Auth is handled via HttpOnly admin_token cookie automatically (set at login).
+// No manual Authorization header needed — cookies are sent by the browser on every request.
+const getAuthHeaders = () => ({ 'Content-Type': 'application/json' });
 
 const VENUE_ROOMS = {
   'C Block – CMS Building': [
@@ -85,15 +84,14 @@ const styles = `
 
   /* Info bar */
   .sa2-info {
-    display: flex; border: 1.5px solid #222; font-size: 10px;
-    font-weight: 700; margin-bottom: 0;
+    display: flex; font-size: 10px; flex-wrap: wrap; justify-content: center; gap: 1rem;
+    font-weight: 700; margin-bottom: 0.5rem;
   }
   .sa2-ic {
-    flex: 1; padding: 3px 6px; border-right: 1.5px solid #222;
-    white-space: nowrap; font-size: 10px;
+    padding: 3px 6px;
+    white-space: nowrap; font-size: 10px; color: #1a1a1a;
   }
-  .sa2-ic:last-child { border-right: none; }
-  .sa2-ic-sem { background: #1f2937; color: #fff; text-align: center; }
+  .sa2-ic-sem { text-align: center; color: #1a1a1a; }
 
   /* Seating table */
   .sa2-table {
@@ -103,9 +101,9 @@ const styles = `
   }
   .sa2-table th, .sa2-table td {
     border: 1px solid #555; padding: 0;
-    vertical-align: top; height: 18mm;
+    vertical-align: top; height: 17.5mm;
   }
-  .sa2-table th { vertical-align: middle; padding: 3px 4px; font-size: 11px; font-weight: 700; text-align: center; height: auto; }
+  .sa2-table th { vertical-align: middle; padding: 3px 4px; font-size: 11px; font-weight: 700; text-align: center; height: 17.5mm; }
 
   /* Column header types */
   .sa2-th-extra { background: #f5f5f5; }
@@ -118,12 +116,12 @@ const styles = `
   .sa2-cell-seat {
     display: flex; flex-direction: column;
     justify-content: center; align-items: center;
-    height: 100%; padding: 2px 3px;
-    font-size: 8.5px; line-height: 1.25;
-    word-break: break-word; text-align: center;
+    height: 100%; padding: 4px;
+    line-height: 1.35;
+    word-break: break-word; overflow-wrap: break-word; text-align: center;
   }
-  .sa2-cell-seat strong { font-size: 9px; font-weight: 700; display: block; }
-  .sa2-cell-seat span { display: block; }
+  .sa2-cell-seat strong { font-size: 10.5px; font-weight: 700; display: block; margin-bottom: 2px; }
+  .sa2-cell-seat span { font-size: 9.5px; display: block; }
   .sa2-cell-seat.is-extra {
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 700; color: #555; font-style: italic;
@@ -142,11 +140,11 @@ const styles = `
   .sa2-label-aisle { color: #1a1a1a; font-style: italic; opacity: 0.7; }
 
   /* Footer */
-  .sa2-footer { margin-top: 8px; text-align: right; }
+  .sa2-footer { margin-top: 28px; padding-right: 10px; text-align: right; }
   .sa2-sig { display: inline-block; text-align: center; }
-  .sa2-sig-line { width: 120px; border-top: 1px solid #333; margin: 0 auto 2px; }
-  .sa2-sig strong { font-size: 9px; display: block; }
-  .sa2-sig span   { font-size: 8px; color: #555; }
+  .sa2-sig-line { width: 140px; border-top: 1px solid #333; margin: 0 auto 6px; }
+  .sa2-sig strong { font-size: 10px; display: block; }
+  .sa2-sig span   { font-size: 9px; color: #555; }
 
   .sa2-info-msg { font-size: .82rem; color: #64748b; margin-bottom: .75rem; }
 
@@ -154,7 +152,7 @@ const styles = `
     body * { visibility: hidden; }
     .sa2-a4-outer, .sa2-a4-outer * { visibility: visible; }
     .sa2-a4-outer { position: fixed; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: white !important; border: none; overflow: hidden; }
-    .sa2-a4 { box-shadow: none !important; margin: 0 auto; padding: 8mm 10mm !important; border: none; width: 297mm; height: 210mm; box-sizing: border-box; }
+    .sa2-a4 { box-shadow: none !important; margin: 0 auto; padding: 4mm 10mm !important; border: none; width: 297mm; height: 210mm; box-sizing: border-box; }
     .sa2-no-print, .sa2-no-print * { display: none !important; visibility: hidden !important; }
     @page { size: landscape; margin: 0mm; }
   }
@@ -345,17 +343,25 @@ export default function Seating() {
             </div>
 
             {/* Info bar */}
-            <div className="sa2-info">
-              <div className="sa2-ic">Room No – {room || (seating?.roomNo) || '--'}</div>
-              {seating
-                ? collapsedHeaders.map((h, i) => (
-                    <div key={i} className="sa2-ic">
-                      {h.dept} – {deptTotals[h.dept] ?? ''}
-                    </div>
-                  ))
-                : <div className="sa2-ic">DEPT – COUNT</div>
-              }
-              <div className="sa2-ic sa2-ic-sem">SEMESTER – {semester}</div>
+            <div className="sa2-info" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div className="sa2-ic" style={{ textAlign: 'left', minWidth: '120px', fontSize: '12.5px', fontWeight: 900, letterSpacing: '0.5px' }}>
+                ROOM NO – {room || (seating?.roomNo) || '--'}
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem', flex: 1, letterSpacing: '0.5px' }}>
+                {seating
+                  ? collapsedHeaders.map((h, i) => (
+                      <div key={i} className="sa2-ic">
+                        {h.dept} – {deptTotals[h.dept] ?? ''}
+                      </div>
+                    ))
+                  : <div className="sa2-ic">DEPT – COUNT</div>
+                }
+              </div>
+
+              <div className="sa2-ic sa2-ic-sem" style={{ textAlign: 'right', minWidth: '120px', fontSize: '12.5px', fontWeight: 900, letterSpacing: '0.5px' }}>
+                SEMESTER – {semester}
+              </div>
             </div>
 
             {/* Seating table */}
@@ -366,7 +372,7 @@ export default function Seating() {
                     <>
                       <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>EXTRA</th>
                       {seating.columns.length > 2 && (
-                        <th className="sa2-th-dept" colSpan={seating.columns.length - 2}></th>
+                        <th className="sa2-th-dept" colSpan={seating.columns.length - 2} style={{ borderTop: 'none' }}></th>
                       )}
                       {seating.columns.length > 1 && (
                         <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>Door</th>
@@ -378,7 +384,7 @@ export default function Seating() {
                   ) : (
                     <>
                       <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>EXTRA</th>
-                      <th className="sa2-th-dept" colSpan={3}></th>
+                      <th className="sa2-th-dept" colSpan={3} style={{ borderTop: 'none' }}></th>
                       <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>Door</th>
                     </>
                   )}
@@ -395,10 +401,15 @@ export default function Seating() {
                         } else if (seat.isExtra) {
                            return <td key={`extra-seat-${ci}`}><div className="sa2-cell-seat is-extra">{seat.label === 'EXTRA' ? 'EXTRA' : seat.label}</div></td>;
                         } else {
+                          // Format as:
+                          // Line 1 (strong): DEPT_STUDENT NAME
+                          // Line 2 (span): ROLL NUMBER
+                          const nameStr = (seat.studentName || '').toUpperCase();
                           return (
                             <td key={ci}>
                               <div className="sa2-cell-seat">
-                                {seat.label}
+                                <strong>{seat.dept}_{nameStr}</strong>
+                                <span>{seat.rollNo}</span>
                               </div>
                             </td>
                           );

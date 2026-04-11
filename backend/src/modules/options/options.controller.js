@@ -38,3 +38,13 @@ export async function getExamOptions(req, res, next) {
     next(error);
   }
 }
+
+/** GET /options/all-programs – all programs with branches/semesters for auto-detect. */
+export async function getAllProgramsWithBranches(req, res, next) {
+  try {
+    const data = await optionsService.listAllProgramsWithBranches();
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+}

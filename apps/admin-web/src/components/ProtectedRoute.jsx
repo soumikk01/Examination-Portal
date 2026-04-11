@@ -49,7 +49,7 @@ const ProtectedRoute = ({ children }) => {
 
     validate();
     return () => { isMounted = false; };
-  }, [location.pathname]);
+  }, []); // Validate once on mount — the API interceptor in api.js handles 401s on subsequent requests
 
   if (authState === 'loading') {
     // Tiny loading state prevents flashing the login page before validation

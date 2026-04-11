@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx-js-style';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
-import { Upload, FileSpreadsheet, Download, Trash2, CheckCircle, AlertCircle, Users, UserPlus } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, Trash2, CheckCircle, AlertCircle, Users, UserPlus, Loader2 } from 'lucide-react';
+import { useBulkImport } from '../contexts/BulkImportContext';
 
 // ── Column mapping: Excel/CSV header → DB field ──────────────────────────────
 const COLUMN_MAP = {
@@ -29,31 +30,51 @@ const COLUMN_MAP = {
   'reg number': 'studentReg',
   'reg no': 'studentReg',
   'reg': 'studentReg',
-  'examinationsem': 'examinationSem',
-  'examination sem': 'examinationSem',
-  'examination_sem': 'examinationSem',
-  'examsem': 'examinationSem',
+  // Both examination sem and semester map to the same field: semester
+  'examinationsem': 'semester',
+  'examination sem': 'semester',
+  'examination_sem': 'semester',
+  'examsem': 'semester',
+  'semester': 'semester',
+  'sem': 'semester',
   'batch': 'batch',
   'program': 'program',
   'branch': 'branch',
-  'semester': 'semester',
-  'sem': 'semester',
   'degree': 'degree',
 };
 
+// Simplified template — a single 'semester' column, no separate examinationSem
 const TEMPLATE_HEADERS = [
-  'collegeId', 'name', 'studentRoll', 'department', 'studentReg',
-  'examinationSem', 'batch', 'program', 'branch', 'semester', 'degree'
+  'collegeId', 'name', 'studentRoll', 'department', 'semester', 'studentReg', 'batch',
+];
+
+// Preview columns shown in the table (includes auto-detected fields)
+const PREVIEW_HEADERS = [
+  'collegeId', 'name', 'studentRoll', 'department', 'semester', 'studentReg', 'batch', 'program', 'degree',
 ];
 
 const initialForm = {
   collegeId: '', name: '', department: '', degree: '',
-  studentRoll: '', studentReg: '', examinationSem: '',
-  batch: '', program: '', branch: '', semester: '',
+  studentRoll: '', studentReg: '', batch: '', 
+  program: '', semester: '',
 };
 
+// ── Build program/branch lookup map from fetched options ─────────────────────
+// branchLookup: { 'CSE' -> { code:'BTECH', name:'B.Tech' }, ... }
+function buildBranchLookup(allPrograms) {
+  const map = {};
+  for (const prog of allPrograms) {
+    for (const branch of prog.branches) {
+      // branch is now { name, degree }
+      map[branch.name.toUpperCase()] = { code: prog.code, name: branch.degree };
+    }
+  }
+  return map;
+}
+
+
 // ── Parse a file into rows ────────────────────────────────────────────────────
-function parseFile(file) {
+function parseFile(file, branchLookup = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -72,8 +93,23 @@ function parseFile(file) {
             const key = COLUMN_MAP[h.toLowerCase()];
             if (key) obj[key] = String(row[i] ?? '').trim();
           });
+
+          // Sync collegeId ↔ studentRoll
           if (!obj.collegeId && obj.studentRoll) obj.collegeId = obj.studentRoll;
           if (!obj.studentRoll && obj.collegeId) obj.studentRoll = obj.collegeId;
+
+          // ── AUTO-DETECT program & degree from branch or department ──────────
+          const lookupKey = (obj.branch || obj.department || '').toUpperCase();
+          if (lookupKey && branchLookup[lookupKey]) {
+            const found = branchLookup[lookupKey];
+            if (!obj.program) obj.program = found.code;   // e.g. UG / PG
+            if (!obj.degree)  obj.degree  = found.name;   // e.g. Undergraduate / Postgraduate
+          }
+
+          // ── Ensure branch and department are synchronized ──────────────────
+          if (!obj.branch && obj.department) obj.branch = obj.department;
+          if (!obj.department && obj.branch) obj.department = obj.branch;
+
           return obj;
         }).filter(r => r.collegeId && r.studentRoll);
 
@@ -89,7 +125,8 @@ function parseFile(file) {
 
 // ── Download template ─────────────────────────────────────────────────────────
 function downloadTemplate() {
-  const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS, ['JIS001', 'John Doe', 'R001', 'CSE', 'REG001', '3', '2022-26', 'B.Tech', 'CSE', '3', 'B.Tech']]);
+  const exampleRow = ['JIS001', 'John Doe', 'R001', 'CSE', '3', 'REG001', '2022-26'];
+  const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS, exampleRow]);
   // Style header row
   TEMPLATE_HEADERS.forEach((_, ci) => {
     const key = XLSX.utils.encode_cell({ r: 0, c: ci });
@@ -113,29 +150,35 @@ const Students = () => {
   const [errors, setErrors] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [programs, setPrograms] = useState([]);
-  const [branches, setBranches] = useState([]);
   const [semesters, setSemesters] = useState([]);
+  const [branchLookup, setBranchLookup] = useState({});  // for auto-detection
 
   // Bulk upload
-  const [bulkRows, setBulkRows] = useState([]);
-  const [bulkFileName, setBulkFileName] = useState('');
-  const [bulkStatus, setBulkStatus] = useState('idle'); // idle | loading | success | error
-  const [bulkResult, setBulkResult] = useState(null);
-  const [bulkError, setBulkError] = useState('');
+  const {
+    bulkRows, setBulkRows,
+    bulkFileName, setBulkFileName,
+    bulkStatus, setBulkStatus,
+    bulkResult, setBulkResult,
+    bulkError, setBulkError,
+    handleBulkSubmit, handleClearBulk: contextClearBulk
+  } = useBulkImport();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     api.get('/options/programs').then(d => setPrograms(Array.isArray(d) ? d : [])).catch(() => setPrograms([]));
+    // Fetch all programs+branches for auto-detection during file upload
+    api.get('/options/all-programs')
+      .then(d => { if (Array.isArray(d)) setBranchLookup(buildBranchLookup(d)); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!form.program) { setBranches([]); setSemesters([]); return; }
+    if (!form.program) { setSemesters([]); return; }
     const ctrl = new AbortController();
-    Promise.all([
-      api.get('/options/branches', { params: { program: form.program }, signal: ctrl.signal }).then(d => setBranches(Array.isArray(d) ? d : [])),
-      api.get('/options/semesters', { params: { program: form.program }, signal: ctrl.signal }).then(d => setSemesters(Array.isArray(d) ? d : [])),
-    ]).catch(err => { if (err?.code !== 'ERR_CANCELED') { setBranches([]); setSemesters([]); } });
+    api.get('/options/semesters', { params: { program: form.program }, signal: ctrl.signal })
+      .then(d => setSemesters(Array.isArray(d) ? d : []))
+      .catch(err => { if (err?.code !== 'ERR_CANCELED') { setSemesters([]); } });
     return () => ctrl.abort();
   }, [form.program]);
 
@@ -152,7 +195,8 @@ const Students = () => {
     e.preventDefault();
     setMessage('');
     
-    const requiredFields = ['collegeId', 'name', 'studentRoll', 'department', 'studentReg', 'examinationSem', 'batch', 'program', 'branch', 'semester'];
+    // 'department' is required because it maps to 'branch' — must not be empty
+    const requiredFields = ['collegeId', 'name', 'studentRoll', 'department', 'studentReg', 'batch', 'program', 'semester'];
     const newErrors = requiredFields.filter(f => !form[f]?.trim());
     
     if (newErrors.length > 0) {
@@ -161,7 +205,13 @@ const Students = () => {
       return;
     }
 
-    const payload = { ...form, program: form.program || undefined, branch: form.branch || undefined, semester: form.semester || undefined };
+    const payload = { 
+      ...form, 
+      branch: form.department.trim(), // Department (Branch) is required — already validated above
+      program: form.program || undefined, 
+      semester: form.semester || undefined 
+    };
+
     api.post('/student', payload)
       .then(() => { setMessage('Student registered successfully.'); setForm(initialForm); })
       .catch(err => setMessage(getUserFriendlyApiError(err, 'Registration failed')));
@@ -179,7 +229,8 @@ const Students = () => {
     setBulkResult(null);
     setBulkStatus('loading');
     try {
-      const rows = await parseFile(file);
+      // Pass branchLookup so auto-detection works immediately
+      const rows = await parseFile(file, branchLookup);
       setBulkRows(rows);
       setBulkFileName(file.name);
       setBulkStatus('idle');
@@ -195,26 +246,8 @@ const Students = () => {
     handleFileSelect(e.dataTransfer.files[0]);
   };
 
-  const handleBulkSubmit = async () => {
-    if (!bulkRows.length) return;
-    setBulkStatus('loading');
-    setBulkResult(null);
-    try {
-      const result = await api.post('/students/bulk', { students: bulkRows });
-      setBulkResult(result);
-      setBulkStatus('success');
-    } catch (err) {
-      setBulkError(getUserFriendlyApiError(err, 'Bulk import failed.'));
-      setBulkStatus('error');
-    }
-  };
-
   const handleClearBulk = () => {
-    setBulkRows([]);
-    setBulkFileName('');
-    setBulkResult(null);
-    setBulkStatus('idle');
-    setBulkError('');
+    contextClearBulk();
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -255,9 +288,8 @@ const Students = () => {
               { name: 'collegeId', placeholder: 'College ID', required: true },
               { name: 'name', placeholder: 'Full Name', required: true },
               { name: 'studentRoll', placeholder: 'Student Roll', required: true },
-              { name: 'department', placeholder: 'Department' },
+              { name: 'department', placeholder: 'Department (Branch)' },
               { name: 'studentReg', placeholder: 'Student Registration No.' },
-              { name: 'examinationSem', placeholder: 'Examination Semester' },
               { name: 'batch', placeholder: 'Batch (e.g., 2022-26)' },
             ].map(f => {
               const isError = errors.includes(f.name);
@@ -285,15 +317,11 @@ const Students = () => {
                 <option value="">Program</option>
                 {programs.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
               </select>
-              <select name="branch" value={form.branch} onChange={handleChange} disabled={!form.program} className={errors.includes('branch') ? 'shake-animation' : ''} style={{ ...inputStyle, borderColor: errors.includes('branch') ? '#ef4444' : 'var(--admin-border)', backgroundColor: errors.includes('branch') ? '#fef2f2' : 'white', transition: 'all 0.2s ease' }}>
-                <option value="">Branch</option>
-                {branches.map(b => <option key={b} value={b}>{b}</option>)}
+              <select name="semester" value={form.semester} onChange={handleChange} disabled={!form.program} className={errors.includes('semester') ? 'shake-animation' : ''} style={{ ...inputStyle, borderColor: errors.includes('semester') ? '#ef4444' : 'var(--admin-border)', backgroundColor: errors.includes('semester') ? '#fef2f2' : 'white', transition: 'all 0.2s ease' }}>
+                <option value="">Semester</option>
+                {semesters.map(s => <option key={s} value={s}>Semester {s}</option>)}
               </select>
             </div>
-            <select name="semester" value={form.semester} onChange={handleChange} disabled={!form.program} className={errors.includes('semester') ? 'shake-animation' : ''} style={{ ...inputStyle, borderColor: errors.includes('semester') ? '#ef4444' : 'var(--admin-border)', backgroundColor: errors.includes('semester') ? '#fef2f2' : 'white', transition: 'all 0.2s ease' }}>
-              <option value="">Semester</option>
-              {semesters.map(s => <option key={s} value={s}>Semester {s}</option>)}
-            </select>
             <button type="submit" className="admin-btn admin-btn-primary" style={{ marginTop: '0.25rem' }}>Register</button>
           </form>
         </div>
@@ -389,7 +417,7 @@ const Students = () => {
                     {bulkFileName} — <span style={{ color: '#3b82f6' }}>{bulkRows.length} row{bulkRows.length !== 1 ? 's' : ''}</span> ready
                   </span>
                 </div>
-                <button onClick={handleClearBulk} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }} title="Clear">
+                <button onClick={handleClearBulk} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Clear">
                   <Trash2 size={15} />
                 </button>
               </div>
@@ -400,8 +428,10 @@ const Students = () => {
                   <thead>
                     <tr style={{ background: '#f1f5f9', position: 'sticky', top: 0 }}>
                       <th style={{ padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', color: '#475569', fontWeight: 700 }}>#</th>
-                      {TEMPLATE_HEADERS.map(h => (
-                        <th key={h} style={{ padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'left', color: '#475569', fontWeight: 700 }}>{h}</th>
+                      {PREVIEW_HEADERS.map(h => (
+                        <th key={h} style={{ padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'left', color: ['program','degree'].includes(h) ? '#7c3aed' : '#475569', fontWeight: 700 }}>
+                          {h}{['program','degree'].includes(h) ? ' ✦' : ''}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -409,8 +439,8 @@ const Students = () => {
                     {bulkRows.slice(0, 50).map((row, i) => (
                       <tr key={i} style={{ background: i % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
                         <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0', color: '#9ca3af', textAlign: 'center' }}>{i + 1}</td>
-                        {TEMPLATE_HEADERS.map(h => (
-                          <td key={h} style={{ padding: '4px 8px', border: '1px solid #e2e8f0', color: '#374151' }}>{row[h] || ''}</td>
+                        {PREVIEW_HEADERS.map(h => (
+                          <td key={h} style={{ padding: '4px 8px', border: '1px solid #e2e8f0', color: ['program','degree'].includes(h) && row[h] ? '#7c3aed' : '#374151', fontWeight: ['program','degree'].includes(h) && row[h] ? 600 : 400 }}>{row[h] || ''}</td>
                         ))}
                       </tr>
                     ))}
@@ -428,12 +458,37 @@ const Students = () => {
               <div style={{ display: 'flex', gap: '0.65rem' }}>
                 <button
                   onClick={handleBulkSubmit}
-                  disabled={bulkStatus === 'loading'}
+                  disabled={bulkStatus === 'loading' || bulkStatus === 'success'}
                   className="admin-btn admin-btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: bulkStatus === 'loading' ? 0.7 : 1 }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    opacity: bulkStatus === 'loading' ? 0.7 : 1,
+                    background: bulkStatus === 'success' ? '#10b981' : '',
+                    borderColor: bulkStatus === 'success' ? '#059669' : '',
+                  }}
                 >
-                  <Upload size={15} />
-                  {bulkStatus === 'loading' ? 'Importing…' : `Import ${bulkRows.length} Students`}
+                  <style>
+                    {`
+                      @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                      }
+                    `}
+                  </style>
+                  {bulkStatus === 'loading' ? (
+                    <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                  ) : bulkStatus === 'success' ? (
+                    <CheckCircle size={15} />
+                  ) : (
+                    <Upload size={15} />
+                  )}
+                  {bulkStatus === 'loading'
+                    ? 'Importing…'
+                    : bulkStatus === 'success'
+                    ? 'Import Complete'
+                    : `Import ${bulkRows.length} Students`}
                 </button>
                 <button onClick={handleClearBulk} className="admin-btn" style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb' }}>
                   Clear

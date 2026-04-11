@@ -139,9 +139,7 @@ export async function listPublished({ departmentCode, semester, mode, scheduleTy
   }
 
   const safeLevel = level ? String(level).toUpperCase() : null;
-  // Diploma schedule is not stored as a separate level in PDFs; reuse UG schedules.
-  const levelFilter =
-    safeLevel === 'UG' || safeLevel === 'PG' ? safeLevel : safeLevel === 'DIPLOMA' ? 'UG' : null;
+  const levelFilter = ['UG', 'PG'].includes(safeLevel) ? safeLevel : null;
 
   return prisma.examSchedule.findMany({
     where: {
@@ -159,9 +157,7 @@ export async function listPublished({ departmentCode, semester, mode, scheduleTy
 export async function listPublishedFilters({ mode, level } = {}) {
   const safeMode = String(mode || 'REGULAR').toUpperCase() === 'BACKLOG' ? 'BACKLOG' : 'REGULAR';
   const safeLevel = level ? String(level).toUpperCase() : null;
-  const requestedDiploma = safeLevel === 'DIPLOMA';
-  // Diploma schedules are represented inside UG schedules; for Diploma we query UG then filter to EE/ME.
-  const levelFilter = safeLevel === 'UG' || safeLevel === 'PG' ? safeLevel : requestedDiploma ? 'UG' : null;
+  const levelFilter = ['UG', 'PG'].includes(safeLevel) ? safeLevel : null;
 
   const rows = await prisma.examSchedule.findMany({
     where: {
@@ -192,16 +188,9 @@ export async function listPublishedFilters({ mode, level } = {}) {
     if (r.scheduleType) types.add(r.scheduleType);
   }
 
-  // Diploma: only show EE + ME departments (as requested)
-  if (requestedDiploma) {
-    for (const code of [...deptMap.keys()]) {
-      if (code !== 'EE' && code !== 'ME') deptMap.delete(code);
-    }
-  }
-
   return {
     mode: safeMode,
-    level: safeLevel,
+    level: levelFilter,
     levels: [...levels].sort(),
     departments: [...deptMap.entries()]
       .map(([code, name]) => ({ code, name }))

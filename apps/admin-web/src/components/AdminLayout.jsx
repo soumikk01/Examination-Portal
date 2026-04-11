@@ -28,7 +28,13 @@ const navItems = [
 
 const AdminLayout = () => {
   const staffJson = sessionStorage.getItem('examination_portal_admin_staff');
-  const staff = staffJson ? JSON.parse(staffJson) : null;
+  let staff = null;
+  try {
+    staff = staffJson ? JSON.parse(staffJson) : null;
+  } catch {
+    // Corrupted storage — ignore and treat as logged out (api interceptor will redirect)
+    sessionStorage.removeItem('examination_portal_admin_staff');
+  }
 
   const handleLogout = async () => {
     await api.logout();

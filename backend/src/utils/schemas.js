@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
-const programEnum = z.enum(['BTECH', 'MTECH', 'DIPLOMA', 'MCA', 'BCA', 'BBA', 'MBA']);
+const programEnum = z.enum(['UG', 'PG']);
 
 export const studentSchema = z.object({
   collegeId: z.string().min(1, 'College ID is required'),
   name: z.string().min(1, 'Name is required'),
   department: z.string().optional().nullable(),
   degree: z.string().optional().nullable(),
-  studentRoll: z.string().regex(/^\d{12}$/, 'Roll number must be 12 digits'),
+  studentRoll: z.string().min(1, 'Roll number is required'),
   studentReg: z.string().optional().nullable(),
   examinationSem: z.string().optional().nullable(),
   batch: z.string().optional().nullable(),
@@ -22,7 +22,7 @@ export const studentSchema = z.object({
 // Branch and semester are required here to match the Prisma Exam model,
 // which defines both fields as non-nullable String columns.
 export const examFormSchema = z.object({
-  program: z.enum(['BTECH', 'MTECH', 'DIPLOMA', 'MCA', 'BCA', 'BBA', 'MBA']),
+  program: z.enum(['UG', 'PG']),
   branch: z.string().min(1, 'Branch is required'),
   semester: z.string().min(1, 'Semester is required'),
   examType: z.enum(['TEST_I', 'TEST_II', 'END_SEM']),
@@ -49,7 +49,7 @@ export const verificationSchema = z.object({
   collegeId: z.string().min(1),
   verification: z
     .string()
-    .regex(/^\d{12}$/, 'Roll number must be 12 digits'),
+    .min(1, 'Roll number is required'),
 });
 
 export const adminLoginSchema = z.object({

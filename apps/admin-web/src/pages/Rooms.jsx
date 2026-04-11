@@ -11,15 +11,15 @@ const getAuthHeaders = () => {
 };
 
 // UG and PG department columns
-const UG_BRANCHES = ["AGE", "BME", "CE", "CSE", "AIML", "CST", "EE", "ECE", "IT", "ME"];
-const PG_REGULAR_BRANCHES = ["BBA", "BBA-DM", "BBA-HM", "BCA", "MCSE", "EDPS", "MME", "MBA", "MCA"];
-const PG_BACKLOG_BRANCHES = ["BBA", "BBA-DM", "BBA-HM", "BCA", "MCSE", "EDPS", "MME", "MBA", "MCA"];
+const UG_BRANCHES = ["AGE", "BME", "CE", "CSE", "AIML", "CST", "EE", "ECE", "IT", "ME", "BBA", "BBA-DM", "BBA-HM", "BCA"];
+const PG_REGULAR_BRANCHES = ["MCSE", "EDPS", "MME", "MBA", "MCA"];
+const PG_BACKLOG_BRANCHES = ["MCSE", "EDPS", "MME", "MBA", "MCA"];
 
 const SECTIONS = [
-  { key: "UG_REGULAR", label: "UG REGULAR", branches: UG_BRANCHES },
-  { key: "UG_BACKLOG", label: "UG BACKLOG", branches: UG_BRANCHES },
-  { key: "PG_REGULAR", label: "BBA+BCA + PG REGULAR", branches: PG_REGULAR_BRANCHES },
-  { key: "PG_BACKLOG", label: "BBA+BCA + PG BACKLOG", branches: PG_BACKLOG_BRANCHES },
+  { key: "UG_REGULAR", label: "UG REGULAR (B.TECH, BBA, BCA)", branches: UG_BRANCHES },
+  { key: "UG_BACKLOG", label: "UG BACKLOG (B.TECH, BBA, BCA)", branches: UG_BRANCHES },
+  { key: "PG_REGULAR", label: "PG REGULAR (M.TECH, MBA, MCA)", branches: PG_REGULAR_BRANCHES },
+  { key: "PG_BACKLOG", label: "PG BACKLOG (M.TECH, MBA, MCA)", branches: PG_BACKLOG_BRANCHES },
 ];
 
 const VENUES = [
@@ -271,6 +271,7 @@ export default function RoomAllotment() {
   const [saveStatus, setSaveStatus] = useState("idle");
   const [showSaveBanner, setShowSaveBanner] = useState(false);
   const [setBtnStatus, setSetBtnStatus] = useState("idle");
+  const [viewMode, setViewMode] = useState("UG"); // "UG" or "ALL"
   const [showPgRegular, setShowPgRegular] = useState(false);
   const [showPgBacklog, setShowPgBacklog] = useState(false);
   const [dbCapacities, setDbCapacities] = useState({});
@@ -833,10 +834,88 @@ export default function RoomAllotment() {
     ? SECTIONS.reduce((s, sec) => s + Object.values(studentCounts[sec.key] || {}).reduce((a, b) => a + b, 0), 0)
     : 0;
 
-  const visibleSections = [
-    showPgRegular ? SECTIONS[2] : SECTIONS[0],
-    showPgBacklog ? SECTIONS[3] : SECTIONS[1],
-  ];
+  const visibleSections = viewMode === "ALL"
+    ? [...SECTIONS]
+    : [
+        showPgRegular ? SECTIONS[2] : SECTIONS[0],
+        showPgBacklog ? SECTIONS[3] : SECTIONS[1]
+      ];
+
+  // ── Import Excel logic ───────────────────────────────────────────────────
+  const fileInputRef = useRef(null);
+  
+  const handleImportExcel = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Convert to array of arrays
+        const aoa = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        if (!aoa || aoa.length < 5) {
+          alert("Invalid Excel format. Please use the downloaded template.");
+          return;
+        }
+
+        // We know Row 2 (index 2) has the branches, but we can do a simpler matching:
+        // We iterate data rows (usually starting from index 6 for C Block)
+        setRows(prevRows => {
+          pushHistory(prevRows);
+          const newRows = prevRows.map(r => ({
+            ...r,
+            UG_REGULAR: { ...r.UG_REGULAR }, UG_BACKLOG: { ...r.UG_BACKLOG },
+            PG_REGULAR: { ...r.PG_REGULAR }, PG_BACKLOG: { ...r.PG_BACKLOG }
+          }));
+
+          // Process each row in Excel
+          for (let i = 5; i < aoa.length; i++) {
+            const rowData = aoa[i];
+            const roomNo = rowData[0];
+            if (!roomNo || String(roomNo).startsWith("(Venue:")) continue;
+
+            const targetRow = newRows.find(r => r.roomNo === roomNo);
+            if (!targetRow) continue;
+
+            // Excel columns: 
+            // 0: RoomNo
+            // 1..14: UG Regular (14 branches)
+            // 15: Total
+            // 16..29: UG Backlog (14 branches)
+            // 30: Total
+            // 31..35: PG Regular (5 branches)
+            // 36: Total
+            // 37..41: PG Backlog (5 branches)
+            // 42: Total
+            
+            let colIdx = 1;
+            SECTIONS.forEach(sec => {
+              sec.branches.forEach(branch => {
+                const val = parseInt(rowData[colIdx], 10);
+                if (!isNaN(val) && val >= 0) {
+                  targetRow[sec.key][branch] = val;
+                }
+                colIdx++;
+              });
+              colIdx++; // Skip the "Total" column
+            });
+          }
+          return newRows;
+        });
+
+      } catch (err) {
+        console.error(err);
+        alert("Failed to parse Excel file.");
+      }
+      e.target.value = null; // reset input
+    };
+    reader.readAsBinaryString(file);
+  };
 
   // ── Remaining students (total - assigned across all rooms) ─────────────────
   function getRemaining(secKey, branch) {
@@ -934,7 +1013,17 @@ export default function RoomAllotment() {
         {/* Title */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
           <h1 style={{ fontSize: "1.3rem", fontWeight: 700, margin: 0 }}>Room Allotment</h1>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            {/* View Toggle / Read Switch (Moved out of box) */}
+            <button
+              className={`ra-btn ${viewMode === 'ALL' ? "ra-btn-green" : "ra-btn-blue"}`}
+              onClick={() => setViewMode(prev => prev === "UG" ? "ALL" : "UG")}
+              title="Switch between viewing UG only, or Full Chart (UG + PG)"
+              style={{ fontWeight: 800, marginRight: "1rem" }}
+            >
+              {viewMode === "UG" ? "Switch to read" : "Switch back"}
+            </button>
+
             {saveStatus === "ok"      && <span className="ra-status ra-status-ok">✓ Saved</span>}
             {saveStatus === "error"   && <span className="ra-status ra-status-err">Save failed</span>}
             {saveStatus === "saving"  && <span className="ra-status ra-status-loading">Saving…</span>}
@@ -962,67 +1051,90 @@ export default function RoomAllotment() {
 
           <div style={{ flex: 1 }} />
 
-          {/* Venue */}
-          <div className="ra-group">
-            <label>Venue</label>
-            <select className="ra-input" value={selVenue} onChange={e => handleVenueChange(e.target.value)}>
-              <option value="">Select Venue</option>
-              {VENUES.map(v => <option key={v.label} value={v.label}>{v.label}</option>)}
-            </select>
-          </div>
+          {viewMode !== "ALL" && (
+            <>
+              {/* Venue */}
+              <div className="ra-group">
+                <label>Venue</label>
+                <select className="ra-input" value={selVenue} onChange={e => handleVenueChange(e.target.value)}>
+                  <option value="">Select Venue</option>
+                  {VENUES.map(v => <option key={v.label} value={v.label}>{v.label}</option>)}
+                </select>
+              </div>
 
-          {/* Room */}
-          <div className="ra-group">
-            <label>Room</label>
-            <select className="ra-input" value={selRoom} onChange={e => handleRoomChange(e.target.value)} disabled={!selVenue}>
-              <option value="">Select Room</option>
-              {currentVenueRooms.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
+              {/* Room */}
+              <div className="ra-group">
+                <label>Room</label>
+                <select className="ra-input" value={selRoom} onChange={e => handleRoomChange(e.target.value)} disabled={!selVenue}>
+                  <option value="">Select Room</option>
+                  {currentVenueRooms.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
 
-          {/* Capacity */}
-          <div className="ra-group">
-            <label>Capacity</label>
-            <input
-              type="number"
-              className="ra-input"
-              placeholder="e.g. 40"
-              value={capInput}
-              onChange={e => setCapInput(e.target.value)}
-              min={1}
-              style={{ width: 90 }}
-            />
-          </div>
+              {/* Capacity */}
+              <div className="ra-group">
+                <label>Capacity</label>
+                <input
+                  type="number"
+                  className="ra-input"
+                  placeholder="e.g. 40"
+                  value={capInput}
+                  onChange={e => setCapInput(e.target.value)}
+                  min={1}
+                  style={{ width: 90 }}
+                />
+              </div>
 
-          <button
-            className="ra-btn ra-btn-blue"
-            onClick={handleSetCapacity}
-            disabled={!selRoom || !capInput || setBtnStatus === "saving"}
-            title="Set capacity for this room"
-          >
-            {setBtnStatus === "saving" ? "Saving..." : "Set"}
-          </button>
+              <button
+                className="ra-btn ra-btn-blue"
+                onClick={handleSetCapacity}
+                disabled={!selRoom || !capInput || setBtnStatus === "saving"}
+                title="Set capacity for this room"
+              >
+                {setBtnStatus === "saving" ? "Saving..." : "Set"}
+              </button>
+            </>
+          )}
+
+          {viewMode === "ALL" && (
+            <div className="ra-group" style={{ flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
+              <label style={{ margin: 0, fontWeight: 700, color: "#1e293b", fontSize: "0.82rem", textTransform: "none" }}>Import Excel:</label>
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                className="ra-input"
+                style={{ padding: "0.25rem", width: "210px", background: "#f8fafc", cursor: "pointer" }}
+                onChange={handleImportExcel}
+                disabled={!studentCounts || fetchStatus !== "ok"}
+                title="Upload a previously downloaded Room Allotment Excel sheet to apply changes"
+              />
+            </div>
+          )}
 
           {/* Line Break to drop controls below Venue/Room/Capacity inputs */}
           <div style={{ flexBasis: "100%", height: 0, margin: "0.25rem 0" }} />
 
-          {/* Auto Run Mode Toggle */}
-          <button
-            className={`ra-btn ${autoRunMode ? "ra-btn-purple" : "ra-btn-gray"}`}
-            onClick={() => { setAutoRunMode(!autoRunMode); setSelectedRunCells([]); }}
-            disabled={!studentCounts || fetchStatus !== "ok"}
-            title="Toggle Auto Run Mode: click cells in a room, then evenly distribute students"
-          >
-            {autoRunMode ? "Exit Auto Run" : "Auto Run Mode"}
-          </button>
-          
-          {autoRunMode && selectedRunCells.length > 0 && (
-            <button
-              className="ra-btn ra-btn-blue"
-              onClick={handleRunDistribution}
-            >
-              Run Distribution
-            </button>
+          {viewMode !== "ALL" && (
+            <>
+              {/* Auto Run Mode Toggle */}
+              <button
+                className={`ra-btn ${autoRunMode ? "ra-btn-purple" : "ra-btn-gray"}`}
+                onClick={() => { setAutoRunMode(!autoRunMode); setSelectedRunCells([]); }}
+                disabled={!studentCounts || fetchStatus !== "ok"}
+                title="Toggle Auto Run Mode: click cells in a room, then evenly distribute students"
+              >
+                {autoRunMode ? "Exit Auto Run" : "Auto Run Mode"}
+              </button>
+              
+              {autoRunMode && selectedRunCells.length > 0 && (
+                <button
+                  className="ra-btn ra-btn-blue"
+                  onClick={handleRunDistribution}
+                >
+                  Run Distribution
+                </button>
+              )}
+            </>
           )}
 
           {/* Undo / Redo */}
@@ -1045,17 +1157,37 @@ export default function RoomAllotment() {
             <Redo2 size={15} />
           </button>
 
-          <div style={{ flex: 1 }} />
+          <div style={{ flex: viewMode === "ALL" ? 0 : 1 }} />
 
-          {/* Download Excel */}
-          <button
-            className="ra-btn ra-btn-gray"
-            onClick={handleDownloadExcel}
-            disabled={!studentCounts || fetchStatus !== "ok"}
-            title="Download all 4 sections (UG Regular, UG Backlog, PG Regular, PG Backlog) in one Excel file"
-          >
-            Excel
-          </button>
+          {/* Download & Import Excel */}
+          {viewMode !== "ALL" && (
+            <button
+              className="ra-btn ra-btn-gray"
+              onClick={handleDownloadExcel}
+              disabled={!studentCounts || fetchStatus !== "ok"}
+              title="Download all 4 sections (UG Regular, UG Backlog, PG Regular, PG Backlog) in one Excel file"
+            >
+              Excel (Download)
+            </button>
+          )}
+
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            style={{ display: "none" }}
+            ref={fileInputRef}
+            onChange={handleImportExcel}
+          />
+          {viewMode !== "ALL" && (
+            <button
+              className="ra-btn ra-btn-gray"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!studentCounts || fetchStatus !== "ok"}
+              title="Upload a previously downloaded Room Allotment Excel sheet to apply changes"
+            >
+              Import Excel
+            </button>
+          )}
 
           {/* Save */}
           <button

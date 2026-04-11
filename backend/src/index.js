@@ -11,8 +11,7 @@ import jwt from 'jsonwebtoken';
 import prisma from './database/database.js';
 import { config } from './config/config.js';
 import { verifyToken, authorizeStudent, authorizeAdmin, validate } from './middleware/auth.middleware.js';
-import { verificationSchema, adminLoginSchema } from './utils/schemas.js';
-import { studentSchema, examFormSchema } from './utils/schemas.js';
+import { verificationSchema, adminLoginSchema, studentSchema, examFormSchema } from './utils/schemas.js';
 import * as authController from './modules/auth/auth.controller.js';
 import * as studentController from './modules/students/student.controller.js';
 import * as examController from './modules/exams/exam.controller.js';
@@ -97,7 +96,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -193,6 +192,7 @@ v1Router.get('/options/programs', authorizeAdmin, optionsController.getPrograms)
 v1Router.get('/options/branches', authorizeAdmin, optionsController.getBranches);
 v1Router.get('/options/semesters', authorizeAdmin, optionsController.getSemesters);
 v1Router.get('/options/exam-options', authorizeAdmin, optionsController.getExamOptions);
+v1Router.get('/options/all-programs', authorizeAdmin, optionsController.getAllProgramsWithBranches);
 
 v1Router.get('/students', authorizeAdmin, studentController.list);
 v1Router.post('/student', authorizeAdmin, validate(studentSchema), studentController.register);
