@@ -82,7 +82,7 @@ export const cache = {
       if (redis.status !== 'ready') return;
       await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
     } catch (err) {
-      // Failed to set cache
+      logger.warn(`[cache] Failed to set key '${key}': [${err.code || err.name}]`);
     }
   },
 
@@ -90,8 +90,8 @@ export const cache = {
     try {
       if (redis.status !== 'ready') return;
       await redis.del(key);
-    } catch (_) {
-      // Failed to delete cache
+    } catch (err) {
+      logger.warn(`[cache] Failed to delete key '${key}': [${err.code || err.name}]`);
     }
   },
 
@@ -107,8 +107,8 @@ export const cache = {
           await redis.del(...keys);
         }
       } while (cursor !== '0');
-    } catch (_) {
-      // Failed to delete pattern
+    } catch (err) {
+      logger.warn(`[cache] Failed to delete pattern '${pattern}': [${err.code || err.name}]`);
     }
   },
 };

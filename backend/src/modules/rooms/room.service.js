@@ -240,11 +240,10 @@ const UG_PROGRAMS = new Set(['UG']);
 // PG: M.Tech, MCA, MBA
 const PG_PROGRAMS = new Set(['PG']);
 
-// Branches shown in PG_REGULAR
-const PG_REGULAR_BRANCHES = new Set(['MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
-
-// Branches shown in PG_BACKLOG
-const PG_BACKLOG_BRANCHES = new Set(['MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
+// Branches valid for PG programs (used for both REGULAR and BACKLOG modes)
+const PG_BRANCHES = new Set(['MCSE', 'EDPS', 'MME', 'MBA', 'MCA']);
+// Note: PG_REGULAR and PG_BACKLOG share the same branch set for now.
+// If they diverge in future, split back into PG_REGULAR_BRANCHES / PG_BACKLOG_BRANCHES.
 
 export async function getStudentCountsForSemester({ semester }) {
   let students = [];
@@ -295,12 +294,11 @@ export async function getStudentCountsForSemester({ semester }) {
     const mode = hasBacklog ? 'BACKLOG' : 'REGULAR';
 
     if (isUG) {
-      // B.Tech: all branches accepted in both modes
+      // UG includes B.Tech, BCA, and BBA — all branches are accepted in both REGULAR and BACKLOG
       result[`UG_${mode}`][branch] = (result[`UG_${mode}`][branch] || 0) + 1;
     } else {
-      // PG / BBA+BCA: enforce separate branch allow-lists per mode
-      const allowed = mode === 'BACKLOG' ? PG_BACKLOG_BRANCHES : PG_REGULAR_BRANCHES;
-      if (allowed.has(branch)) {
+      // PG (M.Tech, MBA, MCA): enforce the PG branch allow-list
+      if (PG_BRANCHES.has(branch)) {
         result[`PG_${mode}`][branch] = (result[`PG_${mode}`][branch] || 0) + 1;
       }
     }

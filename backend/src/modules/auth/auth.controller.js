@@ -86,8 +86,15 @@ export async function updateAdminPassword(req, res, next) {
 }
 
 export function logout(req, res) {
-  res.clearCookie('student_token');
-  res.clearCookie('admin_token');
-  res.clearCookie('token'); // belt-and-suspenders: clear any lingering old cookie
+  // Cookie options must match those used when setting the cookie, otherwise
+  // some browsers (especially in production HTTPS) may silently ignore the clear.
+  const cookieOpts = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  };
+  res.clearCookie('student_token', cookieOpts);
+  res.clearCookie('admin_token', cookieOpts);
+  res.clearCookie('token', cookieOpts); // belt-and-suspenders: clear any lingering old cookie
   res.json({ message: 'Logged out successfully' });
 }

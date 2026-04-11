@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx-js-style';
 import api from '../services/api';
 import { getUserFriendlyApiError } from '../utils/apiError';
 import { Upload, FileSpreadsheet, Download, Trash2, CheckCircle, AlertCircle, Users, UserPlus, Loader2 } from 'lucide-react';
+import { useBulkImport } from '../contexts/BulkImportContext';
 
 // ── Column mapping: Excel/CSV header → DB field ──────────────────────────────
 const COLUMN_MAP = {
@@ -154,11 +155,14 @@ const Students = () => {
   const [branchLookup, setBranchLookup] = useState({});  // for auto-detection
 
   // Bulk upload
-  const [bulkRows, setBulkRows] = useState([]);
-  const [bulkFileName, setBulkFileName] = useState('');
-  const [bulkStatus, setBulkStatus] = useState('idle'); // idle | loading | success | error
-  const [bulkResult, setBulkResult] = useState(null);
-  const [bulkError, setBulkError] = useState('');
+  const {
+    bulkRows, setBulkRows,
+    bulkFileName, setBulkFileName,
+    bulkStatus, setBulkStatus,
+    bulkResult, setBulkResult,
+    bulkError, setBulkError,
+    handleBulkSubmit, handleClearBulk: contextClearBulk
+  } = useBulkImport();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -244,26 +248,8 @@ const Students = () => {
     handleFileSelect(e.dataTransfer.files[0]);
   };
 
-  const handleBulkSubmit = async () => {
-    if (!bulkRows.length) return;
-    setBulkStatus('loading');
-    setBulkResult(null);
-    try {
-      const result = await api.post('/students/bulk', { students: bulkRows });
-      setBulkResult(result);
-      setBulkStatus('success');
-    } catch (err) {
-      setBulkError(getUserFriendlyApiError(err, 'Bulk import failed.'));
-      setBulkStatus('error');
-    }
-  };
-
   const handleClearBulk = () => {
-    setBulkRows([]);
-    setBulkFileName('');
-    setBulkResult(null);
-    setBulkStatus('idle');
-    setBulkError('');
+    contextClearBulk();
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 

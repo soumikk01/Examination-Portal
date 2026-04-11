@@ -3,10 +3,9 @@ import logo from '../assets/logo.png';
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────
 const API = '/api/v1';
-const getAuthHeaders = () => {
-  const token = sessionStorage.getItem('examination_portal_admin_token');
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-};
+// Auth is handled via HttpOnly admin_token cookie automatically (set at login).
+// No manual Authorization header needed — cookies are sent by the browser on every request.
+const getAuthHeaders = () => ({ 'Content-Type': 'application/json' });
 
 const VENUE_ROOMS = {
   'C Block – CMS Building': [
@@ -85,15 +84,14 @@ const styles = `
 
   /* Info bar */
   .sa2-info {
-    display: flex; border: 1.5px solid #222; font-size: 10px;
-    font-weight: 700; margin-bottom: 0;
+    display: flex; font-size: 10px; flex-wrap: wrap; justify-content: center; gap: 1rem;
+    font-weight: 700; margin-bottom: 0.5rem;
   }
   .sa2-ic {
-    flex: 1; padding: 3px 6px; border-right: 1.5px solid #222;
-    white-space: nowrap; font-size: 10px;
+    padding: 3px 6px;
+    white-space: nowrap; font-size: 10px; color: #1a1a1a;
   }
-  .sa2-ic:last-child { border-right: none; }
-  .sa2-ic-sem { background: #1f2937; color: #fff; text-align: center; }
+  .sa2-ic-sem { text-align: center; color: #1a1a1a; }
 
   /* Seating table */
   .sa2-table {
@@ -105,7 +103,7 @@ const styles = `
     border: 1px solid #555; padding: 0;
     vertical-align: top; height: 17.5mm;
   }
-  .sa2-table th { vertical-align: middle; padding: 3px 4px; font-size: 11px; font-weight: 700; text-align: center; height: auto; }
+  .sa2-table th { vertical-align: middle; padding: 3px 4px; font-size: 11px; font-weight: 700; text-align: center; height: 17.5mm; }
 
   /* Column header types */
   .sa2-th-extra { background: #f5f5f5; }
@@ -345,17 +343,25 @@ export default function Seating() {
             </div>
 
             {/* Info bar */}
-            <div className="sa2-info">
-              <div className="sa2-ic">Room No – {room || (seating?.roomNo) || '--'}</div>
-              {seating
-                ? collapsedHeaders.map((h, i) => (
-                    <div key={i} className="sa2-ic">
-                      {h.dept} – {deptTotals[h.dept] ?? ''}
-                    </div>
-                  ))
-                : <div className="sa2-ic">DEPT – COUNT</div>
-              }
-              <div className="sa2-ic sa2-ic-sem">SEMESTER – {semester}</div>
+            <div className="sa2-info" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div className="sa2-ic" style={{ textAlign: 'left', minWidth: '120px', fontSize: '12.5px', fontWeight: 900, letterSpacing: '0.5px' }}>
+                ROOM NO – {room || (seating?.roomNo) || '--'}
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem', flex: 1, letterSpacing: '0.5px' }}>
+                {seating
+                  ? collapsedHeaders.map((h, i) => (
+                      <div key={i} className="sa2-ic">
+                        {h.dept} – {deptTotals[h.dept] ?? ''}
+                      </div>
+                    ))
+                  : <div className="sa2-ic">DEPT – COUNT</div>
+                }
+              </div>
+
+              <div className="sa2-ic sa2-ic-sem" style={{ textAlign: 'right', minWidth: '120px', fontSize: '12.5px', fontWeight: 900, letterSpacing: '0.5px' }}>
+                SEMESTER – {semester}
+              </div>
             </div>
 
             {/* Seating table */}
@@ -366,7 +372,7 @@ export default function Seating() {
                     <>
                       <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>EXTRA</th>
                       {seating.columns.length > 2 && (
-                        <th className="sa2-th-dept" colSpan={seating.columns.length - 2}></th>
+                        <th className="sa2-th-dept" colSpan={seating.columns.length - 2} style={{ borderTop: 'none' }}></th>
                       )}
                       {seating.columns.length > 1 && (
                         <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>Door</th>
@@ -378,7 +384,7 @@ export default function Seating() {
                   ) : (
                     <>
                       <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>EXTRA</th>
-                      <th className="sa2-th-dept" colSpan={3}></th>
+                      <th className="sa2-th-dept" colSpan={3} style={{ borderTop: 'none' }}></th>
                       <th className="sa2-th-dept" style={{ background: '#d1d5db' }}>Door</th>
                     </>
                   )}

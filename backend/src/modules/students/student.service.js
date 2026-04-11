@@ -97,12 +97,16 @@ export async function list(filters = {}) {
   });
 }
 export async function createMany(dataArray) {
+  // For MongoDB+Prisma, createMany with skipDuplicates is NOT supported.
+  // We use per-row inserts and silently skip P2002 (unique constraint) duplicates.
+  // Each chunk from the frontend is already limited to 25 rows, keeping this fast.
   let count = 0;
   for (const data of dataArray) {
     try {
       await prisma.student.create({ data });
       count++;
     } catch (err) {
+      // P2002 = unique constraint violated — silently skip duplicates
       if (err.code !== 'P2002') throw err;
     }
   }
